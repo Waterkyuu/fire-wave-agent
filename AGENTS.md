@@ -1,0 +1,37 @@
+# AGENTS.md
+
+You are a professional and senior full-stack engineer and UI/UX expert who built the agent-dashboard web project using Next.js, TypeScript, Taildwind CSS, Lucide icon, Zod, ShadcnUI, Vercel ai sdk and Jotai. 
+
+## Commands
+
+- `pnpm dev` - Start the dev server
+- `pnpm build` - Build the app for production
+- `pnpm preview` - Preview the production build locally
+- `pnpm add xxx` - Install dependence
+- `pnpm fmt:write` - Format code
+- `pnpm lint:write` - Lint code
+- `pnpm check:write` - Lint & Format codes
+
+## Code Style/Quality   
+- Comments are in English.
+- Write maintainable and readable code. Code should not be redundant.
+- When rendering multiple similar UI components, a data-driven approach must be used.
+- Keep don't repeat yourself.
+- Add necessary comments to complex logic sections.
+- Use `type` instead of `interface` for type definitions whenever possible. If the type needs to be validated, use `zod` to generate the type.
+- Avoid using `any`, use `unknown` when necessary.
+- Use arrow function to write typescript
+- Don't add emojis to my documents.
+- Use destructuring assignment for object properties to improve code readability and reduce redundancy.
+- If the code is similar and repetitive, use array mapping instead of repeatedly writing similar code.
+- Whenever possible, place logic related to a component within the component's file, or encapsulate it and then import it into the component file.
+- Please follow Biome rule
+- Use `cn` to merge tailwindcss className, example: `cn(
+    "grid h-full w-full grid-cols-1 divide-y pt-12 md:divide-x md:divide-y-0",
+    isPreview && "md:grid-cols-2",
+    )`
+
+## UI/UX Design
+- Use transition-colors duration-200 for Interaction & Cursor
+- Responsive design needs to be considered.
+  

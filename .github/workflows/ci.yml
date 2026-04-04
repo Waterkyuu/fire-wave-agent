@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 拉代码
+      - uses: actions/checkout@v4
+
+      # 2. 装 pnpm
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9          # 与仓库锁文件保持一致
+
+      # 3. 装 Node 并缓存 pnpm 依赖
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20    # 按需调整
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 4. Biome 检查
+      - name: Lint & Format
+        run: pnpm check

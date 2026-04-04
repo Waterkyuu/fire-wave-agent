@@ -1,0 +1,79 @@
+{
+	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+	"vcs": {
+		"enabled": false,
+		"clientKind": "git",
+		"useIgnoreFile": false
+	},
+	"files": {
+		"ignoreUnknown": false,
+		"ignore": [
+			"node_modules",
+			"server",
+			".next",
+			"dist",
+			"build",
+			"*.min.js",
+			"*.min.css",
+			"public",
+			".git",
+			".husky",
+			".vscode",
+			"src/components/ui",
+			".github"
+		]
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab"
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"a11y": {
+				"useKeyWithClickEvents": "off",
+				"useKeyWithMouseEvents": "off",
+				"noSvgWithoutTitle": "off"
+			},
+			"correctness": {
+				"noUnusedImports": "error",
+				"useExhaustiveDependencies": "off",
+				"noChildrenProp": "off"
+			},
+			"complexity": {
+				"noForEach": "off",
+				"useOptionalChain": {
+					"level": "error",
+					"fix": "safe"
+				}
+			},
+			"nursery": {
+				"useSortedClasses": {
+					"level": "error",
+					"fix": "safe",
+					"options": {}
+				}
+			},
+			"suspicious": {
+				"noArrayIndexKey": "off"
+			},
+			"style": {
+				"useSelfClosingElements": {
+					"level": "error",
+					"fix": "safe"
+				},
+				"noUselessElse": {
+					"level": "error",
+					"fix": "safe"
+				},
+				"useTemplate": "off"
+			}
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double"
+		}
+	}
+}
