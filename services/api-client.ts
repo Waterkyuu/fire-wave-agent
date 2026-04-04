@@ -17,14 +17,12 @@ const apiClient = axios.create({
 	withCredentials: true,
 });
 
-// 定义业务状态码类型
 const resultEnum: Record<string, number> = {
 	success: 0, // 请求成功
 	unauthorized: 401, // token 无效
 	sensitive: 105, // 涉及敏感词
 };
 
-// 添加请求拦截器
 apiClient.interceptors.request.use(
 	(config: InternalAxiosRequestConfig) => {
 		if (typeof window !== "undefined") {

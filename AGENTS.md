@@ -35,3 +35,29 @@ You are a professional and senior full-stack engineer and UI/UX expert who built
 - Use transition-colors duration-200 for Interaction & Cursor
 - Responsive design needs to be considered.
   
+## Project Structure
+```md
+agent-dashboard/
+├── .github/                    # GitHub configuration (Actions workflows)
+├── .husky/                     # Git hooks
+├── .vscode/                    # VS Code editor settings
+├── app/                        # Next.js 14+ App Router (pages & API routes)
+│   ├── (auth)/                 # Auth route group
+│   │   ├── forget-password/
+│   │   ├── login/
+│   │   └── register/
+│   └── api/                   # API endpoints
+├── atoms/                      # Jotai state management atoms
+├── components/                 # React components
+│   └── ui/                    # ShadcnUI component library
+├── config/                     # Application configuration
+├── constants/                  # Static constants
+├── hooks/                      # Custom React hooks
+├── i18n/                       # Internationalization (i18n) setup
+├── lib/                        # Utility functions & helpers
+├── messages/                   # Translation JSON files
+├── public/                     # Static assets (images, SVGs)
+├── services/                   # API service layer
+├── styles/                     # Global CSS styles
+└── types/                      # TypeScript type definitions
+```
