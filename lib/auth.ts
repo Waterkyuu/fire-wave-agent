@@ -7,7 +7,6 @@ const neonDataApiUrl = process.env.NEON_DATA_PUBLIC_API_URL ?? "";
 // Auth & database query
 export const client = createClient({
 	auth: {
-		// It must start with PUBLIC_
 		url: neonAuthUrl,
 	},
 	dataApi: {

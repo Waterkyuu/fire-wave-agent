@@ -39,6 +39,7 @@ You are a professional and senior full-stack engineer and UI/UX expert who built
     isPreview && "md:grid-cols-2",
     )`
 - Don't write `export` before every function; just use a unified `export` at the end. For example export { xxx, xxx }
+- Unit tests are written in the same directory. Integration tests and end-to-end tests are written in the `tests` directory.
 
 ## UI/UX Design
 - Use transition-colors duration-200 for Interaction & Cursor
@@ -51,13 +52,12 @@ agent-dashboard/
 ├── .husky/                     # Git hooks
 ├── .vscode/                    # VS Code editor settings
 ├── app/                        # Next.js 14+ App Router (pages & API routes)
-│   ├── (auth)/                 # Auth route group
-│   │   ├── forget-password/
-│   │   ├── login/
-│   │   └── register/
 │   └── api/                   # API endpoints
+│   └── chat/                   # Chat page
+│       └── compoents/          # Chat page components
 ├── atoms/                      # Jotai state management atoms
 ├── components/                 # React components
+│   └── share/                  # Common compoents
 │   └── ui/                    # ShadcnUI component library
 ├── config/                     # Application configuration
 ├── constants/                  # Static constants
