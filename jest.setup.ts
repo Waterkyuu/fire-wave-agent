@@ -3,12 +3,11 @@ import "@testing-library/jest-dom";
 if (typeof globalThis.TransformStream === "undefined") {
 	Object.defineProperty(globalThis, "TransformStream", {
 		value: class TransformStream {
-			readable: ReadableStream;
-			writable: WritableStream;
+			readable: unknown;
+			writable: unknown;
 			constructor() {
-				const { readable, writable } = new IdentityTransformStream();
-				this.readable = readable;
-				this.writable = writable;
+				this.readable = {};
+				this.writable = {};
 			}
 		},
 		writable: true,
