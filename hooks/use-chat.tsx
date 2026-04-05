@@ -8,7 +8,7 @@ import {
 	vncUrlAtom,
 } from "@/atoms/chat";
 import type { ToolCallEvent } from "@/types/chat";
-import { useChat } from "@ai-sdk/react";
+import { Chat, useChat } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -51,18 +51,15 @@ const extractToolEventsFromMessages = (
 			if (typeof part.type !== "string" || !part.type.startsWith("tool-"))
 				continue;
 
-			const toolCallId = (part as Record<string, unknown>).toolCallId as
-				| string
-				| undefined;
+			const partRecord = part as Record<string, unknown>;
+			const toolCallId = partRecord.toolCallId as string | undefined;
 			if (!toolCallId) continue;
 
 			const toolName = part.type.slice(5);
-			const partState = (part as Record<string, unknown>).state as
-				| string
-				| undefined;
-			const partInput = (part as Record<string, unknown>).input;
-			const partOutput = (part as Record<string, unknown>).output;
-			const partErrorText = (part as Record<string, unknown>).errorText;
+			const partState = partRecord.state as string | undefined;
+			const partInput = partRecord.input;
+			const partOutput = partRecord.output;
+			const partErrorText = partRecord.errorText;
 
 			const prev = existingMap.get(toolCallId);
 			const startedAt = prev?.startedAt ?? Date.now();
@@ -130,19 +127,15 @@ const useAgentChat = (options: UseChatOptions = {}): UseChatReturn => {
 	const reasoningStartTimeRef = useRef<number | null>(null);
 	const processedToolCallsRef = useRef(new Map<string, ToolCallEvent>());
 
-	const chat = useChat({
-		api,
-		id: sessionId,
-		initialMessages,
-		onFinish: (message) => {
-			jotaiStore.set(agentStatusAtom, "completed");
-			onFinish?.(message);
-		},
-		onError: (error) => {
-			jotaiStore.set(agentStatusAtom, "error");
-			onError?.(error);
-		},
-	});
+	const chatRef = useRef<InstanceType<typeof Chat> | null>(null);
+	if (!chatRef.current) {
+		chatRef.current = new Chat({
+			id: sessionId,
+			messages: initialMessages,
+		});
+	}
+
+	const chat = useChat({ chat: chatRef.current });
 
 	const messages = chat.messages;
 	const status = chat.status;
@@ -193,9 +186,9 @@ const useAgentChat = (options: UseChatOptions = {}): UseChatReturn => {
 			jotaiStore.set(clearToolEventsAtom);
 			jotaiStore.set(agentStatusAtom, "thinking");
 
-			await chat.sendMessage({ text }, { body: opts?.body });
+			await chat.sendMessage({ text }, { body: { ...opts?.body, api } });
 		},
-		[chat],
+		[chat, api],
 	);
 
 	const reload = useCallback(async () => {
