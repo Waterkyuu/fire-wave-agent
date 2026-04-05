@@ -9,7 +9,7 @@ const AppProviders = ({ children }: { children: React.ReactNode }) => {
 	return (
 		<QueryClientProvider client={queryClient}>
 			{children}
-			<Toaster richColors position="top-right" />
+			<Toaster richColors />
 		</QueryClientProvider>
 	);
 };

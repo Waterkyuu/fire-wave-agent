@@ -19,9 +19,8 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-	title: "Xuebantong - Smart Learning Platform",
-	description:
-		"AI-powered learning platform with idioms, language learning, writing enhancement, and Feynman technique",
+	title: "Fire Wave",
+	description: "Agent Helper",
 };
 
 export default function RootLayout({

@@ -1,3 +1,5 @@
+"use client";
+
 import loginDialogAtom from "@/atoms/login-dialog";
 import { sidebarOpenAtom } from "@/atoms/sidebar";
 import { userAtom } from "@/atoms/user";
@@ -73,7 +75,7 @@ const Header = () => {
 								href="/"
 								className="font-lora text-xl sm:text-2xl md:text-4xl"
 							>
-								Figsumx
+								Fire Wave
 							</Link>
 							<Button
 								variant="ghost"

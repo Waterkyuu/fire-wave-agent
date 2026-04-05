@@ -1,3 +1,5 @@
+"use client";
+
 import { firstUserInputAtom } from "@/atoms";
 import {
 	InputGroup,

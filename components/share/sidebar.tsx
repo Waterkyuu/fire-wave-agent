@@ -1,3 +1,5 @@
+"use client";
+
 import { sidebarOpenAtom } from "@/atoms/sidebar";
 import DeleteChatDialog from "@/components/share/delete-chat-dialog";
 import RenameDialog from "@/components/share/rename-dialog";
@@ -115,7 +117,7 @@ const Sidebar = () => {
 					{/* Header with logo and close button */}
 					<div className="flex items-center justify-between border-b px-4 py-4">
 						<Link href="/" className="font-lora text-xl" onClick={closeSidebar}>
-							Figsumx
+							Fire Wave
 						</Link>
 						<Button
 							variant="ghost"
