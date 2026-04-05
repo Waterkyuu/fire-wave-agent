@@ -1,11 +1,4 @@
-import { firstUserInputAtom, modeAtom } from "@/atoms";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuRadioGroup,
-	DropdownMenuRadioItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { firstUserInputAtom } from "@/atoms";
 import {
 	InputGroup,
 	InputGroupAddon,
@@ -70,7 +63,6 @@ const InputField = ({
 	const isHome = pathname === "/";
 	const router = useRouter();
 
-	const [mode, setMode] = useAtom(modeAtom);
 	const [firstUserInput, setFirstUserInput] = useAtom(firstUserInputAtom);
 
 	const [attachments, setAttachments] = useState<File[]>([]);
@@ -345,26 +337,6 @@ const InputField = ({
 						)}
 					</TooltipContent>
 				</Tooltip>
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<InputGroupButton variant="ghost">{mode}</InputGroupButton>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent
-						side="top"
-						align="start"
-						className="[--radius:0.95rem]"
-					>
-						<DropdownMenuRadioGroup
-							value={mode}
-							onValueChange={(value) => setMode(value as "Typst" | "Markdown")}
-						>
-							<DropdownMenuRadioItem value="Typst">Typst</DropdownMenuRadioItem>
-							<DropdownMenuRadioItem value="Markdown">
-								Markdown
-							</DropdownMenuRadioItem>
-						</DropdownMenuRadioGroup>
-					</DropdownMenuContent>
-				</DropdownMenu>
 				<InputGroupText className="ml-auto">52% used</InputGroupText>
 				<Separator orientation="vertical" className="h-4!" />
 				{isLoading ? (

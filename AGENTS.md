@@ -13,6 +13,7 @@ You are a professional and senior full-stack engineer and UI/UX expert who built
 - `pnpm check:write` - Lint & Format codes
 
 ## Git Workflow
+- Break down a large requirement into multiple smaller work units, and commit code at the end of each work unit.
 - After completing a feature, bug fix, or refactoring, and confirming the code is functional, **you must automatically perform a Git commit**.
 - First, run `git diff` to check the changes, then run `git add .`.
 - Use `golangci-lint` to check the code in the server directory for style, and use `pnpm check` to check the code in the client directory for style.
@@ -44,6 +45,7 @@ You are a professional and senior full-stack engineer and UI/UX expert who built
 ## UI/UX Design
 - Use transition-colors duration-200 for Interaction & Cursor
 - Responsive design needs to be considered.
+- The overall style leans towards shadcnui, with white as the main color and black as the secondary color.
   
 ## Project Structure
 ```md

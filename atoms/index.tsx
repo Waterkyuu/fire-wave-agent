@@ -7,3 +7,4 @@ export default jotaiStore;
 export * from "./user";
 export * from "./login-dialog";
 export * from "./sidebar";
+export * from "./chat";
