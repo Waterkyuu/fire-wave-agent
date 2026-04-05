@@ -14,7 +14,6 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { UseChatReturn } from "@/hooks/use-chat";
 import { handleError } from "@/lib/error-handler";
 import { formatFileSize } from "@/lib/file";
 import { type UploadResult, cancelUpload, uploadFile } from "@/lib/upload-file";
@@ -25,12 +24,23 @@ import { usePathname, useRouter } from "next/navigation";
 import { memo, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+type AppendFn = (
+	message: {
+		role: string;
+		content: string;
+	},
+	options?: Record<string, unknown>,
+) => Promise<void>;
+
 type InputFieldProps = {
 	className?: string;
 	size?: "default" | "md" | "sm";
-} & Partial<
-	Pick<UseChatReturn, "append" | "isLoading" | "stop" | "input" | "setInput">
->;
+	append?: AppendFn;
+	isLoading?: boolean;
+	stop?: () => void;
+	input?: string;
+	setInput?: (input: string) => void;
+};
 
 const sizeVariants = {
 	default: {
