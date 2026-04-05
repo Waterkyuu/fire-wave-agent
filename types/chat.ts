@@ -1,31 +1,22 @@
 import { z } from "zod";
 
-// Tool call schema for function calling (aligned with Eino framework)
-const ToolCallSchema = z.object({
-	id: z.string(),
-	type: z.literal("function"),
-	function: z.object({
-		name: z.string(),
-		arguments: z.string(), // JSON string of function arguments
-	}),
-});
+// Agent execution status
+type AgentStatus = "idle" | "thinking" | "acting" | "completed" | "error";
 
-// Message role types
-const RoleSchema = z.enum(["user", "assistant", "tool"]);
+// Tool call event for debug panel event stream
+type ToolCallEvent = {
+	id: string;
+	toolCallId: string;
+	toolName: string;
+	args: Record<string, unknown>;
+	state: "call" | "partial-call" | "result";
+	result?: unknown;
+	startedAt: number;
+	finishedAt?: number;
+	durationMs?: number;
+};
 
-// Message item schema with support for tool calls and reasoning
-const MessageItemSchema = z.object({
-	role: RoleSchema,
-	content: z.string().nullable().optional(), // Content can be null for tool calls
-	reasoning_content: z.string().optional(), // Chain of thought reasoning (separate message)
-	tool_calls: z.array(ToolCallSchema).optional(), // Tool function calls
-	tool_call_id: z.string().optional(), // Tool call ID for tool messages
-	tool_name: z.string().optional(), // Tool name for tool messages
-	version: z.string().optional(), // Current version, optional v1 v2
-});
-
-const MessagesSchema = z.array(MessageItemSchema);
-
+// Chat session schema (used by sidebar / history management)
 const SessionItemSchema = z.object({
 	id: z.string().uuid(),
 	userId: z.string().uuid(),
@@ -36,22 +27,14 @@ const SessionItemSchema = z.object({
 
 const SessionsSchema = z.array(SessionItemSchema);
 
-type MessageItem = z.infer<typeof MessageItemSchema>;
-type Messages = MessageItem[];
 type SessionItem = z.infer<typeof SessionItemSchema>;
 type Sessions = SessionItem[];
-type ToolCall = z.infer<typeof ToolCallSchema>;
-type Role = z.infer<typeof RoleSchema>;
 
 export {
-	MessageItemSchema,
-	MessagesSchema,
 	SessionItemSchema,
 	SessionsSchema,
-	type MessageItem,
-	type Messages,
+	type AgentStatus,
+	type ToolCallEvent,
 	type SessionItem,
 	type Sessions,
-	type ToolCall,
-	type Role,
 };
