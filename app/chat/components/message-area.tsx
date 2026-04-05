@@ -1,21 +1,62 @@
 "use client";
 
-import type { UseChatReturn } from "@/hooks/use-chat";
-import { useRef } from "react";
+import { cn } from "@/lib/utils";
+import type { UIMessage } from "ai";
+import { useEffect, useRef } from "react";
+import MessageItem from "./message-item";
 
 type MessageAreaProps = {
+	messages: UIMessage[];
+	thinkingTime: number | null;
 	className?: string;
-} & Pick<
-	UseChatReturn,
-	"messages" | "setMessages" | "status" | "reload" | "error" | "thinkingTime"
->;
+	onShowVnc?: () => void;
+};
 
-const MessageArea = () => {
+const MessageArea = ({
+	messages,
+	thinkingTime,
+	className,
+	onShowVnc,
+}: MessageAreaProps) => {
 	const messagesEndRef = useRef<HTMLDivElement>(null);
+	const containerRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (messagesEndRef.current) {
+			messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+		}
+	}, [messages]);
+
+	const hasToolCalls = messages.some((msg) =>
+		msg.parts.some(
+			(p) => typeof p.type === "string" && p.type.startsWith("tool-"),
+		),
+	);
+
 	return (
-		<div className="relative flex-1 overflow-hidden">
-			<div className="custom-scrollbar flex h-full w-full flex-col overflow-y-auto px-8 py-4">
-				{/*  Rolling anchor point */}
+		<div
+			ref={containerRef}
+			className={cn("relative flex-1 overflow-hidden", className)}
+		>
+			<div className="custom-scrollbar flex h-full w-full flex-col overflow-y-auto px-2 py-4">
+				{messages.length === 0 && (
+					<div className="flex flex-1 items-center justify-center">
+						<p className="text-muted-foreground text-sm">
+							Send a message to start...
+						</p>
+					</div>
+				)}
+
+				{messages.map((message) => (
+					<MessageItem
+						key={message.id}
+						message={message}
+						thinkingTime={message.role === "assistant" ? thinkingTime : null}
+						hasToolCalls={hasToolCalls}
+						onShowVnc={onShowVnc}
+					/>
+				))}
+
 				<div ref={messagesEndRef} />
 			</div>
 		</div>
