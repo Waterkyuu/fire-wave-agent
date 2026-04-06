@@ -1,3 +1,5 @@
+"use client";
+
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -14,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { signOut } from "@/services/user";
+import { useTranslations } from "next-intl";
 
 type AvatarProps = {
 	mode?: "default" | "online" | "offline";
@@ -22,6 +25,8 @@ type AvatarProps = {
 };
 
 const Avatar = ({ mode = "default", className = "" }: AvatarProps) => {
+	const t = useTranslations("avatar");
+
 	// Get user avatar and email
 	if (mode === "online") {
 		return (
@@ -63,49 +68,49 @@ const Avatar = ({ mode = "default", className = "" }: AvatarProps) => {
 				</div>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent className="w-56" align="end">
-				<DropdownMenuLabel>My Account</DropdownMenuLabel>
+				<DropdownMenuLabel>{t("myAccount")}</DropdownMenuLabel>
 				<DropdownMenuGroup>
 					<DropdownMenuItem>
-						Profile
+						{t("profile")}
 						<DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
 					</DropdownMenuItem>
 					<DropdownMenuItem>
-						Billing
+						{t("billing")}
 						<DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
 					</DropdownMenuItem>
 					<DropdownMenuItem>
-						Settings
+						{t("settings")}
 						<DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
 					</DropdownMenuItem>
 					<DropdownMenuItem>
-						Keyboard shortcuts
+						{t("keyboardShortcuts")}
 						<DropdownMenuShortcut>⌘K</DropdownMenuShortcut>
 					</DropdownMenuItem>
 				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
 				<DropdownMenuGroup>
-					<DropdownMenuItem>Team</DropdownMenuItem>
+					<DropdownMenuItem>{t("team")}</DropdownMenuItem>
 					<DropdownMenuSub>
-						<DropdownMenuSubTrigger>Invite users</DropdownMenuSubTrigger>
+						<DropdownMenuSubTrigger>{t("inviteUsers")}</DropdownMenuSubTrigger>
 						<DropdownMenuPortal>
 							<DropdownMenuSubContent>
-								<DropdownMenuItem>Email</DropdownMenuItem>
-								<DropdownMenuItem>Message</DropdownMenuItem>
+								<DropdownMenuItem>{t("email")}</DropdownMenuItem>
+								<DropdownMenuItem>{t("message")}</DropdownMenuItem>
 								<DropdownMenuSeparator />
-								<DropdownMenuItem>More...</DropdownMenuItem>
+								<DropdownMenuItem>{t("more")}</DropdownMenuItem>
 							</DropdownMenuSubContent>
 						</DropdownMenuPortal>
 					</DropdownMenuSub>
 					<DropdownMenuItem>
-						New Team
+						{t("newTeam")}
 						<DropdownMenuShortcut>⌘+T</DropdownMenuShortcut>
 					</DropdownMenuItem>
 				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
-				<DropdownMenuItem>API Key</DropdownMenuItem>
+				<DropdownMenuItem>{t("apiKey")}</DropdownMenuItem>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem onClick={signOut}>
-					Log out
+					{t("logout")}
 					<DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
 				</DropdownMenuItem>
 			</DropdownMenuContent>

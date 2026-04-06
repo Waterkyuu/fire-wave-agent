@@ -3,15 +3,18 @@
 import { vncUrlAtom } from "@/atoms/chat";
 import { useAtomValue } from "jotai";
 import { Monitor } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { memo, useMemo } from "react";
 
 const VncViewer = memo(
 	({ url }: { url: string }) => {
+		const t = useTranslations("chat");
+
 		if (!url) {
 			return (
 				<div className="flex h-full w-full flex-col items-center justify-center gap-3 text-muted-foreground">
 					<Monitor className="size-12 opacity-30" />
-					<p className="text-sm">Waiting for Agent Sandbox...</p>
+					<p className="text-xs sm:text-sm">{t("waitingSandbox")}</p>
 				</div>
 			);
 		}
@@ -32,6 +35,7 @@ VncViewer.displayName = "VncViewer";
 
 const VncPanel = () => {
 	const vncUrl = useAtomValue(vncUrlAtom);
+	const t = useTranslations("chat");
 
 	const viewerUrl = useMemo(() => vncUrl, [vncUrl]);
 
@@ -40,10 +44,12 @@ const VncPanel = () => {
 			<div className="flex items-center justify-between border-b px-4 py-2">
 				<div className="flex items-center gap-2">
 					<Monitor className="size-4 text-muted-foreground" />
-					<span className="font-medium text-sm">Sandbox Viewer</span>
+					<span className="font-medium text-xs sm:text-sm">
+						{t("sandboxViewer")}
+					</span>
 					{viewerUrl && (
-						<span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 font-medium text-green-700 text-xs">
-							Live
+						<span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 font-medium text-[10px] text-green-700 sm:text-xs">
+							{t("live")}
 						</span>
 					)}
 				</div>

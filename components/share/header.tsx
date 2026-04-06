@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAtom } from "jotai";
 import { MenuIcon, PanelLeftDashed, XIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { memo, useCallback, useState } from "react";
 
@@ -17,6 +18,8 @@ const Header = () => {
 	const isMobile = useIsMobile();
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const [_, setSidebarOpen] = useAtom(sidebarOpenAtom);
+	const t = useTranslations("header");
+	const tMobile = useTranslations("mobileMenu");
 
 	const toggleMenu = () => {
 		setIsMenuOpen(!isMenuOpen);
@@ -60,6 +63,7 @@ const Header = () => {
 						<LoginDialog
 							open={isLoginDialogOpen}
 							onOpenChange={setIsLoginDialogOpen}
+							loginText={t("login")}
 						/>
 					)}
 				</div>
@@ -92,24 +96,24 @@ const Header = () => {
 							<nav className="flex flex-col space-y-4 p-4">
 								<Link
 									href="/"
-									className="py-2 font-medium text-lg"
+									className="py-2 font-medium text-base sm:text-lg"
 									onClick={toggleMenu}
 								>
-									Home
+									{tMobile("home")}
 								</Link>
 								<Link
 									href="/chat/111"
-									className="py-2 font-medium text-lg"
+									className="py-2 font-medium text-base sm:text-lg"
 									onClick={toggleMenu}
 								>
-									Chat
+									{tMobile("chat")}
 								</Link>
 								<Link
 									href="/community"
-									className="py-2 font-medium text-lg"
+									className="py-2 font-medium text-base sm:text-lg"
 									onClick={toggleMenu}
 								>
-									Community
+									{tMobile("community")}
 								</Link>
 							</nav>
 						</div>
@@ -121,6 +125,7 @@ const Header = () => {
 								<LoginDialog
 									open={isLoginDialogOpen}
 									onOpenChange={setIsLoginDialogOpen}
+									loginText={t("login")}
 								/>
 							</div>
 						)}

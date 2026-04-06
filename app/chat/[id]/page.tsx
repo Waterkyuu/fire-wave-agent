@@ -24,6 +24,7 @@ import {
 } from "@/services/chat";
 import { useAtomValue } from "jotai";
 import { Monitor } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import DebugPanel from "../components/debug-panel";
 import MessageArea from "../components/message-area";
@@ -40,6 +41,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 	const sessionCreatedRef = useRef(false);
 	const isMobile = useIsMobile();
 	const vncUrl = useAtomValue(vncUrlAtom);
+	const t = useTranslations("chat");
 
 	useEffect(() => {
 		params.then((p) => setSessionId(p.id));
@@ -116,7 +118,9 @@ const ChatPage = ({ params }: ChatPageProps) => {
 	if (!ready) {
 		return (
 			<div className="flex h-screen w-screen items-center justify-center">
-				<div className="text-muted-foreground text-sm">Loading...</div>
+				<div className="text-muted-foreground text-xs sm:text-sm">
+					{t("loading")}
+				</div>
 			</div>
 		);
 	}
@@ -149,18 +153,18 @@ const ChatPage = ({ params }: ChatPageProps) => {
 					{showVncButton && (
 						<button
 							type="button"
-							className="flex w-full items-center justify-center gap-2 border-t bg-primary/5 py-2 text-primary text-sm transition-colors duration-200 hover:bg-primary/10"
+							className="flex w-full items-center justify-center gap-2 border-t bg-primary/5 py-2 text-primary text-xs transition-colors duration-200 hover:bg-primary/10 sm:text-sm"
 							onClick={() => setVncSheetOpen(true)}
 						>
 							<Monitor className="size-4" />
-							View Sandbox
+							{t("viewSandbox")}
 						</button>
 					)}
 
 					<Sheet open={vncSheetOpen} onOpenChange={setVncSheetOpen}>
 						<SheetContent side="bottom" className="h-[70vh] p-0">
 							<SheetHeader className="sr-only">
-								<SheetTitle>Sandbox Viewer</SheetTitle>
+								<SheetTitle>{t("sandboxViewer")}</SheetTitle>
 							</SheetHeader>
 							<VncPanel />
 						</SheetContent>

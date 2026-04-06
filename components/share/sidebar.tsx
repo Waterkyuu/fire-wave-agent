@@ -28,6 +28,7 @@ import {
 	PanelRightDashed,
 	Search,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { memo, useCallback, useEffect, useState } from "react";
@@ -46,6 +47,7 @@ const Sidebar = () => {
 	const [isOpen, setIsOpen] = useAtom(sidebarOpenAtom);
 	const [isSearchOpen, setIsSearchOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
+	const t = useTranslations("sidebar");
 
 	const { data: sessions = [] } = useAllSessions();
 
@@ -110,8 +112,12 @@ const Sidebar = () => {
 			>
 				<div className="flex h-full flex-col">
 					<div className="flex items-center justify-between border-b px-4 py-4">
-						<Link href="/" className="font-lora text-xl" onClick={closeSidebar}>
-							Fire Wave
+						<Link
+							href="/"
+							className="font-lora text-lg sm:text-xl"
+							onClick={closeSidebar}
+						>
+							{t("brand")}
 						</Link>
 						<Button
 							variant="ghost"
@@ -127,23 +133,23 @@ const Sidebar = () => {
 					<div className="px-3 py-3">
 						<Button
 							variant="outline"
-							className="w-full justify-start gap-2"
+							className="w-full justify-start gap-2 text-sm sm:text-[15px]"
 							onClick={handleNewChat}
 						>
 							<MessageSquarePlus className="size-4" />
-							<span>New Chat</span>
+							<span>{t("newChat")}</span>
 						</Button>
 					</div>
 
 					<div className="px-3 pb-3">
 						<Button
 							variant="outline"
-							className="w-full justify-start gap-2 text-muted-foreground"
+							className="w-full justify-start gap-2 text-muted-foreground text-sm sm:text-[15px]"
 							onClick={() => setIsSearchOpen(true)}
 						>
 							<Search className="size-4" />
-							<span>Search chats...</span>
-							<span className="ml-auto text-xs">Ctrl+K</span>
+							<span>{t("searchChats")}</span>
+							<span className="ml-auto text-[10px] sm:text-xs">Ctrl+K</span>
 						</Button>
 					</div>
 
@@ -151,14 +157,14 @@ const Sidebar = () => {
 						<div className="space-y-4 pb-4">
 							{Object.entries(groupedChats).map(([date, chats]) => (
 								<div key={date}>
-									<h3 className="mb-2 px-2 font-medium text-muted-foreground text-xs">
+									<h3 className="mb-2 px-2 font-medium text-[10px] text-muted-foreground sm:text-xs">
 										{date}
 									</h3>
 									<div className="space-y-0.5">
 										{chats.map((chat) => (
 											<div
 												key={chat.id}
-												className="group flex items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors duration-200 hover:bg-accent/50"
+												className="group flex items-center justify-between rounded-md px-2 py-1.5 text-xs transition-colors duration-200 hover:bg-accent/50 sm:text-sm"
 											>
 												<Link
 													href={`/chat/${chat.id}`}
@@ -214,17 +220,17 @@ const Sidebar = () => {
 			<CommandDialog
 				open={isSearchOpen}
 				onOpenChange={setIsSearchOpen}
-				title="Search chats"
-				description="Search through your chat history"
+				title={t("searchChatsTitle")}
+				description={t("searchChatsDescription")}
 			>
 				<CommandInput
-					placeholder="Search chats..."
+					placeholder={t("searchChats")}
 					value={searchQuery}
 					onValueChange={setSearchQuery}
 				/>
 				<CommandList>
-					<CommandEmpty>No chats found.</CommandEmpty>
-					<CommandGroup heading="Chat History">
+					<CommandEmpty>{t("noChatsFound")}</CommandEmpty>
+					<CommandGroup heading={t("chatHistory")}>
 						{filteredChats.map((chat) => (
 							<CommandItem
 								key={chat.id}
@@ -233,7 +239,7 @@ const Sidebar = () => {
 							>
 								<MessageSquarePlus className="mr-2 size-4" />
 								<span>{chat.title}</span>
-								<span className="ml-auto text-muted-foreground text-xs">
+								<span className="ml-auto text-[10px] text-muted-foreground sm:text-xs">
 									{chat.computedDate}
 								</span>
 							</CommandItem>

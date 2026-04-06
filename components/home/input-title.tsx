@@ -1,9 +1,14 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
 const InputTitle = () => {
+	const t = useTranslations("home");
+
 	return (
 		<div className="flex flex-col items-center justify-center gap-4">
-			{/* Using Lora font italic style */}
 			<h1 className="mb-4 w-full text-center font-lora text-2xl sm:text-3xl md:text-4xl">
-				What's your plans toady?
+				{t("title")}
 			</h1>
 		</div>
 	);

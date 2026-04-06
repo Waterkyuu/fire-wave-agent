@@ -20,6 +20,7 @@ import { type UploadResult, cancelUpload, uploadFile } from "@/lib/upload-file";
 import { cn, generateId } from "@/lib/utils";
 import { useAtom } from "jotai";
 import { ArrowUp, FileText, Plus, Square, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "next/navigation";
 import { memo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -69,6 +70,7 @@ const InputField = ({
 	className,
 	size = "default",
 }: InputFieldProps) => {
+	const t = useTranslations("inputField");
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const pathname = usePathname();
@@ -110,8 +112,8 @@ const InputField = ({
 
 		const newFiles = Array.from(e.target.files);
 		if (attachments.length + newFiles.length > 2) {
-			toast.error("Maximum files reached", {
-				description: "You can only upload up to 2 files at a time.",
+			toast.error(t("maxFilesReached"), {
+				description: t("maxFilesDescription"),
 			});
 			return;
 		}
@@ -122,10 +124,10 @@ const InputField = ({
 				const suffix = fileName.split(".").pop()?.toLowerCase();
 
 				if (!suffix || !supportedExtensions.includes(suffix)) {
-					toast.error("Unsupported file", {
-						description: "Only support pdf, docx, md, txt, typ files",
+					toast.error(t("unsupportedFile"), {
+						description: t("unsupportedFileDescription"),
 						action: {
-							label: "Cancel",
+							label: t("cancel"),
 							onClick: () => console.log("Cancel"),
 						},
 					});
@@ -147,13 +149,15 @@ const InputField = ({
 					});
 
 					setUploadedFiles((prev) => [...prev, result]);
-					toast.success("File uploaded successfully", {
-						description: `${currentFile.name} has been indexed and is ready for RAG`,
+					toast.success(t("fileUploaded"), {
+						description: t("fileUploadSuccess", { fileName: currentFile.name }),
 					});
 				} catch (error) {
 					handleError(error);
-					toast.error("Upload failed", {
-						description: `Failed to upload ${currentFile.name}`,
+					toast.error(t("uploadFailed"), {
+						description: t("uploadFailedDescription", {
+							fileName: currentFile.name,
+						}),
 					});
 					// Remove from attachments on error
 					setAttachments((prev) => prev.filter((f) => f !== currentFile));
@@ -262,10 +266,10 @@ const InputField = ({
 
 								{/* File Info */}
 								<div className="flex flex-col overflow-hidden text-left">
-									<span className="truncate font-medium text-gray-700 text-sm">
+									<span className="truncate font-medium text-gray-700 text-xs sm:text-sm">
 										{file.name}
 									</span>
-									<span className="mt-0.5 truncate text-[11px] text-gray-400">
+									<span className="mt-0.5 truncate text-[10px] text-gray-400 sm:text-[11px]">
 										{ext} {formatFileSize(file.size)}
 										{isFileUploading && ` - ${Math.round(progress * 100)}%`}
 									</span>
@@ -297,7 +301,7 @@ const InputField = ({
 			<InputGroupTextarea
 				value={isHome ? firstUserInput : input}
 				onChange={handleInputChange}
-				placeholder="Ask, Search or Chat..."
+				placeholder={t("placeholder")}
 				className={cn(
 					sizeVariants[size].textarea,
 					attachments.length > 0 ? "min-h-12 pt-2 md:min-h-16" : "",
@@ -326,9 +330,9 @@ const InputField = ({
 						</InputGroupButton>
 					</TooltipTrigger>
 					<TooltipContent>
-						<p>Only support pdf, docx, md, txt, typ, 2 max</p>
+						<p>{t("fileTooltip")}</p>
 						{Object.keys(uploadingFiles).length > 0 && (
-							<p className="text-blue-500">Uploading...</p>
+							<p className="text-blue-500">{t("uploading")}</p>
 						)}
 					</TooltipContent>
 				</Tooltip>
@@ -342,7 +346,7 @@ const InputField = ({
 						onClick={() => stop()}
 					>
 						<Square fill="white" />
-						<span className="sr-only">Stop</span>
+						<span className="sr-only">{t("stop")}</span>
 					</InputGroupButton>
 				) : (
 					<InputGroupButton
@@ -356,7 +360,7 @@ const InputField = ({
 						onClick={handleSumit}
 					>
 						<ArrowUp />
-						<span className="sr-only">Send</span>
+						<span className="sr-only">{t("send")}</span>
 					</InputGroupButton>
 				)}
 			</InputGroupAddon>
