@@ -1,18 +1,15 @@
-import { auth } from "@/lib/auth/server";
+import authMiddleware from "@/middlewares/auth";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const protectedPaths = ["/settings", "/chat"];
+const middlewares = [authMiddleware];
 
 export async function middleware(request: NextRequest) {
-	const pathname = request.nextUrl.pathname;
-
-	const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
-	if (!isProtected) return NextResponse.next();
-
-	const { data: session } = await auth.getSession();
-	if (!session?.user) {
-		return NextResponse.redirect(new URL("/", request.url));
+	for (const mw of middlewares) {
+		const response = await mw(request);
+		if (response && response !== NextResponse.next()) {
+			return response;
+		}
 	}
 
 	return NextResponse.next();
