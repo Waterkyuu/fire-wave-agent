@@ -79,8 +79,9 @@ const getMessages = async (sessionId: string): Promise<UIMessage[]> => {
 	}));
 };
 
-export type { SessionRow, MessageRow };
 export {
+	type SessionRow,
+	type MessageRow,
 	createSession,
 	getAllSessions,
 	getSession,
