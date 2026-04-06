@@ -31,3 +31,11 @@ jobs:
       # 4. Biome 检查
       - name: Lint & Format
         run: pnpm check
+
+      # 5. 单元测试
+      - name: Test
+        run: pnpm test
+
+      # 6. 构建
+      - name: Build
+        run: pnpm build
