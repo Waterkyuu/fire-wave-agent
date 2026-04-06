@@ -112,7 +112,11 @@ const Sidebar = () => {
 			>
 				<div className="flex h-full flex-col">
 					<div className="flex items-center justify-between border-b px-4 py-4">
-						<Link href="/" className="font-lora text-xl" onClick={closeSidebar}>
+						<Link
+							href="/"
+							className="font-lora text-lg sm:text-xl"
+							onClick={closeSidebar}
+						>
 							{t("brand")}
 						</Link>
 						<Button
@@ -129,7 +133,7 @@ const Sidebar = () => {
 					<div className="px-3 py-3">
 						<Button
 							variant="outline"
-							className="w-full justify-start gap-2"
+							className="w-full justify-start gap-2 text-sm sm:text-[15px]"
 							onClick={handleNewChat}
 						>
 							<MessageSquarePlus className="size-4" />
@@ -140,12 +144,12 @@ const Sidebar = () => {
 					<div className="px-3 pb-3">
 						<Button
 							variant="outline"
-							className="w-full justify-start gap-2 text-muted-foreground"
+							className="w-full justify-start gap-2 text-muted-foreground text-sm sm:text-[15px]"
 							onClick={() => setIsSearchOpen(true)}
 						>
 							<Search className="size-4" />
 							<span>{t("searchChats")}</span>
-							<span className="ml-auto text-xs">Ctrl+K</span>
+							<span className="ml-auto text-[10px] sm:text-xs">Ctrl+K</span>
 						</Button>
 					</div>
 
@@ -153,14 +157,14 @@ const Sidebar = () => {
 						<div className="space-y-4 pb-4">
 							{Object.entries(groupedChats).map(([date, chats]) => (
 								<div key={date}>
-									<h3 className="mb-2 px-2 font-medium text-muted-foreground text-xs">
+									<h3 className="mb-2 px-2 font-medium text-[10px] text-muted-foreground sm:text-xs">
 										{date}
 									</h3>
 									<div className="space-y-0.5">
 										{chats.map((chat) => (
 											<div
 												key={chat.id}
-												className="group flex items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors duration-200 hover:bg-accent/50"
+												className="group flex items-center justify-between rounded-md px-2 py-1.5 text-xs transition-colors duration-200 hover:bg-accent/50 sm:text-sm"
 											>
 												<Link
 													href={`/chat/${chat.id}`}
