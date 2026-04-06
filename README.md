@@ -2,7 +2,11 @@
 
 An autonomous AI agent web application that controls a computer — similar to OpenAI Operator. Powered by Zhipu AI models and E2B sandboxes, it provides a real-time Ubuntu desktop environment with browser automation, web search, shell command execution, and Python code interpretation.
 
-> Note that many features are still incomplete; this project is currently just a demo.
+<div style="border-left: 4px solid red; background: #ffe6e6; padding: 10px;">
+⚠️ <strong style="color:red;">
+Note: that many features are still incomplete; this project is currently just a demo.
+</strong>
+</div>
 
 ![Fire Wave Agent](screenshots/image.png)
 
