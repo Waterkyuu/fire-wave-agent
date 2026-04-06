@@ -1,10 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import type { Page } from "@playwright/test";
-
 test.describe("Chat Flow E2E", () => {
-	let page: Page;
-
 	test.beforeEach(async ({ page }) => {
 		await page.goto("/");
 	});

@@ -1,4 +1,11 @@
 import {
+	createDesktopSandbox,
+	executeCode,
+	executeCommand,
+	navigateBrowser,
+	searchWeb,
+} from "@/lib/e2b";
+import {
 	convertToModelMessages,
 	stepCountIs,
 	streamText,
@@ -9,18 +16,9 @@ import { NextResponse } from "next/server";
 import { zhipu } from "zhipu-ai-provider";
 import { z } from "zod";
 
-const SANDBOX_TIMEOUT_MS = 5 * 60 * 1000;
-
-type SandboxInfo = {
-	id: string;
-	vncUrl: string;
-};
-
-const activeSandboxes = new Map<string, SandboxInfo>();
-
 const createSandboxTool = tool({
 	description:
-		"Create an E2B Desktop Sandbox for browser automation. Returns a VNC URL for viewing the remote desktop.",
+		"Create an E2B Desktop Sandbox with a full Ubuntu desktop and browser. Returns a VNC URL for viewing the remote desktop. Use this when the user needs browser automation or visual desktop interaction.",
 	inputSchema: zodSchema(
 		z.object({
 			task: z
@@ -30,14 +28,7 @@ const createSandboxTool = tool({
 	),
 	execute: async ({ task }: { task: string }) => {
 		try {
-			const sandboxId = `sb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-			const vncUrl = `https://8080-${sandboxId}.e2b.dev`;
-
-			activeSandboxes.set(sandboxId, { id: sandboxId, vncUrl });
-
-			setTimeout(() => {
-				activeSandboxes.delete(sandboxId);
-			}, SANDBOX_TIMEOUT_MS);
+			const { sandboxId, vncUrl } = await createDesktopSandbox();
 
 			return {
 				sandboxId,
@@ -55,44 +46,25 @@ const createSandboxTool = tool({
 	},
 });
 
-const executeCodeTool = tool({
+const codeInterpreterTool = tool({
 	description:
-		"Execute Python/Playwright code in the sandbox to perform browser automation.",
+		"Execute Python code in an isolated Jupyter notebook sandbox. Use for data analysis, calculations, chart generation, and any Python computation. Each call runs in a notebook cell, so variables persist between calls.",
 	inputSchema: zodSchema(
 		z.object({
-			code: z.string().describe("Python code to execute in the sandbox"),
-			sandboxId: z
-				.string()
-				.optional()
-				.describe("Sandbox ID (uses latest if not provided)"),
+			code: z.string().describe("Python code to execute in a notebook cell"),
 		}),
 	),
-	execute: async ({
-		code,
-		sandboxId,
-	}: {
-		code: string;
-		sandboxId?: string;
-	}) => {
+	execute: async ({ code }: { code: string }) => {
 		try {
-			const sid =
-				sandboxId ??
-				(activeSandboxes.size > 0
-					? [...activeSandboxes.keys()].pop()
-					: undefined);
-
-			if (!sid) {
-				return {
-					status: "error",
-					message: "No sandbox available. Create a sandbox first.",
-				};
-			}
+			const result = await executeCode(code);
 
 			return {
-				status: "success",
-				stdout: `Simulated execution of:\n${code.slice(0, 200)}...`,
-				stderr: "",
-				exitCode: 0,
+				status: result.error ? "error" : "success",
+				text: result.text,
+				results: result.results,
+				stdout: result.stdout,
+				stderr: result.stderr,
+				error: result.error,
 			};
 		} catch (error) {
 			return {
@@ -104,8 +76,37 @@ const executeCodeTool = tool({
 	},
 });
 
+const shellTool = tool({
+	description:
+		"Execute a shell command in the desktop sandbox. Use for running scripts, installing packages, or any terminal operations. Requires a desktop sandbox to exist first.",
+	inputSchema: zodSchema(
+		z.object({
+			command: z.string().describe("Shell command to execute in the sandbox"),
+		}),
+	),
+	execute: async ({ command }: { command: string }) => {
+		try {
+			const result = await executeCommand(command);
+
+			return {
+				status: "success",
+				stdout: result.stdout,
+				stderr: result.stderr,
+				exitCode: result.exitCode,
+			};
+		} catch (error) {
+			return {
+				status: "error",
+				message:
+					error instanceof Error ? error.message : "Command execution failed",
+			};
+		}
+	},
+});
+
 const navigateBrowserTool = tool({
-	description: "Navigate the browser in the sandbox to a specific URL.",
+	description:
+		"Open a URL in the desktop sandbox browser. Requires a desktop sandbox to exist first.",
 	inputSchema: zodSchema(
 		z.object({
 			url: z.string().describe("URL to navigate to"),
@@ -113,22 +114,12 @@ const navigateBrowserTool = tool({
 	),
 	execute: async ({ url }: { url: string }) => {
 		try {
-			const sid =
-				activeSandboxes.size > 0
-					? [...activeSandboxes.keys()].pop()
-					: undefined;
-
-			if (!sid) {
-				return {
-					status: "error",
-					message: "No sandbox available. Create a sandbox first.",
-				};
-			}
+			const result = await navigateBrowser(url);
 
 			return {
 				status: "success",
-				url,
-				message: `Navigated to ${url}`,
+				url: result.url,
+				message: result.title,
 			};
 		} catch (error) {
 			return {
@@ -140,7 +131,8 @@ const navigateBrowserTool = tool({
 });
 
 const searchWebTool = tool({
-	description: "Search the web using a search engine in the sandbox.",
+	description:
+		"Search the web by opening Google in the desktop sandbox browser. If no desktop sandbox exists, returns a message asking to create one first.",
 	inputSchema: zodSchema(
 		z.object({
 			query: z.string().describe("Search query"),
@@ -148,15 +140,12 @@ const searchWebTool = tool({
 	),
 	execute: async ({ query }: { query: string }) => {
 		try {
+			const result = await searchWeb(query);
+
 			return {
 				status: "success",
-				query,
-				results: [
-					{
-						title: `Search results for: ${query}`,
-						snippet: "Web search results would appear here.",
-					},
-				],
+				query: result.query,
+				results: result.results,
 			};
 		} catch (error) {
 			return {
@@ -167,17 +156,15 @@ const searchWebTool = tool({
 	},
 });
 
-const SYSTEM_PROMPT = `You are an autonomous AI agent that helps users accomplish tasks using a desktop sandbox environment. You can:
+const SYSTEM_PROMPT = `You are an autonomous AI agent that helps users accomplish tasks using sandbox environments. You have access to two types of sandboxes:
 
-1. Create a sandbox with a browser
-2. Navigate websites, click elements, fill forms
-3. Search the web for information
-4. Execute code to automate browser actions
+1. **Desktop Sandbox** (Ubuntu desktop + browser + VNC) — for browser automation, visual tasks, web browsing
+2. **Code Interpreter** (Jupyter notebook) — for Python execution, data analysis, calculations, chart generation
 
 When a user asks you to do something:
-- First, create a sandbox if one doesn't exist
-- Then break down the task into steps
-- Use the available tools to accomplish each step
+- For computation/data tasks: use codeInterpreter directly
+- For browser/web tasks: first createSandbox, then use navigateBrowser and shell
+- Break complex tasks into steps and use the appropriate tool for each step
 - Report your progress to the user
 
 Always explain what you're doing and why. Be thorough and careful.`;
@@ -197,7 +184,8 @@ export async function POST(req: Request) {
 			messages: modelMessages,
 			tools: {
 				createSandbox: createSandboxTool,
-				executeCode: executeCodeTool,
+				codeInterpreter: codeInterpreterTool,
+				executeShell: shellTool,
 				navigateBrowser: navigateBrowserTool,
 				searchWeb: searchWebTool,
 			},
