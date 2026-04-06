@@ -19,18 +19,14 @@ type MessageRow = {
 };
 
 const MESSAGE_BATCH_PRECISION = 1000;
+const CHAT_DB_NAME = "firewave-agent-v2";
 
-const db = new Dexie("firewave-agent") as Dexie & {
+const db = new Dexie(CHAT_DB_NAME) as Dexie & {
 	sessions: EntityTable<SessionRow, "id">;
 	messages: EntityTable<MessageRow, "id">;
 };
 
 db.version(1).stores({
-	sessions: "id, updatedAt",
-	messages: "id, sessionId, createdAt",
-});
-
-db.version(2).stores({
 	sessions: "id, userId, updatedAt, [userId+updatedAt]",
 	messages: "id, userId, sessionId, createdAt, [userId+sessionId]",
 });
