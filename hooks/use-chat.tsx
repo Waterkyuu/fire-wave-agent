@@ -8,7 +8,7 @@ import {
 	vncUrlAtom,
 } from "@/atoms/chat";
 import type { ToolCallEvent } from "@/types/chat";
-import { Chat, useChat } from "@ai-sdk/react";
+import { useChat } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -17,7 +17,7 @@ type ChatStatus = "submitted" | "streaming" | "ready" | "error";
 type UseChatOptions = {
 	api?: string;
 	sessionId?: string;
-	onFinish?: (message: UIMessage) => void;
+	onFinish?: (messages: UIMessage[]) => void;
 	onError?: (error: Error) => void;
 	initialMessages?: UIMessage[];
 };
@@ -128,18 +128,23 @@ const useAgentChat = (options: UseChatOptions = {}): UseChatReturn => {
 	const reasoningStartTimeRef = useRef<number | null>(null);
 	const processedToolCallsRef = useRef(new Map<string, ToolCallEvent>());
 
-	const chatRef = useRef<InstanceType<typeof Chat> | null>(null);
-	if (!chatRef.current) {
-		chatRef.current = new Chat({
-			id: sessionId,
-			messages: initialMessages,
-		});
-	}
-
-	const chat = useChat({ chat: chatRef.current });
+	const chat = useChat({
+		id: sessionId,
+		messages: initialMessages,
+	});
 
 	const messages = chat.messages;
 	const status = chat.status;
+
+	useEffect(() => {
+		if (!sessionId || initialMessages.length === 0 || messages.length > 0) {
+			return;
+		}
+
+		// Restore persisted history after the session is created before IndexedDB
+		// finishes loading, without overwriting an active in-memory conversation.
+		chat.setMessages(initialMessages);
+	}, [chat, initialMessages, messages.length, sessionId]);
 
 	useEffect(() => {
 		for (const msg of messages) {
@@ -176,8 +181,15 @@ const useAgentChat = (options: UseChatOptions = {}): UseChatReturn => {
 	useEffect(() => {
 		if (status === "ready" && messages.length > 0) {
 			reasoningStartTimeRef.current = null;
+			onFinish?.(messages);
 		}
-	}, [status, messages.length]);
+	}, [status, messages.length, onFinish]);
+
+	useEffect(() => {
+		if (status === "error" && chat.error) {
+			onError?.(chat.error);
+		}
+	}, [status, chat.error, onError]);
 
 	const append = useCallback(
 		async (text: string, opts?: { body?: Record<string, unknown> }) => {

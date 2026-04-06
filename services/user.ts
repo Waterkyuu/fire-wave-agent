@@ -1,6 +1,6 @@
 import jotaiStore, { logoutAtom, userAtom } from "@/atoms";
-import { client } from "@/lib/auth";
 import { handleError } from "@/lib/error-handler";
+import { client } from "@/lib/neon-auth";
 import type { User } from "@/types";
 
 type provider = "google" | "github" | "vercel";

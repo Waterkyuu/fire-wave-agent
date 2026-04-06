@@ -2,6 +2,7 @@
 
 import jotaiStore from "@/atoms";
 import { firstUserInputAtom, vncUrlAtom } from "@/atoms/chat";
+import Header from "@/components/share/header";
 import InputField from "@/components/share/input-field";
 import {
 	ResizableHandle,
@@ -16,6 +17,11 @@ import {
 } from "@/components/ui/sheet";
 import useAgentChat from "@/hooks/use-chat";
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+	useChatHistory,
+	useCreateSession,
+	useSaveMessages,
+} from "@/services/chat";
 import { useAtomValue } from "jotai";
 import { Monitor } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -31,12 +37,30 @@ const ChatPage = ({ params }: ChatPageProps) => {
 	const [sessionId, setSessionId] = useState<string>("");
 	const [vncSheetOpen, setVncSheetOpen] = useState(false);
 	const firstInputSentRef = useRef(false);
+	const sessionCreatedRef = useRef(false);
 	const isMobile = useIsMobile();
 	const vncUrl = useAtomValue(vncUrlAtom);
 
 	useEffect(() => {
 		params.then((p) => setSessionId(p.id));
 	}, [params]);
+
+	const { data: historyMessages = [], isLoading: historyLoading } =
+		useChatHistory(sessionId);
+	const { mutateAsync: createSession } = useCreateSession();
+	const { mutate: saveMessages } = useSaveMessages();
+
+	const hasHistory = historyMessages.length > 0;
+	const initialMessages = hasHistory ? historyMessages : [];
+	const ready = !!sessionId && !historyLoading;
+
+	const onFinish = useCallback(
+		(messages: Parameters<typeof saveMessages>[0]["messages"]) => {
+			if (!sessionId) return;
+			saveMessages({ messages, sessionId });
+		},
+		[saveMessages, sessionId],
+	);
 
 	const {
 		messages,
@@ -50,6 +74,8 @@ const ChatPage = ({ params }: ChatPageProps) => {
 	} = useAgentChat({
 		api: "/api/chat",
 		sessionId,
+		initialMessages,
+		onFinish,
 	});
 
 	useEffect(() => {
@@ -60,9 +86,18 @@ const ChatPage = ({ params }: ChatPageProps) => {
 		if (firstInput) {
 			firstInputSentRef.current = true;
 			jotaiStore.set(firstUserInputAtom, "");
+
+			const title =
+				firstInput.length > 50 ? `${firstInput.slice(0, 50)}...` : firstInput;
+
+			if (!sessionCreatedRef.current) {
+				sessionCreatedRef.current = true;
+				createSession({ id: sessionId, title });
+			}
+
 			append(firstInput);
 		}
-	}, [sessionId, append]);
+	}, [sessionId, append, createSession]);
 
 	const handleShowVnc = useCallback(() => {
 		if (isMobile) {
@@ -78,8 +113,17 @@ const ChatPage = ({ params }: ChatPageProps) => {
 
 	const showVncButton = isMobile && vncUrl && hasToolCalls;
 
+	if (!ready) {
+		return (
+			<div className="flex h-screen w-screen items-center justify-center">
+				<div className="text-muted-foreground text-sm">Loading...</div>
+			</div>
+		);
+	}
+
 	return (
 		<div className="flex h-screen w-screen flex-col">
+			<Header />
 			{isMobile ? (
 				<div className="flex flex-1 flex-col overflow-hidden">
 					<MessageArea
@@ -130,6 +174,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 					<ResizablePanel defaultSize="30%" maxSize="50%" minSize="30%">
 						<div className="flex h-full w-full flex-col">
 							<MessageArea messages={messages} thinkingTime={thinkingTime} />
+							<DebugPanel />
 							<div className="flex w-full items-center justify-center px-4 py-2">
 								<InputField
 									input={input}
