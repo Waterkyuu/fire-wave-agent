@@ -21,7 +21,7 @@ import { cn, generateId } from "@/lib/utils";
 import { useAtom } from "jotai";
 import { ArrowUp, FileText, Plus, Square, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type AppendFn = (
@@ -82,23 +82,6 @@ const InputField = ({
 	const [uploadingFiles, setUploadingFiles] = useState<Record<string, number>>(
 		{},
 	);
-
-	useEffect(() => {
-		const sendHomeInput = async () => {
-			const newInput = firstUserInput;
-			setFirstUserInput("");
-
-			if (append)
-				await append({
-					role: "user",
-					content: newInput,
-				});
-		};
-
-		if (firstUserInput && !isHome) {
-			sendHomeInput();
-		}
-	}, []);
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
 		const value = e.target.value;
