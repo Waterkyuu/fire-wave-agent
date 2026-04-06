@@ -141,6 +141,16 @@ const useAgentChat = (options: UseChatOptions = {}): UseChatReturn => {
 	const messages = chat.messages;
 	const status = chat.status;
 
+	const hydratedRef = useRef(false);
+	useEffect(() => {
+		if (hydratedRef.current || !initialMessages || initialMessages.length === 0)
+			return;
+		if (chat.messages.length > 0) return;
+
+		hydratedRef.current = true;
+		chat.setMessages(initialMessages);
+	}, [initialMessages, chat]);
+
 	useEffect(() => {
 		for (const msg of messages) {
 			if (msg.role !== "assistant") continue;
