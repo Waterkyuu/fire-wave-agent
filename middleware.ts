@@ -6,10 +6,5 @@ export async function middleware(_request: NextRequest) {
 }
 
 export const config = {
-	matcher: [
-		"/settings/:path*",
-		"/mycreations/:path*",
-		"/myfavourite/:path*",
-		"/morecredits/:path*",
-	],
+	matcher: ["/settings/:path*", "/chat:path"],
 };
