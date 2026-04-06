@@ -1,1 +1,129 @@
-{}
+{
+	"metadata": {
+		"title": "Fire Wave",
+		"description": "Agent Helper"
+	},
+	"notFound": {
+		"title": "Page Not Found",
+		"description": "The page you are looking for does not exist or has been moved.",
+		"backToHome": "Back to Home"
+	},
+	"home": {
+		"title": "What's your plans today?"
+	},
+	"footer": {
+		"privacy": "Privacy",
+		"terms": "Terms",
+		"helpCenter": "Help Center"
+	},
+	"header": {
+		"login": "Login"
+	},
+	"mobileMenu": {
+		"home": "Home",
+		"chat": "Chat",
+		"community": "Community"
+	},
+	"inputField": {
+		"placeholder": "Ask, Search or Chat...",
+		"fileTooltip": "Only support pdf, docx, md, txt, typ, 2 max",
+		"uploading": "Uploading...",
+		"stop": "Stop",
+		"send": "Send",
+		"maxFilesReached": "Maximum files reached",
+		"maxFilesDescription": "You can only upload up to 2 files at a time.",
+		"unsupportedFile": "Unsupported file",
+		"unsupportedFileDescription": "Only support pdf, docx, md, txt, typ files",
+		"fileUploaded": "File uploaded successfully",
+		"fileUploadSuccess": "{fileName} has been indexed and is ready for RAG",
+		"uploadFailed": "Upload failed",
+		"uploadFailedDescription": "Failed to upload {fileName}",
+		"cancel": "Cancel"
+	},
+	"login": {
+		"startBuilding": "Start Building",
+		"description": "Sign in to continue your magic journey",
+		"orContinueWith": "OR continue with",
+		"signInWithEmail": "Sign in with email",
+		"emailLabel": "Email",
+		"emailPlaceholder": "Enter your email address",
+		"emailEmpty": "Email cannot be empty",
+		"next": "Next",
+		"goBack": "Go back",
+		"otpSent": "Verification code has been sent to {email}",
+		"loginSuccess": "Login successful"
+	},
+	"sidebar": {
+		"brand": "Fire Wave",
+		"newChat": "New Chat",
+		"searchChats": "Search chats...",
+		"searchChatsTitle": "Search chats",
+		"searchChatsDescription": "Search through your chat history",
+		"noChatsFound": "No chats found.",
+		"chatHistory": "Chat History"
+	},
+	"deleteChat": {
+		"trigger": "Delete",
+		"title": "Are you absolutely sure?",
+		"description": "This action cannot be undone. This will permanently delete this chat session and all its messages from local storage.",
+		"cancel": "Cancel",
+		"continue": "Continue",
+		"deleting": "Deleting...",
+		"success": "Chat deleted successfully",
+		"failed": "Failed to delete chat"
+	},
+	"renameChat": {
+		"trigger": "Rename",
+		"title": "Edit chat name",
+		"description": "Give this chat a more descriptive name",
+		"chatName": "Chat Name",
+		"cancel": "Cancel",
+		"save": "Save",
+		"saving": "Saving...",
+		"titleEmpty": "Title cannot be empty",
+		"success": "Title updated successfully",
+		"failed": "Failed to update title"
+	},
+	"avatar": {
+		"myAccount": "My Account",
+		"profile": "Profile",
+		"billing": "Billing",
+		"settings": "Settings",
+		"keyboardShortcuts": "Keyboard shortcuts",
+		"team": "Team",
+		"inviteUsers": "Invite users",
+		"email": "Email",
+		"message": "Message",
+		"more": "More...",
+		"newTeam": "New Team",
+		"apiKey": "API Key",
+		"logout": "Log out"
+	},
+	"chat": {
+		"loading": "Loading...",
+		"sendMessage": "Send a message to start...",
+		"viewSandbox": "View Sandbox",
+		"sandboxViewer": "Sandbox Viewer",
+		"live": "Live",
+		"waitingSandbox": "Waiting for Agent Sandbox..."
+	},
+	"message": {
+		"thinking": "Thinking...",
+		"thoughtFor": "Thought for {time}s",
+		"toolRunning": "Running...",
+		"toolPreparing": "Preparing...",
+		"toolCompleted": "Completed",
+		"toolFailed": "Failed",
+		"toolUnknown": "Unknown"
+	},
+	"debug": {
+		"panelTitle": "Debug Panel",
+		"events": "{count} events",
+		"noEvents": "No tool events recorded yet.",
+		"arguments": "Arguments",
+		"result": "Result",
+		"streaming": "Streaming",
+		"called": "Called",
+		"done": "Done"
+	}
+}

@@ -12,6 +12,7 @@ import {
 	Wrench,
 	XCircle,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { memo, useMemo } from "react";
 
 type MessageItemProps = {
@@ -21,15 +22,19 @@ type MessageItemProps = {
 	onShowVnc?: () => void;
 };
 
-const ReasoningBlock = memo(({ text }: { text: string }) => (
-	<div className="mb-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
-		<div className="mb-1 flex items-center gap-1.5 font-medium text-amber-600 text-xs">
-			<Clock className="size-3" />
-			Thinking...
+const ReasoningBlock = memo(({ text }: { text: string }) => {
+	const t = useTranslations("message");
+
+	return (
+		<div className="mb-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
+			<div className="mb-1 flex items-center gap-1.5 font-medium text-amber-600 text-xs">
+				<Clock className="size-3" />
+				{t("thinking")}
+			</div>
+			<p className="whitespace-pre-wrap text-amber-800 text-xs">{text}</p>
 		</div>
-		<p className="whitespace-pre-wrap text-amber-800 text-xs">{text}</p>
-	</div>
-));
+	);
+});
 
 ReasoningBlock.displayName = "ReasoningBlock";
 
@@ -41,6 +46,8 @@ const ToolCallBlock = memo(
 		part: Record<string, unknown>;
 		onShowVnc?: () => void;
 	}) => {
+		const t = useTranslations("message");
+		const tChat = useTranslations("chat");
 		const toolName =
 			typeof part.type === "string" ? part.type.slice(5) : "unknown";
 		const state = part.state as string | undefined;
@@ -62,12 +69,12 @@ const ToolCallBlock = memo(
 		}, [state]);
 
 		const stateLabel = useMemo(() => {
-			if (state === "input-streaming") return "Running...";
-			if (state === "input-available") return "Preparing...";
-			if (state === "output-available") return "Completed";
-			if (state === "output-error") return "Failed";
-			return state ?? "Unknown";
-		}, [state]);
+			if (state === "input-streaming") return t("toolRunning");
+			if (state === "input-available") return t("toolPreparing");
+			if (state === "output-available") return t("toolCompleted");
+			if (state === "output-error") return t("toolFailed");
+			return state ?? t("toolUnknown");
+		}, [state, t]);
 
 		const isCreateSandbox =
 			toolName === "createSandbox" && state === "output-available";
@@ -86,7 +93,7 @@ const ToolCallBlock = memo(
 							className="ml-auto rounded-md bg-primary px-2 py-0.5 text-[10px] text-primary-foreground transition-colors duration-200 hover:bg-primary/90"
 							onClick={onShowVnc}
 						>
-							View Sandbox
+							{tChat("viewSandbox")}
 						</button>
 					)}
 				</div>
@@ -112,6 +119,7 @@ ToolCallBlock.displayName = "ToolCallBlock";
 
 const MessageItem = memo(
 	({ message, thinkingTime, hasToolCalls, onShowVnc }: MessageItemProps) => {
+		const t = useTranslations("message");
 		const isUser = message.role === "user";
 		const isAssistant = message.role === "assistant";
 
@@ -196,7 +204,7 @@ const MessageItem = memo(
 
 					{isAssistant && thinkingTime != null && textParts.length > 0 && (
 						<p className="text-[10px] text-muted-foreground">
-							Thought for {thinkingTime.toFixed(1)}s
+							{t("thoughtFor", { time: thinkingTime.toFixed(1) })}
 						</p>
 					)}
 				</div>

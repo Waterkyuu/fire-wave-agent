@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import type { UIMessage } from "ai";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 import MessageItem from "./message-item";
 
@@ -18,6 +19,7 @@ const MessageArea = ({
 	className,
 	onShowVnc,
 }: MessageAreaProps) => {
+	const t = useTranslations("chat");
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 
@@ -41,9 +43,7 @@ const MessageArea = ({
 			<div className="custom-scrollbar flex h-full w-full flex-col overflow-y-auto px-2 py-4">
 				{messages.length === 0 && (
 					<div className="flex flex-1 items-center justify-center">
-						<p className="text-muted-foreground text-sm">
-							Send a message to start...
-						</p>
+						<p className="text-muted-foreground text-sm">{t("sendMessage")}</p>
 					</div>
 				)}
 

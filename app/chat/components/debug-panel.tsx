@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import type { ToolCallEvent } from "@/types/chat";
 import { useAtomValue } from "jotai";
 import { Bug, ChevronDown, ChevronRight, Clock, Wrench } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { memo, useState } from "react";
 
 const stateColors: Record<string, string> = {
@@ -27,6 +28,7 @@ type ToolEventItemProps = {
 
 const ToolEventItem = memo(({ event }: ToolEventItemProps) => {
 	const [isExpanded, setIsExpanded] = useState(false);
+	const t = useTranslations("debug");
 
 	const durationStr =
 		event.durationMs != null
@@ -64,7 +66,7 @@ const ToolEventItem = memo(({ event }: ToolEventItemProps) => {
 				<div className="space-y-2 bg-muted/20 px-3 pt-1 pb-3">
 					<div>
 						<p className="mb-1 text-[10px] text-muted-foreground uppercase">
-							Arguments
+							{t("arguments")}
 						</p>
 						<pre className="overflow-x-auto rounded bg-background p-2 font-mono text-[11px]">
 							{JSON.stringify(event.args, null, 2)}
@@ -73,7 +75,7 @@ const ToolEventItem = memo(({ event }: ToolEventItemProps) => {
 					{event.result !== undefined && (
 						<div>
 							<p className="mb-1 text-[10px] text-muted-foreground uppercase">
-								Result
+								{t("result")}
 							</p>
 							<pre className="overflow-x-auto rounded bg-background p-2 font-mono text-[11px]">
 								{JSON.stringify(event.result, null, 2)}
@@ -91,6 +93,7 @@ ToolEventItem.displayName = "ToolEventItem";
 const DebugPanel = memo(() => {
 	const toolEvents = useAtomValue(toolEventsAtom);
 	const [isOpen, setIsOpen] = useState(false);
+	const t = useTranslations("debug");
 
 	return (
 		<div className="border-t">
@@ -100,9 +103,9 @@ const DebugPanel = memo(() => {
 				onClick={() => setIsOpen(!isOpen)}
 			>
 				<Bug className="size-3.5 text-muted-foreground" />
-				<span className="font-medium text-xs">Debug Panel</span>
+				<span className="font-medium text-xs">{t("panelTitle")}</span>
 				<Badge variant="secondary" className="ml-auto text-[10px]">
-					{toolEvents.length} events
+					{t("events", { count: toolEvents.length })}
 				</Badge>
 				{isOpen ? (
 					<ChevronDown className="size-3 text-muted-foreground" />
@@ -114,7 +117,7 @@ const DebugPanel = memo(() => {
 				<ScrollArea className="max-h-64">
 					{toolEvents.length === 0 ? (
 						<p className="px-4 py-3 text-muted-foreground text-xs">
-							No tool events recorded yet.
+							{t("noEvents")}
 						</p>
 					) : (
 						toolEvents.map((event) => (

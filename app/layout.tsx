@@ -21,8 +21,8 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-	title: "Fire Wave",
-	description: "Agent Helper",
+	title: "metadata.title",
+	description: "metadata.description",
 };
 
 export default async function RootLayout({

@@ -1,6 +1,11 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import { memo } from "react";
 
 const Footer = () => {
+	const t = useTranslations("footer");
+
 	return (
 		<div className="fixed bottom-2 flex w-full items-center justify-between px-4 py-1">
 			<div className="flex items-center gap-2">
@@ -27,9 +32,9 @@ const Footer = () => {
 				</a>
 			</div>
 			<div className="flex items-center gap-2 font-medium text-gray-600 text-xs md:text-sm">
-				<span>Privacy /</span>
-				<span>Terms /</span>
-				<span>Help Cneter /</span>
+				<span>{t("privacy")} /</span>
+				<span>{t("terms")} /</span>
+				<span>{t("helpCenter")} /</span>
 			</div>
 		</div>
 	);
