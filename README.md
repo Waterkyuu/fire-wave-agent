@@ -99,6 +99,19 @@ pnpm build
 pnpm start
 ```
 
+### Authentication on Vercel
+
+If authentication works locally but fails on your deployed Vercel domain with an error like `{"code":"INVALID_ORIGIN","message":"Invalid origin"}`, your Neon Auth project is rejecting the site origin.
+
+Add every deployed app origin to your Neon Auth / Better Auth trusted origins configuration, for example:
+
+```txt
+http://localhost:3000
+https://fire-wave-agent.vercel.app
+```
+
+You should also make sure the same production domain is allowed in any OAuth provider callback or redirect settings you use.
+
 ## Scripts
 
 | Command | Description |

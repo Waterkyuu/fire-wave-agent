@@ -3,6 +3,19 @@ import { authClient } from "@/lib/auth/client";
 
 type Provider = "google" | "github" | "vercel";
 
+const getAuthErrorMessage = (error: unknown, fallbackMessage: string) => {
+	if (
+		error &&
+		typeof error === "object" &&
+		"message" in error &&
+		typeof error.message === "string"
+	) {
+		return error.message;
+	}
+
+	return fallbackMessage;
+};
+
 const sendSignInOtp = async (email: string) => {
 	const { error } = await authClient.emailOtp.sendVerificationOtp({
 		email,
@@ -39,7 +52,10 @@ const signInVercel = async () => {
 };
 
 const signOut = async () => {
-	await authClient.signOut();
+	const { error } = await authClient.signOut();
+	if (error) {
+		throw new Error(getAuthErrorMessage(error, "Failed to sign out"));
+	}
 	jotaiStore.set(logoutAtom);
 };
 

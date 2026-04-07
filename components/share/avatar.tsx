@@ -14,6 +14,7 @@ import {
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { handleError } from "@/lib/error-handler";
 import { cn } from "@/lib/utils";
 import { signOut } from "@/services/user";
 import { useTranslations } from "next-intl";
@@ -26,6 +27,14 @@ type AvatarProps = {
 
 const Avatar = ({ mode = "default", className = "" }: AvatarProps) => {
 	const t = useTranslations("avatar");
+
+	const handleSignOut = async () => {
+		try {
+			await signOut();
+		} catch (error) {
+			handleError(error);
+		}
+	};
 
 	// Get user avatar and email
 	if (mode === "online") {
@@ -111,7 +120,7 @@ const Avatar = ({ mode = "default", className = "" }: AvatarProps) => {
 				<DropdownMenuSeparator />
 				<DropdownMenuItem>{t("apiKey")}</DropdownMenuItem>
 				<DropdownMenuSeparator />
-				<DropdownMenuItem onClick={signOut}>
+				<DropdownMenuItem onClick={handleSignOut}>
 					{t("logout")}
 					<DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
 				</DropdownMenuItem>
