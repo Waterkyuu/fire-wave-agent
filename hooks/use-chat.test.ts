@@ -4,16 +4,11 @@ import {
 	createAuthAwareChatFetch,
 	extractToolEventsFromMessages,
 } from "@/hooks/use-chat";
+import type { UIMessage } from "ai";
 
 type SimplePart = {
 	type: string;
 	[key: string]: unknown;
-};
-
-type SimpleUIMessage = {
-	id: string;
-	role: "user" | "assistant";
-	parts: SimplePart[];
 };
 
 const makeToolPart = (
@@ -32,19 +27,17 @@ const makeToolPart = (
 const makeMessage = (
 	role: "user" | "assistant",
 	parts: SimplePart[],
-): SimpleUIMessage => ({
-	id: `msg-${Math.random()}`,
-	role,
-	parts,
-});
+): UIMessage =>
+	({
+		id: `msg-${Math.random()}`,
+		role,
+		parts,
+	}) as UIMessage;
 
 describe("extractToolEventsFromMessages", () => {
 	it("returns empty for user-only messages", () => {
 		const messages = [makeMessage("user", [{ type: "text", text: "hello" }])];
-		const result = extractToolEventsFromMessages(
-			messages as unknown[],
-			new Map(),
-		);
+		const result = extractToolEventsFromMessages(messages, new Map());
 		expect(result).toEqual([]);
 	});
 
@@ -54,10 +47,7 @@ describe("extractToolEventsFromMessages", () => {
 				makeToolPart("createSandbox", "input-streaming", "call-1"),
 			]),
 		];
-		const events = extractToolEventsFromMessages(
-			messages as unknown[],
-			new Map(),
-		);
+		const events = extractToolEventsFromMessages(messages, new Map());
 		expect(events).toHaveLength(1);
 		expect(events[0]).toEqual(
 			expect.objectContaining({
@@ -80,10 +70,7 @@ describe("extractToolEventsFromMessages", () => {
 				}),
 			]),
 		];
-		const events = extractToolEventsFromMessages(
-			messages as unknown[],
-			new Map(),
-		);
+		const events = extractToolEventsFromMessages(messages, new Map());
 		expect(events).toHaveLength(1);
 		expect(events[0].state).toBe("result");
 		expect(events[0].result).toEqual({
@@ -101,10 +88,7 @@ describe("extractToolEventsFromMessages", () => {
 				}),
 			]),
 		];
-		const events = extractToolEventsFromMessages(
-			messages as unknown[],
-			new Map(),
-		);
+		const events = extractToolEventsFromMessages(messages, new Map());
 		expect(events).toHaveLength(1);
 		expect(events[0].state).toBe("result");
 		expect(events[0].result).toEqual({ error: "Code execution timed out" });
@@ -125,10 +109,7 @@ describe("extractToolEventsFromMessages", () => {
 				}),
 			]),
 		];
-		const events = extractToolEventsFromMessages(
-			messages as unknown[],
-			new Map(),
-		);
+		const events = extractToolEventsFromMessages(messages, new Map());
 		expect(events).toHaveLength(2);
 		expect(events[0].toolCallId).toBe("call-1");
 		expect(events[0].toolName).toBe("createSandbox");
@@ -144,20 +125,14 @@ describe("extractToolEventsFromMessages", () => {
 				makeToolPart("searchWeb", "input-available", "call-1"),
 			]),
 		];
-		const events = extractToolEventsFromMessages(
-			messages as unknown[],
-			new Map(),
-		);
+		const events = extractToolEventsFromMessages(messages, new Map());
 		expect(events).toHaveLength(1);
 		expect(events[0].toolName).toBe("searchWeb");
 	});
 
 	it("ignores parts without toolCallId", () => {
 		const messages = [makeMessage("assistant", [{ type: "tool-searchWeb" }])];
-		const events = extractToolEventsFromMessages(
-			messages as unknown[],
-			new Map(),
-		);
+		const events = extractToolEventsFromMessages(messages, new Map());
 		expect(events).toEqual([]);
 	});
 });
