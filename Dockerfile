@@ -1,10 +1,13 @@
 FROM node:20-bookworm-slim AS base
 
+ARG NPM_REGISTRY=https://registry.npmjs.org/
+
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN corepack enable
+RUN npm config set registry "${NPM_REGISTRY}" \
+	&& npm install -g pnpm@10.33.0
 
 FROM base AS deps
 
