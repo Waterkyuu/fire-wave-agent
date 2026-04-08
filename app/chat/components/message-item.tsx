@@ -6,6 +6,8 @@ import type { UIMessage } from "ai";
 import {
 	Bot,
 	CheckCircle2,
+	ChevronDown,
+	ChevronUp,
 	Clock,
 	Loader2,
 	User,
@@ -13,7 +15,7 @@ import {
 	XCircle,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState } from "react";
 
 type MessageItemProps = {
 	message: UIMessage;
@@ -50,12 +52,14 @@ const ToolCallBlock = memo(
 	}) => {
 		const t = useTranslations("message");
 		const tChat = useTranslations("chat");
+		const [isExpanded, setIsExpanded] = useState(false);
 		const toolName =
 			typeof part.type === "string" ? part.type.slice(5) : "unknown";
 		const state = part.state as string | undefined;
 		const input = part.input as Record<string, unknown> | undefined;
 		const output = part.output as Record<string, unknown> | undefined;
 		const errorText = part.errorText as string | undefined;
+		const hasDetails = Boolean(input || output || errorText);
 
 		const stateIcon = useMemo(() => {
 			if (state === "input-streaming" || state === "input-available") {
@@ -91,30 +95,52 @@ const ToolCallBlock = memo(
 					<Badge variant="secondary" className="text-[9px] sm:text-[10px]">
 						{stateLabel}
 					</Badge>
-					{isCreateSandbox && onShowVnc && (
-						<button
-							type="button"
-							className="ml-auto rounded-md bg-primary px-2 py-0.5 text-[9px] text-primary-foreground transition-colors duration-200 hover:bg-primary/90 sm:text-[10px]"
-							onClick={onShowVnc}
-						>
-							{tChat("viewSandbox")}
-						</button>
-					)}
+					<div className="ml-auto flex items-center gap-1">
+						{isCreateSandbox && onShowVnc && (
+							<button
+								type="button"
+								className="rounded-md bg-primary px-2 py-0.5 text-[9px] text-primary-foreground transition-colors duration-200 hover:bg-primary/90 sm:text-[10px]"
+								onClick={onShowVnc}
+							>
+								{tChat("viewSandbox")}
+							</button>
+						)}
+						{hasDetails && (
+							<button
+								type="button"
+								aria-label={
+									isExpanded ? t("hideToolDetails") : t("showToolDetails")
+								}
+								className="rounded-md p-1 text-muted-foreground transition-colors duration-200 hover:bg-accent hover:text-foreground"
+								onClick={() => setIsExpanded((prev) => !prev)}
+							>
+								{isExpanded ? (
+									<ChevronUp className="size-3.5" />
+								) : (
+									<ChevronDown className="size-3.5" />
+								)}
+							</button>
+						)}
+					</div>
 				</div>
-				{input && (
-					<pre className="mt-1.5 max-h-24 overflow-auto rounded bg-background p-1.5 font-mono text-[9px] sm:text-[10px]">
-						{JSON.stringify(input, null, 2)}
-					</pre>
-				)}
-				{output && state === "output-available" && (
-					<pre className="mt-1.5 max-h-24 overflow-auto rounded bg-background p-1.5 font-mono text-[9px] sm:text-[10px]">
-						{JSON.stringify(output, null, 2)}
-					</pre>
-				)}
-				{errorText && (
-					<p className="mt-1.5 text-[10px] text-red-500 sm:text-xs">
-						{errorText}
-					</p>
+				{isExpanded && (
+					<>
+						{input && (
+							<pre className="mt-1.5 max-h-24 overflow-auto rounded bg-background p-1.5 font-mono text-[9px] sm:text-[10px]">
+								{JSON.stringify(input, null, 2)}
+							</pre>
+						)}
+						{output && state === "output-available" && (
+							<pre className="mt-1.5 max-h-24 overflow-auto rounded bg-background p-1.5 font-mono text-[9px] sm:text-[10px]">
+								{JSON.stringify(output, null, 2)}
+							</pre>
+						)}
+						{errorText && (
+							<p className="mt-1.5 text-[10px] text-red-500 sm:text-xs">
+								{errorText}
+							</p>
+						)}
+					</>
 				)}
 			</div>
 		);

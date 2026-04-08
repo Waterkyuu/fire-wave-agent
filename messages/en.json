@@ -114,7 +114,9 @@
 		"toolPreparing": "Preparing...",
 		"toolCompleted": "Completed",
 		"toolFailed": "Failed",
-		"toolUnknown": "Unknown"
+		"toolUnknown": "Unknown",
+		"showToolDetails": "Show tool details",
+		"hideToolDetails": "Hide tool details"
 	},
 	"debug": {
 		"panelTitle": "Debug Panel",

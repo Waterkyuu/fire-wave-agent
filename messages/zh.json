@@ -114,7 +114,9 @@
 		"toolPreparing": "准备中...",
 		"toolCompleted": "已完成",
 		"toolFailed": "失败",
-		"toolUnknown": "未知"
+		"toolUnknown": "未知",
+		"showToolDetails": "显示工具详情",
+		"hideToolDetails": "隐藏工具详情"
 	},
 	"debug": {
 		"panelTitle": "调试面板",
