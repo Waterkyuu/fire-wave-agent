@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import type { UIMessage } from "ai";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
+import ChatHistorySkeleton from "./chat-history-skeleton";
 import MessageItem from "./message-item";
 
 type MessageAreaProps = {
@@ -11,6 +12,7 @@ type MessageAreaProps = {
 	thinkingTime: number | null;
 	className?: string;
 	onShowVnc?: () => void;
+	isHistoryLoading?: boolean;
 };
 
 const MessageArea = ({
@@ -18,6 +20,7 @@ const MessageArea = ({
 	thinkingTime,
 	className,
 	onShowVnc,
+	isHistoryLoading = false,
 }: MessageAreaProps) => {
 	const t = useTranslations("chat");
 	const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -38,10 +41,13 @@ const MessageArea = ({
 	return (
 		<div
 			ref={containerRef}
+			data-slot="message-area"
 			className={cn("relative flex-1 overflow-hidden", className)}
 		>
 			<div className="custom-scrollbar flex h-full w-full flex-col overflow-y-auto px-2 py-4">
-				{messages.length === 0 && (
+				{isHistoryLoading && <ChatHistorySkeleton className="px-2 py-0" />}
+
+				{!isHistoryLoading && messages.length === 0 && (
 					<div className="flex flex-1 items-center justify-center">
 						<p className="text-muted-foreground text-xs sm:text-sm">
 							{t("sendMessage")}
@@ -49,15 +55,16 @@ const MessageArea = ({
 					</div>
 				)}
 
-				{messages.map((message) => (
-					<MessageItem
-						key={message.id}
-						message={message}
-						thinkingTime={message.role === "assistant" ? thinkingTime : null}
-						hasToolCalls={hasToolCalls}
-						onShowVnc={onShowVnc}
-					/>
-				))}
+				{!isHistoryLoading &&
+					messages.map((message) => (
+						<MessageItem
+							key={message.id}
+							message={message}
+							thinkingTime={message.role === "assistant" ? thinkingTime : null}
+							hasToolCalls={hasToolCalls}
+							onShowVnc={onShowVnc}
+						/>
+					))}
 
 				<div ref={messagesEndRef} />
 			</div>

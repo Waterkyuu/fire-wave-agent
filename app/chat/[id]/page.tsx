@@ -54,7 +54,6 @@ const ChatPage = ({ params }: ChatPageProps) => {
 
 	const hasHistory = historyMessages.length > 0;
 	const initialMessages = hasHistory ? historyMessages : [];
-	const ready = !!sessionId && !historyLoading;
 
 	const onFinish = useCallback(
 		(messages: Parameters<typeof saveMessages>[0]["messages"]) => {
@@ -64,21 +63,21 @@ const ChatPage = ({ params }: ChatPageProps) => {
 		[saveMessages, sessionId],
 	);
 
-	const {
-		messages,
-		input,
-		setInput,
-		append,
-		isLoading,
-		stop,
-		thinkingTime,
-		status,
-	} = useAgentChat({
-		api: "/api/chat",
-		sessionId,
-		initialMessages,
-		onFinish,
-	});
+	const { messages, input, setInput, append, isLoading, stop, thinkingTime } =
+		useAgentChat({
+			api: "/api/chat",
+			sessionId,
+			initialMessages,
+			onFinish,
+		});
+
+	const hasPendingFirstInput =
+		Boolean(jotaiStore.get(firstUserInputAtom)) || firstInputSentRef.current;
+	const isHistoryHydrating =
+		!!sessionId &&
+		historyLoading &&
+		messages.length === 0 &&
+		!hasPendingFirstInput;
 
 	useEffect(() => {
 		if (firstInputSentRef.current) return;
@@ -115,7 +114,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 
 	const showVncButton = isMobile && vncUrl && hasToolCalls;
 
-	if (!ready) {
+	if (!sessionId) {
 		return (
 			<div className="flex h-screen w-screen items-center justify-center">
 				<div className="text-muted-foreground text-xs sm:text-sm">
@@ -133,6 +132,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 					<MessageArea
 						messages={messages}
 						thinkingTime={thinkingTime}
+						isHistoryLoading={isHistoryHydrating}
 						className="min-h-0 flex-1"
 						onShowVnc={handleShowVnc}
 					/>
@@ -180,6 +180,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 							<MessageArea
 								messages={messages}
 								thinkingTime={thinkingTime}
+								isHistoryLoading={isHistoryHydrating}
 								className="min-h-0 flex-1"
 							/>
 							<DebugPanel />
