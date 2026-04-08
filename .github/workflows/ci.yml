@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      NEON_AUTH_BASE_URL: https://example.com/neondb/auth
+      NEON_AUTH_COOKIE_SECRET: ci-build-cookie-secret-0123456789abcdef
 
     steps:
       # 1. 拉代码
