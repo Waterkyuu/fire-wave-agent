@@ -176,7 +176,7 @@ export async function POST(req: Request) {
 
 		const modelMessages = await convertToModelMessages(uiMessages);
 
-		const modelName = process.env.GLM_MODLE ?? "glm-4-flash";
+		const modelName = process.env.GLM_MODEL ?? "glm-4-flash";
 
 		const result = streamText({
 			model: zhipu(modelName),
