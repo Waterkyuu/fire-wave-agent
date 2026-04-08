@@ -101,6 +101,27 @@ pnpm build
 pnpm start
 ```
 
+### Docker
+
+Build and run with Docker Compose:
+
+```bash
+docker compose up -d --build
+```
+
+If you keep environment variables in a local file, you can pass them in when starting Compose:
+
+```bash
+docker compose --env-file .env.local up -d --build
+```
+
+Or build and run the image directly:
+
+```bash
+docker build -t fire-wave-agent .
+docker run -d -p 3000:3000 --env-file .env.local --name fire-wave-agent fire-wave-agent
+```
+
 ### Authentication on Vercel
 
 If authentication works locally but fails on your deployed Vercel domain with an error like `{"code":"INVALID_ORIGIN","message":"Invalid origin"}`, your Neon Auth project is rejecting the site origin.
