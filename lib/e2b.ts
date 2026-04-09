@@ -26,6 +26,10 @@ type ManagedCodeSandbox = {
 	sandbox: CodeSandbox;
 	sandboxId: string;
 	createdAt: number;
+	lastChartArtifact?: {
+		png: string;
+		title?: string;
+	};
 	syncedFileIds: Set<string>;
 	timeoutHandle: ReturnType<typeof setTimeout>;
 };
@@ -122,6 +126,7 @@ const createCodeSandbox = async (
 		sandbox,
 		sandboxId,
 		createdAt: Date.now(),
+		lastChartArtifact: undefined,
 		syncedFileIds: new Set<string>(),
 		timeoutHandle: undefined as unknown as ReturnType<typeof setTimeout>,
 	});
@@ -232,6 +237,28 @@ const persistCodeFile = async ({
 	});
 };
 
+const persistLatestChart = async ({
+	contentType = "image/png",
+	filename = "chart.png",
+	sandboxId,
+}: {
+	contentType?: string;
+	filename?: string;
+	sandboxId?: string;
+}) => {
+	const entry = getCodeSandboxEntry(sandboxId);
+	if (!entry?.lastChartArtifact?.png) {
+		throw new Error("No chart artifact available. Generate a chart first.");
+	}
+
+	return storeFileRecordFromBytes({
+		bytes: Buffer.from(entry.lastChartArtifact.png, "base64"),
+		contentType,
+		filename,
+		kind: "document",
+	});
+};
+
 const executeCode = async (
 	code: string,
 	sandboxId?: string,
@@ -266,6 +293,20 @@ const executeCode = async (
 	await syncFilesToCodeSandbox(fileIds, sandboxId);
 
 	const execution = await sb.runCode(code);
+	const entry = getCodeSandboxEntry(sandboxId);
+	const latestChartResult = execution.results.find((result) => result.png);
+
+	if (entry) {
+		entry.lastChartArtifact = latestChartResult?.png
+			? {
+					png: latestChartResult.png,
+					title:
+						typeof latestChartResult.chart?.title === "string"
+							? latestChartResult.chart.title
+							: latestChartResult.text,
+				}
+			: entry.lastChartArtifact;
+	}
 
 	return {
 		text: execution.text,
@@ -392,6 +433,7 @@ export {
 	executeCode,
 	navigateBrowser,
 	persistCodeFile,
+	persistLatestChart,
 	searchWeb,
 	syncFilesToCodeSandbox,
 	cleanup,

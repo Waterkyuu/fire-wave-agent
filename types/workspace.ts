@@ -4,6 +4,9 @@ type WorkspaceView = "empty" | "vnc" | "chart" | "dataset";
 
 type WorkspaceChart = {
 	chart?: Record<string, unknown>;
+	downloadUrl?: string;
+	fileId?: string;
+	filename?: string;
 	generatedAt: number;
 	png?: string;
 	title?: string;

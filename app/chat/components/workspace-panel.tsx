@@ -104,12 +104,23 @@ const ChartPanel = memo(() => {
 	return (
 		<div className="flex h-full min-h-0 flex-col">
 			<div className="border-b px-4 py-3">
-				<p className="font-medium text-sm">{chart.title || t("chartViewer")}</p>
-				<p className="text-muted-foreground text-xs">
-					{t("chartGeneratedAt", {
-						time: new Date(chart.generatedAt).toLocaleTimeString(),
-					})}
-				</p>
+				<div className="flex items-start justify-between gap-3">
+					<div>
+						<p className="font-medium text-sm">
+							{chart.title || t("chartViewer")}
+						</p>
+						<p className="text-muted-foreground text-xs">
+							{t("chartGeneratedAt", {
+								time: new Date(chart.generatedAt).toLocaleTimeString(),
+							})}
+						</p>
+					</div>
+					{chart.downloadUrl && (
+						<Button asChild size="sm" variant="outline">
+							<a href={chart.downloadUrl}>{t("downloadArtifact")}</a>
+						</Button>
+					)}
+				</div>
 			</div>
 			<div className="min-h-0 flex-1 overflow-auto p-4">
 				{imageSrc ? (

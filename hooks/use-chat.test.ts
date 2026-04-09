@@ -1,4 +1,5 @@
 import jotaiStore from "@/atoms";
+import { workspaceChartAtom } from "@/atoms/chat";
 import loginDialogAtom from "@/atoms/login-dialog";
 import {
 	createAuthAwareChatFetch,
@@ -35,6 +36,10 @@ const makeMessage = (
 	}) as UIMessage;
 
 describe("extractToolEventsFromMessages", () => {
+	beforeEach(() => {
+		jotaiStore.set(workspaceChartAtom, null);
+	});
+
 	it("returns empty for user-only messages", () => {
 		const messages = [makeMessage("user", [{ type: "text", text: "hello" }])];
 		const result = extractToolEventsFromMessages(messages, new Map());
@@ -134,6 +139,39 @@ describe("extractToolEventsFromMessages", () => {
 		const messages = [makeMessage("assistant", [{ type: "tool-searchWeb" }])];
 		const events = extractToolEventsFromMessages(messages, new Map());
 		expect(events).toEqual([]);
+	});
+
+	it("updates workspace chart download info when chart persistence completes", () => {
+		jotaiStore.set(workspaceChartAtom, {
+			generatedAt: Date.now(),
+			png: "ZmFrZS1wbmc=",
+			title: "Revenue",
+			toolCallId: "chart-call",
+		});
+
+		const messages = [
+			makeMessage("assistant", [
+				makeToolPart("persistLatestChart", "output-available", "call-1", {
+					output: {
+						downloadUrl: "/api/file/chart-1/download",
+						fileId: "chart-1",
+						filename: "revenue.png",
+						status: "success",
+					},
+				}),
+			]),
+		];
+
+		extractToolEventsFromMessages(messages, new Map());
+
+		expect(jotaiStore.get(workspaceChartAtom)).toEqual(
+			expect.objectContaining({
+				downloadUrl: "/api/file/chart-1/download",
+				fileId: "chart-1",
+				filename: "revenue.png",
+				title: "Revenue",
+			}),
+		);
 	});
 });
 

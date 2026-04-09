@@ -9,6 +9,7 @@ import {
 	showDatasetWorkspaceAtom,
 	showVncWorkspaceAtom,
 	vncUrlAtom,
+	workspaceChartAtom,
 } from "@/atoms/chat";
 import loginDialogAtom from "@/atoms/login-dialog";
 import type { ToolCallEvent } from "@/types/chat";
@@ -184,6 +185,28 @@ const extractToolEventsFromMessages = (
 						fileId: output.fileId,
 						filename: output.filename,
 						preview: output.preview,
+					});
+				}
+			}
+
+			if (
+				toolName === "persistLatestChart" &&
+				partState === "output-available" &&
+				partOutput
+			) {
+				const output = partOutput as {
+					downloadUrl?: string;
+					fileId?: string;
+					filename?: string;
+				};
+				const currentChart = jotaiStore.get(workspaceChartAtom);
+
+				if (currentChart && output.downloadUrl) {
+					jotaiStore.set(showChartWorkspaceAtom, {
+						...currentChart,
+						downloadUrl: output.downloadUrl,
+						fileId: output.fileId,
+						filename: output.filename,
 					});
 				}
 			}

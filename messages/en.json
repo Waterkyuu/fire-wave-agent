@@ -108,6 +108,7 @@
 		"chartViewer": "Chart Viewer",
 		"datasetViewer": "Dataset Viewer",
 		"datasetSummary": "{rows} rows, {columns} columns, sheet {sheet}",
+		"downloadArtifact": "Download",
 		"chartGeneratedAt": "Generated at {time}",
 		"live": "Live",
 		"waitingSandbox": "Waiting for Agent Sandbox...",
