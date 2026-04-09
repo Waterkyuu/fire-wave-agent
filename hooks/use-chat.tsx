@@ -5,6 +5,8 @@ import {
 	agentStatusAtom,
 	clearToolEventsAtom,
 	dispatchToolEventAtom,
+	showChartWorkspaceAtom,
+	showVncWorkspaceAtom,
 	vncUrlAtom,
 } from "@/atoms/chat";
 import loginDialogAtom from "@/atoms/login-dialog";
@@ -118,6 +120,37 @@ const extractToolEventsFromMessages = (
 				const output = partOutput as { vncUrl?: string };
 				if (output.vncUrl) {
 					jotaiStore.set(vncUrlAtom, output.vncUrl);
+					jotaiStore.set(showVncWorkspaceAtom);
+				}
+			}
+
+			if (
+				toolName === "codeInterpreter" &&
+				partState === "output-available" &&
+				partOutput
+			) {
+				const output = partOutput as {
+					results?: Array<{
+						chart?: Record<string, unknown>;
+						png?: string;
+						text?: string;
+					}>;
+				};
+				const chartResult = output.results?.find(
+					(result) => result.chart || result.png,
+				);
+
+				if (chartResult) {
+					jotaiStore.set(showChartWorkspaceAtom, {
+						chart: chartResult.chart,
+						generatedAt: Date.now(),
+						png: chartResult.png,
+						title:
+							typeof chartResult.chart?.title === "string"
+								? chartResult.chart.title
+								: chartResult.text,
+						toolCallId,
+					});
 				}
 			}
 		}

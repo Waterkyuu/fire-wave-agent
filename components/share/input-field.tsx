@@ -1,6 +1,7 @@
 "use client";
 
 import { firstUserInputAtom, userAtom } from "@/atoms";
+import { showDatasetWorkspaceAtom } from "@/atoms/chat";
 import loginDialogAtom from "@/atoms/login-dialog";
 import {
 	InputGroup,
@@ -19,7 +20,7 @@ import { handleError } from "@/lib/error-handler";
 import { formatFileSize } from "@/lib/file";
 import { type UploadResult, cancelUpload, uploadFile } from "@/lib/upload-file";
 import { cn, generateId } from "@/lib/utils";
-import { useAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import { ArrowUp, FileText, Plus, Square, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "next/navigation";
@@ -31,7 +32,9 @@ type AppendFn = (
 		role: string;
 		content: string;
 	},
-	options?: Record<string, unknown>,
+	options?: {
+		requestBody?: Record<string, unknown>;
+	},
 ) => Promise<void>;
 
 type InputFieldProps = {
@@ -39,6 +42,7 @@ type InputFieldProps = {
 	size?: "default" | "md" | "sm";
 	append?: AppendFn;
 	isLoading?: boolean;
+	onOpenWorkspace?: () => void;
 	stop?: () => void;
 	input?: string;
 	setInput?: (input: string) => void;
@@ -67,6 +71,7 @@ const InputField = ({
 	setInput,
 	append,
 	isLoading = false,
+	onOpenWorkspace,
 	stop = () => {},
 	className,
 	size = "default",
@@ -81,6 +86,7 @@ const InputField = ({
 	const [firstUserInput, setFirstUserInput] = useAtom(firstUserInputAtom);
 	const [user] = useAtom(userAtom);
 	const [, setIsLoginDialogOpen] = useAtom(loginDialogAtom);
+	const showDatasetWorkspace = useSetAtom(showDatasetWorkspaceAtom);
 
 	const [attachments, setAttachments] = useState<File[]>([]);
 	const [uploadedFiles, setUploadedFiles] = useState<UploadResult[]>([]);
@@ -107,7 +113,16 @@ const InputField = ({
 	};
 
 	const handelFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		const supportedExtensions = ["pdf", "docx", "md", "txt", "typ"];
+		const supportedExtensions = [
+			"pdf",
+			"docx",
+			"md",
+			"txt",
+			"typ",
+			"csv",
+			"xlsx",
+			"xls",
+		];
 
 		if (!e.target.files || e.target.files.length === 0) {
 			return;
@@ -152,6 +167,14 @@ const InputField = ({
 					});
 
 					setUploadedFiles((prev) => [...prev, result]);
+					if (result.preview) {
+						showDatasetWorkspace({
+							fileId: result.fileId,
+							filename: result.filename,
+							preview: result.preview,
+						});
+						onOpenWorkspace?.();
+					}
 					toast.success(t("fileUploaded"), {
 						description: t("fileUploadSuccess", { fileName: currentFile.name }),
 					});
@@ -208,6 +231,22 @@ const InputField = ({
 		});
 	};
 
+	const handlePreviewDataset = (filename: string) => {
+		const uploadedFile = uploadedFiles.find(
+			(file) => file.filename === filename,
+		);
+		if (!uploadedFile?.preview) {
+			return;
+		}
+
+		showDatasetWorkspace({
+			fileId: uploadedFile.fileId,
+			filename: uploadedFile.filename,
+			preview: uploadedFile.preview,
+		});
+		onOpenWorkspace?.();
+	};
+
 	const handleSumit = async () => {
 		try {
 			let newInput = "";
@@ -262,10 +301,18 @@ const InputField = ({
 						const ext = file.name.split(".").pop()?.toUpperCase() || "FILE";
 						const progress = uploadingFiles[file.name];
 						const isFileUploading = progress !== undefined;
+						const uploadedFile = uploadedFiles.find(
+							(item) => item.filename === file.name,
+						);
+						const isPreviewable = Boolean(uploadedFile?.preview);
 						return (
 							<div
 								key={index}
-								className="group relative flex w-[16rem] items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-2.5 pr-4"
+								className={cn(
+									"group relative flex w-[16rem] items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-2.5 pr-4 text-left transition-colors duration-200",
+									isPreviewable && "hover:border-primary/40 hover:bg-primary/5",
+								)}
+								onClick={() => handlePreviewDataset(file.name)}
 							>
 								{/* File Icon */}
 								<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white">
@@ -294,7 +341,10 @@ const InputField = ({
 								{/* Remove Button */}
 								<button
 									type="button"
-									onClick={() => handleRemoveAttachment(index)}
+									onClick={(event) => {
+										event.stopPropagation();
+										void handleRemoveAttachment(index);
+									}}
 									className="-right-2 -top-2 absolute hidden h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:text-red-500 group-hover:flex"
 								>
 									<X className="h-3 w-3" />
@@ -330,7 +380,7 @@ const InputField = ({
 								type="file"
 								ref={fileInputRef}
 								className="hidden"
-								accept=".pdf,.docx,.md,.txt,.typ,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,text/plain"
+								accept=".pdf,.docx,.md,.txt,.typ,.csv,.xlsx,.xls,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,text/plain,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 								onChange={handelFileUpload}
 								multiple
 							/>

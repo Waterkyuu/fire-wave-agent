@@ -1,7 +1,12 @@
 "use client";
 
 import jotaiStore from "@/atoms";
-import { firstUserInputAtom, vncUrlAtom } from "@/atoms/chat";
+import {
+	firstUserInputAtom,
+	vncUrlAtom,
+	workspaceChartAtom,
+	workspaceDatasetAtom,
+} from "@/atoms/chat";
 import Header from "@/components/share/header";
 import InputField from "@/components/share/input-field";
 import {
@@ -28,7 +33,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import DebugPanel from "../components/debug-panel";
 import MessageArea from "../components/message-area";
-import VncPanel from "../components/vnc-panel";
+import WorkspacePanel from "../components/workspace-panel";
 
 type ChatPageProps = {
 	params: Promise<{ id: string }>;
@@ -41,6 +46,8 @@ const ChatPage = ({ params }: ChatPageProps) => {
 	const sessionCreatedRef = useRef(false);
 	const isMobile = useIsMobile();
 	const vncUrl = useAtomValue(vncUrlAtom);
+	const workspaceChart = useAtomValue(workspaceChartAtom);
+	const workspaceDataset = useAtomValue(workspaceDatasetAtom);
 	const t = useTranslations("chat");
 
 	useEffect(() => {
@@ -112,7 +119,13 @@ const ChatPage = ({ params }: ChatPageProps) => {
 		),
 	);
 
-	const showVncButton = isMobile && vncUrl && hasToolCalls;
+	const hasWorkspaceContent = Boolean(
+		vncUrl || workspaceChart || workspaceDataset,
+	);
+	const showVncButton =
+		isMobile &&
+		hasWorkspaceContent &&
+		(hasToolCalls || Boolean(workspaceDataset));
 
 	if (!sessionId) {
 		return (
@@ -141,10 +154,16 @@ const ChatPage = ({ params }: ChatPageProps) => {
 						<InputField
 							input={input}
 							setInput={setInput}
-							append={async (msg) => {
-								await append(msg.content ?? "");
+							append={async (msg, options) => {
+								const requestOptions = options as
+									| { requestBody?: Record<string, unknown> }
+									| undefined;
+								await append(msg.content ?? "", {
+									body: requestOptions?.requestBody,
+								});
 							}}
 							isLoading={isLoading}
+							onOpenWorkspace={() => setVncSheetOpen(true)}
 							stop={stop}
 							size="md"
 						/>
@@ -166,7 +185,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 							<SheetHeader className="sr-only">
 								<SheetTitle>{t("sandboxViewer")}</SheetTitle>
 							</SheetHeader>
-							<VncPanel />
+							<WorkspacePanel />
 						</SheetContent>
 					</Sheet>
 				</div>
@@ -188,10 +207,16 @@ const ChatPage = ({ params }: ChatPageProps) => {
 								<InputField
 									input={input}
 									setInput={setInput}
-									append={async (msg) => {
-										await append(msg.content ?? "");
+									append={async (msg, options) => {
+										const requestOptions = options as
+											| { requestBody?: Record<string, unknown> }
+											| undefined;
+										await append(msg.content ?? "", {
+											body: requestOptions?.requestBody,
+										});
 									}}
 									isLoading={isLoading}
+									onOpenWorkspace={handleShowVnc}
 									stop={stop}
 								/>
 							</div>
@@ -199,7 +224,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 					</ResizablePanel>
 					<ResizableHandle withHandle />
 					<ResizablePanel defaultSize="70%" minSize="50%" maxSize="70%">
-						<VncPanel />
+						<WorkspacePanel />
 					</ResizablePanel>
 				</ResizablePanelGroup>
 			)}

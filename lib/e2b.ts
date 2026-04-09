@@ -1,5 +1,6 @@
 import { Sandbox as CodeSandbox } from "@e2b/code-interpreter";
 import { Sandbox as DesktopSandbox } from "@e2b/desktop";
+import { getUploadedFileBytes } from "./file-store";
 
 const E2B_API_KEY = process.env.E2B_API_KEY;
 
@@ -10,6 +11,7 @@ if (!E2B_API_KEY) {
 }
 
 const SANDBOX_TIMEOUT_MS = 5 * 60 * 1000;
+const CODE_DATA_DIR = "/home/user/data";
 
 type ManagedDesktopSandbox = {
 	sandbox: DesktopSandbox;
@@ -23,6 +25,7 @@ type ManagedCodeSandbox = {
 	sandbox: CodeSandbox;
 	sandboxId: string;
 	createdAt: number;
+	syncedFileIds: Set<string>;
 	timeoutHandle: ReturnType<typeof setTimeout>;
 };
 
@@ -118,6 +121,7 @@ const createCodeSandbox = async (
 		sandbox,
 		sandboxId,
 		createdAt: Date.now(),
+		syncedFileIds: new Set<string>(),
 		timeoutHandle: undefined as unknown as ReturnType<typeof setTimeout>,
 	});
 
@@ -134,6 +138,51 @@ const getDesktopSandbox = (sandboxId?: string): DesktopSandbox | undefined => {
 const getCodeSandbox = (sandboxId?: string): CodeSandbox | undefined => {
 	if (sandboxId) return codeStore.get(sandboxId)?.sandbox;
 	return getLatestCode()?.sandbox;
+};
+
+const getCodeSandboxEntry = (
+	sandboxId?: string,
+): ManagedCodeSandbox | undefined => {
+	if (sandboxId) {
+		return codeStore.get(sandboxId);
+	}
+
+	return getLatestCode();
+};
+
+const syncFilesToCodeSandbox = async (
+	fileIds: string[],
+	sandboxId?: string,
+): Promise<void> => {
+	if (fileIds.length === 0) {
+		return;
+	}
+
+	let entry = getCodeSandboxEntry(sandboxId);
+	if (!entry) {
+		await createCodeSandbox();
+		entry = getCodeSandboxEntry();
+	}
+	if (!entry) {
+		throw new Error("No code sandbox available. Create a code sandbox first.");
+	}
+
+	await entry.sandbox.commands.run(`mkdir -p ${CODE_DATA_DIR}`);
+
+	for (const fileId of fileIds) {
+		if (entry.syncedFileIds.has(fileId)) {
+			continue;
+		}
+
+		const { bytes, record } = await getUploadedFileBytes(fileId);
+		const fileBuffer = new ArrayBuffer(bytes.byteLength);
+		new Uint8Array(fileBuffer).set(bytes);
+		await entry.sandbox.files.write(
+			`${CODE_DATA_DIR}/${record.filename}`,
+			fileBuffer,
+		);
+		entry.syncedFileIds.add(fileId);
+	}
 };
 
 const executeCommand = async (
@@ -155,13 +204,21 @@ const executeCommand = async (
 const executeCode = async (
 	code: string,
 	sandboxId?: string,
+	fileIds: string[] = [],
 ): Promise<{
 	text?: string;
 	results: Array<{
+		chart?: Record<string, unknown>;
+		data?: Record<string, unknown>;
+		jpeg?: string;
+		json?: string;
+		latex?: string;
+		markdown?: string;
+		pdf?: string;
+		svg?: string;
 		text?: string;
 		html?: string;
 		png?: string;
-		error?: boolean;
 	}>;
 	stdout: string[];
 	stderr: string[];
@@ -175,14 +232,24 @@ const executeCode = async (
 	if (!sb)
 		throw new Error("No code sandbox available. Create a code sandbox first.");
 
+	await syncFilesToCodeSandbox(fileIds, sandboxId);
+
 	const execution = await sb.runCode(code);
 
 	return {
 		text: execution.text,
 		results: execution.results.map((r) => ({
+			chart: r.chart as Record<string, unknown> | undefined,
+			data: r.data,
 			text: r.text,
 			html: r.html,
+			jpeg: r.jpeg,
+			json: r.json,
+			latex: r.latex,
+			markdown: r.markdown,
+			pdf: r.pdf,
 			png: r.png,
+			svg: r.svg,
 		})),
 		stdout: execution.logs.stdout,
 		stderr: execution.logs.stderr,
@@ -294,5 +361,6 @@ export {
 	executeCode,
 	navigateBrowser,
 	searchWeb,
+	syncFilesToCodeSandbox,
 	cleanup,
 };

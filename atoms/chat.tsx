@@ -1,9 +1,16 @@
+import type { WorkspaceChart, WorkspaceDataset, WorkspaceView } from "@/types";
 import type { AgentStatus, ToolCallEvent } from "@/types/chat";
 import { atom } from "jotai";
 
 const firstUserInputAtom = atom<string>("");
 
 const vncUrlAtom = atom<string>("");
+
+const workspaceViewAtom = atom<WorkspaceView>("empty");
+
+const workspaceChartAtom = atom<WorkspaceChart | null>(null);
+
+const workspaceDatasetAtom = atom<WorkspaceDataset | null>(null);
 
 const agentStatusAtom = atom<AgentStatus>("idle");
 
@@ -25,11 +32,37 @@ const clearToolEventsAtom = atom(null, (_get, set) => {
 	set(toolEventsAtom, []);
 });
 
+const showVncWorkspaceAtom = atom(null, (_get, set) => {
+	set(workspaceViewAtom, "vnc");
+});
+
+const showChartWorkspaceAtom = atom(
+	null,
+	(_get, set, chart: WorkspaceChart) => {
+		set(workspaceChartAtom, chart);
+		set(workspaceViewAtom, "chart");
+	},
+);
+
+const showDatasetWorkspaceAtom = atom(
+	null,
+	(_get, set, dataset: WorkspaceDataset) => {
+		set(workspaceDatasetAtom, dataset);
+		set(workspaceViewAtom, "dataset");
+	},
+);
+
 export {
 	firstUserInputAtom,
 	vncUrlAtom,
+	workspaceViewAtom,
+	workspaceChartAtom,
+	workspaceDatasetAtom,
 	agentStatusAtom,
 	toolEventsAtom,
 	dispatchToolEventAtom,
 	clearToolEventsAtom,
+	showVncWorkspaceAtom,
+	showChartWorkspaceAtom,
+	showDatasetWorkspaceAtom,
 };

@@ -1,6 +1,10 @@
 import apiClient from "@/services/api-client";
 import { voidPost, zodGet, zodPost } from "@/services/request";
-import { FileRecordSchema, MergeFileResponseSchema } from "@/types";
+import {
+	type DatasetPreview,
+	FileRecordSchema,
+	MergeFileResponseSchema,
+} from "@/types";
 import { handleError } from "./error-handler";
 
 const DEFAULT_CHUNK_SIZE = 2 * 1024 * 1024;
@@ -15,6 +19,7 @@ type UploadProgressHandler = (progress: number) => void;
 type UploadResult = {
 	fileId: string;
 	filename: string;
+	preview?: DatasetPreview;
 };
 
 type CreateChunksOptions = {
@@ -57,6 +62,7 @@ type UploadFilesOptions = {
 };
 
 type MergeFileOptions = {
+	contentType?: string;
 	filename: string;
 	totalChunks: number;
 };
@@ -158,12 +164,14 @@ const uploadChunks = async ({
 };
 
 const mergeFile = async ({
+	contentType,
 	filename,
 	totalChunks,
 }: MergeFileOptions): Promise<UploadResult> => {
 	const result = await zodPost(
 		"/file/merge",
 		{
+			contentType,
 			filename,
 			total: totalChunks,
 		},
@@ -173,6 +181,7 @@ const mergeFile = async ({
 	return {
 		fileId: result.file_id,
 		filename,
+		preview: result.preview,
 	};
 };
 
@@ -236,6 +245,7 @@ const uploadFile = async ({
 	});
 
 	const result = await mergeFile({
+		contentType: file.type,
 		filename: file.name,
 		totalChunks: chunks.length,
 	});

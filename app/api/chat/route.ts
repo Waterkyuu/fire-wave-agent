@@ -5,7 +5,9 @@ import {
 	navigateBrowser,
 	searchWeb,
 } from "@/lib/e2b";
+import { readFileRecord } from "@/lib/file-store";
 import {
+	type UIMessage,
 	convertToModelMessages,
 	stepCountIs,
 	streamText,
@@ -41,36 +43,6 @@ const createSandboxTool = tool({
 				status: "error",
 				message:
 					error instanceof Error ? error.message : "Failed to create sandbox",
-			};
-		}
-	},
-});
-
-const codeInterpreterTool = tool({
-	description:
-		"Execute Python code in an isolated Jupyter notebook sandbox. Use for data analysis, calculations, chart generation, and any Python computation. Each call runs in a notebook cell, so variables persist between calls.",
-	inputSchema: zodSchema(
-		z.object({
-			code: z.string().describe("Python code to execute in a notebook cell"),
-		}),
-	),
-	execute: async ({ code }: { code: string }) => {
-		try {
-			const result = await executeCode(code);
-
-			return {
-				status: result.error ? "error" : "success",
-				text: result.text,
-				results: result.results,
-				stdout: result.stdout,
-				stderr: result.stderr,
-				error: result.error,
-			};
-		} catch (error) {
-			return {
-				status: "error",
-				message:
-					error instanceof Error ? error.message : "Code execution failed",
 			};
 		}
 	},
@@ -172,15 +144,76 @@ Always explain what you're doing and why. Be thorough and careful.`;
 export async function POST(req: Request) {
 	try {
 		const body = await req.json();
-		const { messages: uiMessages } = body;
+		const {
+			fileIds = [],
+			messages: uiMessages,
+		}: { fileIds?: string[]; messages: Array<Omit<UIMessage, "id">> } = body;
+
+		const attachedFiles = await Promise.all(
+			fileIds.map(async (fileId) => {
+				try {
+					return await readFileRecord(fileId);
+				} catch {
+					return null;
+				}
+			}),
+		);
 
 		const modelMessages = await convertToModelMessages(uiMessages);
 
 		const modelName = process.env.GLM_MODEL ?? "glm-4-flash";
+		const attachmentContext = attachedFiles
+			.filter(
+				(file): file is Awaited<ReturnType<typeof readFileRecord>> =>
+					file !== null,
+			)
+			.map(
+				(file) =>
+					`- ${file.filename} -> ${file.kind ?? "document"} -> ${file.objectKey ?? "unresolved"}`,
+			)
+			.join("\n");
+
+		const codeInterpreterTool = tool({
+			description:
+				"Execute Python code in an isolated Jupyter notebook sandbox. Use for data analysis, calculations, chart generation, and any Python computation. Each call runs in a notebook cell, so variables persist between calls.",
+			inputSchema: zodSchema(
+				z.object({
+					code: z
+						.string()
+						.describe("Python code to execute in a notebook cell"),
+				}),
+			),
+			execute: async ({ code }: { code: string }) => {
+				try {
+					const result = await executeCode(code, undefined, fileIds);
+
+					return {
+						status: result.error ? "error" : "success",
+						text: result.text,
+						results: result.results,
+						stdout: result.stdout,
+						stderr: result.stderr,
+						error: result.error,
+					};
+				} catch (error) {
+					return {
+						status: "error",
+						message:
+							error instanceof Error ? error.message : "Code execution failed",
+					};
+				}
+			},
+		});
 
 		const result = streamText({
 			model: zhipu(modelName),
-			system: SYSTEM_PROMPT,
+			system: `${SYSTEM_PROMPT}
+
+ATTACHED FILES:
+${attachmentContext || "- none"}
+
+If attached files exist, they will be synced into the code interpreter at ${"/home/user/data"} before Python runs.
+Use pandas to load them from that folder when the user asks for analysis, charting, or cleaning.`,
 			messages: modelMessages,
 			tools: {
 				createSandbox: createSandboxTool,
