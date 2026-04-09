@@ -6,6 +6,7 @@ import {
 	clearToolEventsAtom,
 	dispatchToolEventAtom,
 	showChartWorkspaceAtom,
+	showDatasetWorkspaceAtom,
 	showVncWorkspaceAtom,
 	vncUrlAtom,
 } from "@/atoms/chat";
@@ -150,6 +151,39 @@ const extractToolEventsFromMessages = (
 								? chartResult.chart.title
 								: chartResult.text,
 						toolCallId,
+					});
+				}
+			}
+
+			if (
+				toolName === "persistCodeFile" &&
+				partState === "output-available" &&
+				partOutput
+			) {
+				const output = partOutput as {
+					fileId?: string;
+					filename?: string;
+					kind?: string;
+					preview?: {
+						activeSheet: string;
+						columns: string[];
+						rows: string[][];
+						sheetNames: string[];
+						totalColumns: number;
+						totalRows: number;
+					};
+				};
+
+				if (
+					output.kind === "dataset" &&
+					output.fileId &&
+					output.filename &&
+					output.preview
+				) {
+					jotaiStore.set(showDatasetWorkspaceAtom, {
+						fileId: output.fileId,
+						filename: output.filename,
+						preview: output.preview,
 					});
 				}
 			}

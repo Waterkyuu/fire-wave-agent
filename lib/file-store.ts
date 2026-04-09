@@ -136,26 +136,23 @@ const writeChunkFile = async ({
 	await writeFile(getChunkPath(safeFilename, index), Buffer.from(chunk));
 };
 
-const mergeUploadedFile = async ({
+const storeFileRecordFromBytes = async ({
+	bytes,
 	contentType,
 	filename,
-	totalChunks,
+	kind,
 }: {
+	bytes: Uint8Array;
 	contentType?: string | null;
 	filename: string;
-	totalChunks: number;
+	kind?: "dataset" | "document";
 }) => {
 	if (!BUCKET_NAME) {
 		throw new Error("BUCKET_NAME is not configured.");
 	}
 
 	const safeFilename = sanitizeFilename(filename);
-	const chunkBuffers = await Promise.all(
-		Array.from({ length: totalChunks }, async (_, index) =>
-			readFile(getChunkPath(safeFilename, index)),
-		),
-	);
-	const mergedBuffer = Buffer.concat(chunkBuffers);
+	const mergedBuffer = Buffer.from(bytes);
 	const fileId = crypto.randomUUID();
 	const objectKey = `${fileId}/${safeFilename}`;
 	const preview = buildDatasetPreview(mergedBuffer, safeFilename);
@@ -166,7 +163,7 @@ const mergeUploadedFile = async ({
 		contentType: contentType ?? null,
 		fileSize: mergedBuffer.byteLength,
 		status: "ready",
-		kind: preview ? "dataset" : "document",
+		kind: kind ?? (preview ? "dataset" : "document"),
 		objectKey,
 		preview,
 		errorMessage: null,
@@ -183,6 +180,30 @@ const mergeUploadedFile = async ({
 		}),
 	);
 	await saveFileRecord(record);
+
+	return record;
+};
+
+const mergeUploadedFile = async ({
+	contentType,
+	filename,
+	totalChunks,
+}: {
+	contentType?: string | null;
+	filename: string;
+	totalChunks: number;
+}) => {
+	const safeFilename = sanitizeFilename(filename);
+	const chunkBuffers = await Promise.all(
+		Array.from({ length: totalChunks }, async (_, index) =>
+			readFile(getChunkPath(safeFilename, index)),
+		),
+	);
+	const record = await storeFileRecordFromBytes({
+		bytes: Buffer.concat(chunkBuffers),
+		contentType,
+		filename: safeFilename,
+	});
 	await rm(getChunkDir(safeFilename), { recursive: true, force: true });
 
 	return record;
@@ -277,5 +298,6 @@ export {
 	readFileRecord,
 	saveFileRecord,
 	sanitizeFilename,
+	storeFileRecordFromBytes,
 	writeChunkFile,
 };

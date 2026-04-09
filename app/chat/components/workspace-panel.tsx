@@ -25,15 +25,6 @@ const toImageSrc = (value?: string) => {
 	return value.startsWith("data:") ? value : `data:image/png;base64,${value}`;
 };
 
-const WORKSPACE_COPY = {
-	chartGeneratedAt: "Generated at {time}",
-	chartViewer: "Chart Viewer",
-	datasetViewer: "Dataset Viewer",
-	waitingChart: "Waiting for chart output...",
-	waitingDataset: "Select a dataset to preview.",
-	workspaceEmpty: "No workspace output yet.",
-};
-
 const DatasetPanel = memo(() => {
 	const dataset = useAtomValue(workspaceDatasetAtom);
 	const t = useTranslations("chat");
@@ -41,7 +32,7 @@ const DatasetPanel = memo(() => {
 	if (!dataset?.preview) {
 		return (
 			<div className="flex h-full w-full items-center justify-center text-muted-foreground text-sm">
-				{WORKSPACE_COPY.waitingDataset}
+				{t("waitingDataset")}
 			</div>
 		);
 	}
@@ -53,7 +44,11 @@ const DatasetPanel = memo(() => {
 			<div className="border-b px-4 py-3">
 				<p className="font-medium text-sm">{dataset.filename}</p>
 				<p className="text-muted-foreground text-xs">
-					{`${preview.totalRows} rows, ${preview.totalColumns} columns, sheet ${preview.activeSheet || "-"}`}
+					{t("datasetSummary", {
+						rows: preview.totalRows,
+						columns: preview.totalColumns,
+						sheet: preview.activeSheet || "-",
+					})}
 				</p>
 			</div>
 			<div className="min-h-0 flex-1 overflow-auto">
@@ -101,7 +96,7 @@ const ChartPanel = memo(() => {
 	if (!chart) {
 		return (
 			<div className="flex h-full w-full items-center justify-center text-muted-foreground text-sm">
-				{WORKSPACE_COPY.waitingChart}
+				{t("waitingChart")}
 			</div>
 		);
 	}
@@ -109,21 +104,18 @@ const ChartPanel = memo(() => {
 	return (
 		<div className="flex h-full min-h-0 flex-col">
 			<div className="border-b px-4 py-3">
-				<p className="font-medium text-sm">
-					{chart.title || WORKSPACE_COPY.chartViewer}
-				</p>
+				<p className="font-medium text-sm">{chart.title || t("chartViewer")}</p>
 				<p className="text-muted-foreground text-xs">
-					{WORKSPACE_COPY.chartGeneratedAt.replace(
-						"{time}",
-						new Date(chart.generatedAt).toLocaleTimeString(),
-					)}
+					{t("chartGeneratedAt", {
+						time: new Date(chart.generatedAt).toLocaleTimeString(),
+					})}
 				</p>
 			</div>
 			<div className="min-h-0 flex-1 overflow-auto p-4">
 				{imageSrc ? (
 					<img
 						src={imageSrc}
-						alt={chart.title || WORKSPACE_COPY.chartViewer}
+						alt={chart.title || t("chartViewer")}
 						className="mx-auto max-h-full rounded-xl border bg-white shadow-sm"
 					/>
 				) : (
@@ -167,7 +159,7 @@ const WorkspacePanel = () => {
 		if (chart) {
 			views.push({
 				key: "chart",
-				label: WORKSPACE_COPY.chartViewer,
+				label: t("chartViewer"),
 				icon: BarChart3,
 				onClick: () => showChart(chart),
 			});
@@ -175,7 +167,7 @@ const WorkspacePanel = () => {
 		if (dataset) {
 			views.push({
 				key: "dataset",
-				label: WORKSPACE_COPY.datasetViewer,
+				label: t("datasetViewer"),
 				icon: FileSpreadsheet,
 				onClick: () => showDataset(dataset),
 			});
@@ -216,7 +208,7 @@ const WorkspacePanel = () => {
 					})
 				) : (
 					<span className="text-muted-foreground text-sm">
-						{WORKSPACE_COPY.workspaceEmpty}
+						{t("workspaceEmpty")}
 					</span>
 				)}
 			</div>
@@ -227,7 +219,7 @@ const WorkspacePanel = () => {
 				{effectiveView === "vnc" && <VncViewer url={vncUrl} />}
 				{effectiveView === "empty" && (
 					<div className="flex h-full w-full items-center justify-center text-muted-foreground text-sm">
-						{WORKSPACE_COPY.workspaceEmpty}
+						{t("workspaceEmpty")}
 					</div>
 				)}
 			</div>

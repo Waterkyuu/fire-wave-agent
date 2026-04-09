@@ -1,6 +1,7 @@
+import { basename } from "node:path/posix";
 import { Sandbox as CodeSandbox } from "@e2b/code-interpreter";
 import { Sandbox as DesktopSandbox } from "@e2b/desktop";
-import { getUploadedFileBytes } from "./file-store";
+import { getUploadedFileBytes, storeFileRecordFromBytes } from "./file-store";
 
 const E2B_API_KEY = process.env.E2B_API_KEY;
 
@@ -201,6 +202,36 @@ const executeCommand = async (
 	};
 };
 
+const persistCodeFile = async ({
+	contentType,
+	filename,
+	filePath,
+	kind,
+	sandboxId,
+}: {
+	contentType?: string;
+	filename?: string;
+	filePath: string;
+	kind?: "dataset" | "document";
+	sandboxId?: string;
+}) => {
+	const entry = getCodeSandboxEntry(sandboxId);
+	if (!entry) {
+		throw new Error("No code sandbox available. Create a code sandbox first.");
+	}
+
+	const fileBytes = (await entry.sandbox.files.read(filePath, {
+		format: "bytes",
+	})) as Uint8Array;
+
+	return storeFileRecordFromBytes({
+		bytes: fileBytes,
+		contentType,
+		filename: filename ?? basename(filePath),
+		kind,
+	});
+};
+
 const executeCode = async (
 	code: string,
 	sandboxId?: string,
@@ -360,6 +391,7 @@ export {
 	executeCommand,
 	executeCode,
 	navigateBrowser,
+	persistCodeFile,
 	searchWeb,
 	syncFilesToCodeSandbox,
 	cleanup,

@@ -5,11 +5,11 @@
 	},
 	"notFound": {
 		"title": "页面未找到",
-		"description": "您访问的页面不存在或已被移动。",
+		"description": "你访问的页面不存在，或者已经被移动。",
 		"backToHome": "返回首页"
 	},
 	"home": {
-		"title": "今天有什么计划？"
+		"title": "今天想完成什么？"
 	},
 	"footer": {
 		"privacy": "隐私政策",
@@ -26,27 +26,27 @@
 	},
 	"inputField": {
 		"placeholder": "提问、搜索或聊天...",
-		"fileTooltip": "仅支持 pdf、docx、md、txt、typ，最多2个文件",
+		"fileTooltip": "仅支持 pdf、docx、md、txt、typ、csv、xlsx，最多 2 个文件",
 		"uploading": "上传中...",
 		"stop": "停止",
 		"send": "发送",
-		"maxFilesReached": "已达到最大文件数",
-		"maxFilesDescription": "一次最多只能上传2个文件。",
-		"unsupportedFile": "不支持的文件格式",
-		"unsupportedFileDescription": "仅支持 pdf、docx、md、txt、typ 文件",
+		"maxFilesReached": "已达到文件数量上限",
+		"maxFilesDescription": "一次最多只能上传 2 个文件。",
+		"unsupportedFile": "不支持的文件类型",
+		"unsupportedFileDescription": "仅支持 pdf、docx、md、txt、typ、csv、xlsx 文件",
 		"fileUploaded": "文件上传成功",
-		"fileUploadSuccess": "{fileName} 已被索引，可进行 RAG 检索",
+		"fileUploadSuccess": "{fileName} 已上传并可用于分析",
 		"uploadFailed": "上传失败",
 		"uploadFailedDescription": "上传 {fileName} 失败",
 		"cancel": "取消"
 	},
 	"login": {
-		"startBuilding": "开始构建",
-		"description": "登录以继续您的奇妙旅程",
+		"startBuilding": "开始使用",
+		"description": "登录后继续你的工作流程",
 		"orContinueWith": "或继续使用",
 		"signInWithEmail": "使用邮箱登录",
 		"emailLabel": "邮箱",
-		"emailPlaceholder": "请输入您的邮箱地址",
+		"emailPlaceholder": "请输入你的邮箱地址",
 		"emailEmpty": "邮箱不能为空",
 		"next": "下一步",
 		"goBack": "返回",
@@ -58,14 +58,14 @@
 		"newChat": "新对话",
 		"searchChats": "搜索对话...",
 		"searchChatsTitle": "搜索对话",
-		"searchChatsDescription": "搜索您的聊天记录",
+		"searchChatsDescription": "搜索你的聊天记录",
 		"noChatsFound": "未找到对话。",
 		"chatHistory": "聊天记录"
 	},
 	"deleteChat": {
 		"trigger": "删除",
-		"title": "确定要删除吗？",
-		"description": "此操作无法撤销。这将永久删除此聊天会话及其所有消息。",
+		"title": "确认删除这个对话吗？",
+		"description": "此操作不可撤销。这会永久删除该聊天会话及其本地消息记录。",
 		"cancel": "取消",
 		"continue": "继续",
 		"deleting": "删除中...",
@@ -75,7 +75,7 @@
 	"renameChat": {
 		"trigger": "重命名",
 		"title": "编辑对话名称",
-		"description": "为此对话起一个更具描述性的名称",
+		"description": "给这个对话起一个更清晰的名称",
 		"chatName": "对话名称",
 		"cancel": "取消",
 		"save": "保存",
@@ -96,16 +96,24 @@
 		"message": "消息",
 		"more": "更多...",
 		"newTeam": "新建团队",
-		"apiKey": "API 密钥",
+		"apiKey": "API Key",
 		"logout": "退出登录"
 	},
 	"chat": {
 		"loading": "加载中...",
-		"sendMessage": "发送消息开始聊天...",
+		"sendMessage": "发送消息开始对话...",
 		"viewSandbox": "查看沙盒",
+		"viewWorkspace": "查看工作区",
 		"sandboxViewer": "沙盒查看器",
-		"live": "直播中",
-		"waitingSandbox": "等待代理沙盒..."
+		"chartViewer": "图表查看器",
+		"datasetViewer": "数据表查看器",
+		"datasetSummary": "{rows} 行，{columns} 列，工作表 {sheet}",
+		"chartGeneratedAt": "生成时间 {time}",
+		"live": "实时",
+		"waitingSandbox": "等待 Agent 沙盒...",
+		"waitingChart": "等待图表输出...",
+		"waitingDataset": "请选择一个数据文件进行预览。",
+		"workspaceEmpty": "右侧工作区还没有内容。"
 	},
 	"message": {
 		"thinking": "思考中...",
