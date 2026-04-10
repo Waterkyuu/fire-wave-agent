@@ -4,6 +4,14 @@ import { atom } from "jotai";
 
 const firstUserInputAtom = atom<string>("");
 
+const pendingHomeUploadsAtom = atom<
+	Array<{
+		fileId: string;
+		filename: string;
+		preview?: WorkspaceDataset["preview"];
+	}>
+>([]);
+
 const vncUrlAtom = atom<string>("");
 
 const workspaceViewAtom = atom<WorkspaceView>("empty");
@@ -54,6 +62,7 @@ const showDatasetWorkspaceAtom = atom(
 
 export {
 	firstUserInputAtom,
+	pendingHomeUploadsAtom,
 	vncUrlAtom,
 	workspaceViewAtom,
 	workspaceChartAtom,

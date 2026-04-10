@@ -3,6 +3,8 @@
 import jotaiStore from "@/atoms";
 import {
 	firstUserInputAtom,
+	pendingHomeUploadsAtom,
+	showDatasetWorkspaceAtom,
 	vncUrlAtom,
 	workspaceChartAtom,
 	workspaceDatasetAtom,
@@ -91,9 +93,11 @@ const ChatPage = ({ params }: ChatPageProps) => {
 		if (!sessionId) return;
 
 		const firstInput = jotaiStore.get(firstUserInputAtom);
+		const pendingHomeUploads = jotaiStore.get(pendingHomeUploadsAtom);
 		if (firstInput) {
 			firstInputSentRef.current = true;
 			jotaiStore.set(firstUserInputAtom, "");
+			jotaiStore.set(pendingHomeUploadsAtom, []);
 
 			const title =
 				firstInput.length > 50 ? `${firstInput.slice(0, 50)}...` : firstInput;
@@ -103,7 +107,20 @@ const ChatPage = ({ params }: ChatPageProps) => {
 				createSession({ id: sessionId, title });
 			}
 
-			append(firstInput);
+			const firstDataset = pendingHomeUploads.find((file) => file.preview);
+			if (firstDataset?.preview) {
+				jotaiStore.set(showDatasetWorkspaceAtom, {
+					fileId: firstDataset.fileId,
+					filename: firstDataset.filename,
+					preview: firstDataset.preview,
+				});
+			}
+
+			append(firstInput, {
+				body: {
+					fileIds: pendingHomeUploads.map((file) => file.fileId),
+				},
+			});
 		}
 	}, [sessionId, append, createSession]);
 

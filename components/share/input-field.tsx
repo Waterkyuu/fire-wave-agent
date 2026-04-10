@@ -1,7 +1,7 @@
 "use client";
 
 import { firstUserInputAtom, userAtom } from "@/atoms";
-import { showDatasetWorkspaceAtom } from "@/atoms/chat";
+import { pendingHomeUploadsAtom, showDatasetWorkspaceAtom } from "@/atoms/chat";
 import loginDialogAtom from "@/atoms/login-dialog";
 import {
 	InputGroup,
@@ -86,6 +86,7 @@ const InputField = ({
 	const [firstUserInput, setFirstUserInput] = useAtom(firstUserInputAtom);
 	const [user] = useAtom(userAtom);
 	const [, setIsLoginDialogOpen] = useAtom(loginDialogAtom);
+	const setPendingHomeUploads = useSetAtom(pendingHomeUploadsAtom);
 	const showDatasetWorkspace = useSetAtom(showDatasetWorkspaceAtom);
 
 	const [attachments, setAttachments] = useState<File[]>([]);
@@ -257,6 +258,13 @@ const InputField = ({
 					return;
 				}
 
+				setPendingHomeUploads(
+					uploadedFiles.map((file) => ({
+						fileId: file.fileId,
+						filename: file.filename,
+						preview: file.preview,
+					})),
+				);
 				const sessionID = generateId();
 				router.push(`/chat/${sessionID}`);
 				return;
