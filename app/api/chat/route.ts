@@ -39,7 +39,7 @@ const POST = async (req: Request) => {
 
 		const attachedFiles = await resolveAttachedFiles(fileIds);
 		const modelMessages = await convertToModelMessages(uiMessages);
-		const modelName = process.env.GLM_MODEL ?? "glm-4-flash";
+		const modelName = process.env.GLM_MODEL ?? "glm-4.5";
 
 		const result = streamText({
 			model: zhipu(modelName),

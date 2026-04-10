@@ -36,14 +36,12 @@ const ReasoningBlock = memo(({ text }: { text: string }) => {
 				<Clock className="size-3" />
 				{t("thinking")}
 			</div>
-			<p className="whitespace-pre-wrap break-words text-[10px] text-amber-800 [overflow-wrap:anywhere] sm:text-xs">
+			<p className="whitespace-pre-wrap break-words text-[10px] text-amber-800 sm:text-xs">
 				{text}
 			</p>
 		</div>
 	);
 });
-
-ReasoningBlock.displayName = "ReasoningBlock";
 
 const ToolCallBlock = memo(
 	({
@@ -64,26 +62,34 @@ const ToolCallBlock = memo(
 		const errorText = part.errorText as string | undefined;
 		const hasDetails = Boolean(input || output || errorText);
 
-		const stateIcon = useMemo(() => {
-			if (state === "input-streaming" || state === "input-available") {
-				return <Loader2 className="size-3 animate-spin text-blue-500" />;
-			}
-			if (state === "output-available") {
-				return <CheckCircle2 className="size-3 text-green-500" />;
-			}
-			if (state === "output-error") {
-				return <XCircle className="size-3 text-red-500" />;
-			}
-			return <Wrench className="size-3 text-muted-foreground" />;
-		}, [state]);
+		const stateIconMap: Record<string, React.ReactNode> = {
+			"input-streaming": (
+				<Loader2 className="size-3 animate-spin text-blue-500" />
+			),
+			"input-available": (
+				<Loader2 className="size-3 animate-spin text-blue-500" />
+			),
+			"output-available": <CheckCircle2 className="size-3 text-green-500" />,
+			"output-error": <XCircle className="size-3 text-red-500" />,
+		};
 
-		const stateLabel = useMemo(() => {
-			if (state === "input-streaming") return t("toolRunning");
-			if (state === "input-available") return t("toolPreparing");
-			if (state === "output-available") return t("toolCompleted");
-			if (state === "output-error") return t("toolFailed");
-			return state ?? t("toolUnknown");
-		}, [state, t]);
+		const stateLabelMap: Record<string, string> = {
+			"input-streaming": t("toolRunning"),
+			"input-available": t("toolPreparing"),
+			"output-available": t("toolCompleted"),
+			"output-error": t("toolFailed"),
+		};
+
+		const stateIcon = state ? (
+			(stateIconMap[state] ?? (
+				<Wrench className="size-3 text-muted-foreground" />
+			))
+		) : (
+			<Wrench className="size-3 text-muted-foreground" />
+		);
+		const stateLabel = state
+			? (stateLabelMap[state] ?? state)
+			: t("toolUnknown");
 
 		const isCreateSandbox =
 			toolName === "createSandbox" && state === "output-available";
@@ -149,8 +155,6 @@ const ToolCallBlock = memo(
 		);
 	},
 );
-
-ToolCallBlock.displayName = "ToolCallBlock";
 
 const MessageItem = memo(
 	({
