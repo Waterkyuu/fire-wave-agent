@@ -1,337 +1,51 @@
-import {
-	createDesktopSandbox,
-	executeCode,
-	executeCommand,
-	navigateBrowser,
-	persistCodeFile,
-	persistLatestChart,
-	searchWeb,
-} from "@/lib/e2b";
+import { buildChatSystemPrompt } from "@/lib/agent/prompts";
+import { createChatTools } from "@/lib/agent/tools";
 import { readFileRecord } from "@/lib/file-store";
+import type { FileRecord } from "@/types";
 import {
 	type UIMessage,
 	convertToModelMessages,
 	stepCountIs,
 	streamText,
-	tool,
-	zodSchema,
 } from "ai";
 import { NextResponse } from "next/server";
 import { zhipu } from "zhipu-ai-provider";
-import { z } from "zod";
 
-const createSandboxTool = tool({
-	description:
-		"Create an E2B Desktop Sandbox with a full Ubuntu desktop and browser. Returns a VNC URL for viewing the remote desktop. Use this when the user needs browser automation or visual desktop interaction.",
-	inputSchema: zodSchema(
-		z.object({
-			task: z
-				.string()
-				.describe("Description of what the agent needs to do in the sandbox"),
+type ChatRequestBody = {
+	fileIds?: string[];
+	messages: Array<Omit<UIMessage, "id">>;
+};
+
+const resolveAttachedFiles = async (
+	fileIds: string[],
+): Promise<FileRecord[]> => {
+	const attachedFiles = await Promise.all(
+		fileIds.map(async (fileId) => {
+			try {
+				return await readFileRecord(fileId);
+			} catch {
+				return null;
+			}
 		}),
-	),
-	execute: async ({ task }: { task: string }) => {
-		try {
-			const { sandboxId, vncUrl } = await createDesktopSandbox();
+	);
 
-			return {
-				sandboxId,
-				vncUrl,
-				status: "running",
-				message: `Sandbox created for task: ${task}`,
-			};
-		} catch (error) {
-			return {
-				status: "error",
-				message:
-					error instanceof Error ? error.message : "Failed to create sandbox",
-			};
-		}
-	},
-});
+	return attachedFiles.filter((file): file is FileRecord => file !== null);
+};
 
-const shellTool = tool({
-	description:
-		"Execute a shell command in the desktop sandbox. IMPORTANT: You MUST call createSandbox before using this tool, otherwise it will fail.",
-	inputSchema: zodSchema(
-		z.object({
-			command: z.string().describe("Shell command to execute in the sandbox"),
-		}),
-	),
-	execute: async ({ command }: { command: string }) => {
-		try {
-			const result = await executeCommand(command);
-
-			return {
-				status: "success",
-				stdout: result.stdout,
-				stderr: result.stderr,
-				exitCode: result.exitCode,
-			};
-		} catch (error) {
-			return {
-				status: "error",
-				message:
-					error instanceof Error ? error.message : "Command execution failed",
-			};
-		}
-	},
-});
-
-const navigateBrowserTool = tool({
-	description:
-		"Open a URL in the desktop sandbox browser. IMPORTANT: You MUST call createSandbox before using this tool, otherwise it will fail.",
-	inputSchema: zodSchema(
-		z.object({
-			url: z.string().describe("URL to navigate to"),
-		}),
-	),
-	execute: async ({ url }: { url: string }) => {
-		try {
-			const result = await navigateBrowser(url);
-
-			return {
-				status: "success",
-				url: result.url,
-				message: result.title,
-			};
-		} catch (error) {
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Navigation failed",
-			};
-		}
-	},
-});
-
-const searchWebTool = tool({
-	description:
-		"Search the web by opening Google in the desktop sandbox browser. IMPORTANT: You MUST call createSandbox before using this tool, otherwise it will fail.",
-	inputSchema: zodSchema(
-		z.object({
-			query: z.string().describe("Search query"),
-		}),
-	),
-	execute: async ({ query }: { query: string }) => {
-		try {
-			const result = await searchWeb(query);
-
-			return {
-				status: "success",
-				query: result.query,
-				results: result.results,
-			};
-		} catch (error) {
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Search failed",
-			};
-		}
-	},
-});
-
-const persistCodeFileTool = tool({
-	description:
-		"Persist a file generated inside the code interpreter sandbox to storage. Use this after creating a cleaned CSV or another analysis output file. Returns a downloadable file reference and dataset preview when applicable.",
-	inputSchema: zodSchema(
-		z.object({
-			contentType: z
-				.string()
-				.optional()
-				.describe("MIME type of the exported file"),
-			filename: z
-				.string()
-				.optional()
-				.describe("Optional output filename shown to the user"),
-			filePath: z
-				.string()
-				.describe("Absolute file path inside the code interpreter sandbox"),
-			kind: z
-				.enum(["dataset", "document"])
-				.optional()
-				.describe("Semantic kind of the exported file"),
-		}),
-	),
-	execute: async ({
-		contentType,
-		filename,
-		filePath,
-		kind,
-	}: {
-		contentType?: string;
-		filename?: string;
-		filePath: string;
-		kind?: "dataset" | "document";
-	}) => {
-		try {
-			const record = await persistCodeFile({
-				contentType,
-				filename,
-				filePath,
-				kind,
-			});
-
-			return {
-				contentType: record.contentType,
-				downloadUrl: `/api/file/${record.id}/download`,
-				fileId: record.id,
-				filename: record.filename,
-				kind: record.kind,
-				preview: record.preview,
-				status: "success",
-			};
-		} catch (error) {
-			return {
-				status: "error",
-				message:
-					error instanceof Error ? error.message : "Failed to persist file",
-			};
-		}
-	},
-});
-
-const persistLatestChartTool = tool({
-	description:
-		"Persist the latest chart image generated by the code interpreter to storage. Use this when the user wants to keep or download the chart artifact after analysis.",
-	inputSchema: zodSchema(
-		z.object({
-			contentType: z
-				.string()
-				.optional()
-				.describe("MIME type of the chart file"),
-			filename: z
-				.string()
-				.optional()
-				.describe("Optional output filename shown to the user"),
-		}),
-	),
-	execute: async ({
-		contentType,
-		filename,
-	}: {
-		contentType?: string;
-		filename?: string;
-	}) => {
-		try {
-			const record = await persistLatestChart({
-				contentType,
-				filename,
-			});
-
-			return {
-				contentType: record.contentType,
-				downloadUrl: `/api/file/${record.id}/download`,
-				fileId: record.id,
-				filename: record.filename,
-				status: "success",
-			};
-		} catch (error) {
-			return {
-				status: "error",
-				message:
-					error instanceof Error ? error.message : "Failed to persist chart",
-			};
-		}
-	},
-});
-
-const SYSTEM_PROMPT = `You are an autonomous AI agent that helps users accomplish tasks using sandbox environments. You have access to two types of sandboxes:
-
-1. Desktop Sandbox (Ubuntu desktop + browser + VNC) for browser automation, visual tasks, and web browsing
-2. Code Interpreter (Jupyter notebook) for Python execution, data analysis, calculations, and chart generation
-
-IMPORTANT RULES:
-- Before using navigateBrowser, searchWeb, or executeShell, you MUST call createSandbox first to set up a desktop sandbox.
-- For Python or notebook tasks, use codeInterpreter directly. It auto-creates a Jupyter sandbox if needed.
-- When the user asks for a cleaned CSV or another generated output file, save it in the code sandbox and then call persistCodeFile so the file becomes downloadable.
-- When the user asks to keep or download the latest chart, call persistLatestChart after generating it.
-- Break complex tasks into steps and use the appropriate tool for each step.
-- Report your progress to the user.
-
-Always explain what you're doing and why. Be thorough and careful.`;
-
-export async function POST(req: Request) {
+const POST = async (req: Request) => {
 	try {
 		const body = await req.json();
-		const {
-			fileIds = [],
-			messages: uiMessages,
-		}: { fileIds?: string[]; messages: Array<Omit<UIMessage, "id">> } = body;
+		const { fileIds = [], messages: uiMessages }: ChatRequestBody = body;
 
-		const attachedFiles = await Promise.all(
-			fileIds.map(async (fileId) => {
-				try {
-					return await readFileRecord(fileId);
-				} catch {
-					return null;
-				}
-			}),
-		);
-
+		const attachedFiles = await resolveAttachedFiles(fileIds);
 		const modelMessages = await convertToModelMessages(uiMessages);
 		const modelName = process.env.GLM_MODEL ?? "glm-4-flash";
-		const attachmentContext = attachedFiles
-			.filter(
-				(file): file is Awaited<ReturnType<typeof readFileRecord>> =>
-					file !== null,
-			)
-			.map(
-				(file) =>
-					`- ${file.filename} -> ${file.kind ?? "document"} -> ${file.objectKey ?? "unresolved"}`,
-			)
-			.join("\n");
-
-		const codeInterpreterTool = tool({
-			description:
-				"Execute Python code in an isolated Jupyter notebook sandbox. Use for data analysis, calculations, chart generation, and any Python computation. Each call runs in a notebook cell, so variables persist between calls.",
-			inputSchema: zodSchema(
-				z.object({
-					code: z
-						.string()
-						.describe("Python code to execute in a notebook cell"),
-				}),
-			),
-			execute: async ({ code }: { code: string }) => {
-				try {
-					const result = await executeCode(code, undefined, fileIds);
-
-					return {
-						status: result.error ? "error" : "success",
-						text: result.text,
-						results: result.results,
-						stdout: result.stdout,
-						stderr: result.stderr,
-						error: result.error,
-					};
-				} catch (error) {
-					return {
-						status: "error",
-						message:
-							error instanceof Error ? error.message : "Code execution failed",
-					};
-				}
-			},
-		});
 
 		const result = streamText({
 			model: zhipu(modelName),
-			system: `${SYSTEM_PROMPT}
-
-ATTACHED FILES:
-${attachmentContext || "- none"}
-
-If attached files exist, they will be synced into the code interpreter at /home/user/data before Python runs.
-Use pandas to load them from that folder when the user asks for analysis, charting, cleaning, or exporting a new CSV.`,
+			system: buildChatSystemPrompt(attachedFiles),
 			messages: modelMessages,
-			tools: {
-				createSandbox: createSandboxTool,
-				codeInterpreter: codeInterpreterTool,
-				executeShell: shellTool,
-				navigateBrowser: navigateBrowserTool,
-				persistCodeFile: persistCodeFileTool,
-				persistLatestChart: persistLatestChartTool,
-				searchWeb: searchWebTool,
-			},
+			tools: createChatTools({ fileIds }),
 			stopWhen: stepCountIs(10),
 		});
 
@@ -348,4 +62,6 @@ Use pandas to load them from that folder when the user asks for analysis, charti
 			{ status: 500 },
 		);
 	}
-}
+};
+
+export { POST };
