@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { memo, useMemo, useState } from "react";
+import Markdown from "react-markdown";
 
 type AssistantMessageProps = {
 	message: UIMessage;
@@ -189,11 +190,9 @@ const AssistantMessage = memo(
 							return (
 								<div
 									key={i}
-									className="flex items-center justify-center rounded-2xl bg-muted px-4 py-2.5 text-xs sm:text-sm"
+									className="prose prose-sm max-w-none break-words rounded-2xl bg-muted px-4 py-2.5 text-xs sm:text-sm"
 								>
-									<p className="flex items-center justify-center break-words">
-										{part.text}
-									</p>
+									<Markdown>{part.text}</Markdown>
 								</div>
 							);
 						}
