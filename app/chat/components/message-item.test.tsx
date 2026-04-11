@@ -9,6 +9,7 @@ const toolMessage: UIMessage = {
 	parts: [
 		{
 			type: "tool-searchDocs",
+			toolCallId: "tool-call-1",
 			state: "output-available",
 			input: { query: "test query" },
 			output: { result: "tool result payload" },

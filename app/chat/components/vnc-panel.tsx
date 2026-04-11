@@ -31,8 +31,6 @@ const VncViewer = memo(
 	(prevProps, nextProps) => prevProps.url === nextProps.url,
 );
 
-VncViewer.displayName = "VncViewer";
-
 const VncPanel = () => {
 	const vncUrl = useAtomValue(vncUrlAtom);
 	const t = useTranslations("chat");

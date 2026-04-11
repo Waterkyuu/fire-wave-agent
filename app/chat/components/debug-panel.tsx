@@ -90,8 +90,6 @@ const ToolEventItem = memo(({ event }: ToolEventItemProps) => {
 	);
 });
 
-ToolEventItem.displayName = "ToolEventItem";
-
 const DebugPanel = memo(() => {
 	const toolEvents = useAtomValue(toolEventsAtom);
 	const [isOpen, setIsOpen] = useState(false);
@@ -136,7 +134,5 @@ const DebugPanel = memo(() => {
 		</div>
 	);
 });
-
-DebugPanel.displayName = "DebugPanel";
 
 export default DebugPanel;

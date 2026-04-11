@@ -1,6 +1,6 @@
 {
 	"metadata": {
-		"title": "Fire Wave",
+		"title": "Refract",
 		"description": "Agent 助手"
 	},
 	"notFound": {
@@ -54,7 +54,7 @@
 		"loginSuccess": "登录成功"
 	},
 	"sidebar": {
-		"brand": "Fire Wave",
+		"brand": "Refract",
 		"newChat": "新对话",
 		"searchChats": "搜索对话...",
 		"searchChatsTitle": "搜索对话",

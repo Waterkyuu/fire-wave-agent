@@ -1,6 +1,6 @@
 {
 	"metadata": {
-		"title": "Fire Wave",
+		"title": "Refract",
 		"description": "Agent Helper"
 	},
 	"notFound": {
@@ -54,7 +54,7 @@
 		"loginSuccess": "Login successful"
 	},
 	"sidebar": {
-		"brand": "Fire Wave",
+		"brand": "Refract",
 		"newChat": "New Chat",
 		"searchChats": "Search chats...",
 		"searchChatsTitle": "Search chats",

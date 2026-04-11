@@ -90,8 +90,6 @@ const DatasetPanel = memo(() => {
 	);
 });
 
-DatasetPanel.displayName = "DatasetPanel";
-
 const ChartPanel = memo(() => {
 	const chart = useAtomValue(workspaceChartAtom);
 	const t = useTranslations("chat");
@@ -143,8 +141,6 @@ const ChartPanel = memo(() => {
 	);
 });
 
-ChartPanel.displayName = "ChartPanel";
-
 const FileInfoPanel = memo(() => {
 	const file = useAtomValue(workspaceFileAtom);
 	const t = useTranslations("chat");
@@ -185,8 +181,6 @@ const FileInfoPanel = memo(() => {
 		</div>
 	);
 });
-
-FileInfoPanel.displayName = "FileInfoPanel";
 
 const WorkspacePanel = () => {
 	const t = useTranslations("chat");
