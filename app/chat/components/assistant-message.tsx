@@ -13,7 +13,7 @@ import {
 	XCircle,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { memo, useMemo, useState } from "react";
+import { memo, useDeferredValue, useMemo, useState } from "react";
 import Markdown from "react-markdown";
 
 type AssistantMessageProps = {
@@ -146,6 +146,16 @@ const ToolCallBlock = memo(
 	},
 );
 
+const TextBlock = memo(({ text }: { text: string }) => {
+	const deferredText = useDeferredValue(text);
+
+	return (
+		<div className="prose prose-sm max-w-none break-words rounded-2xl bg-muted px-4 py-2.5 text-xs sm:text-sm">
+			<Markdown>{deferredText}</Markdown>
+		</div>
+	);
+});
+
 const isTextPart = (
 	p: Record<string, unknown>,
 ): p is { type: "text"; text: string } => p.type === "text";
@@ -187,14 +197,7 @@ const AssistantMessage = memo(
 
 						if (isTextPart(part)) {
 							if (!part.text) return null;
-							return (
-								<div
-									key={i}
-									className="prose prose-sm max-w-none break-words rounded-2xl bg-muted px-4 py-2.5 text-xs sm:text-sm"
-								>
-									<Markdown>{part.text}</Markdown>
-								</div>
-							);
+							return <TextBlock key={i} text={part.text} />;
 						}
 
 						if (isToolPart(part)) {
