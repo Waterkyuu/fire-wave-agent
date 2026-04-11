@@ -145,26 +145,31 @@ const ToolCallBlock = memo(
 	},
 );
 
+const isTextPart = (
+	p: Record<string, unknown>,
+): p is { type: "text"; text: string } => p.type === "text";
+
+const isReasoningPart = (
+	p: Record<string, unknown>,
+): p is { type: "reasoning"; text: string } => p.type === "reasoning";
+
+const isToolPart = (p: Record<string, unknown>): boolean =>
+	typeof p.type === "string" && p.type.startsWith("tool-");
+
 const AssistantMessage = memo(
 	({ message, thinkingTime, onShowVnc }: AssistantMessageProps) => {
 		const t = useTranslations("message");
 
-		const textParts = useMemo(
-			() => message.parts.filter((p) => p.type === "text"),
-			[message.parts],
-		);
-
-		const reasoningParts = useMemo(
-			() => message.parts.filter((p) => p.type === "reasoning"),
-			[message.parts],
-		);
-
-		const toolParts = useMemo(
+		const renderableParts = useMemo(
 			() =>
-				message.parts.filter((p) =>
-					typeof p.type === "string" ? p.type.startsWith("tool-") : false,
-				),
+				message.parts.filter(
+					(p) => p.type !== "step-start",
+				) as unknown as Record<string, unknown>[],
 			[message.parts],
+		);
+
+		const hasText = renderableParts.some(
+			(p) => p.type === "text" && (p as { text: string }).text,
 		);
 
 		return (
@@ -174,38 +179,35 @@ const AssistantMessage = memo(
 				</div>
 
 				<div className="min-w-0 max-w-[80%] space-y-1">
-					{reasoningParts.map((part, i) => (
-						<ReasoningBlock
-							key={`reasoning-${i}`}
-							text={(part as { text: string }).text}
-						/>
-					))}
+					{renderableParts.map((part, i) => {
+						if (isReasoningPart(part)) {
+							return <ReasoningBlock key={i} text={part.text} />;
+						}
 
-					{textParts.map((part, i) => {
-						const textPart = part as { text: string };
-						if (!textPart.text) return null;
+						if (isTextPart(part)) {
+							if (!part.text) return null;
+							return (
+								<div
+									key={i}
+									className="flex items-center justify-center rounded-2xl bg-muted px-4 py-2.5 text-xs sm:text-sm"
+								>
+									<p className="flex items-center justify-center break-words">
+										{part.text}
+									</p>
+								</div>
+							);
+						}
 
-						return (
-							<div
-								key={`text-${i}`}
-								className="flex items-center justify-center rounded-2xl bg-muted px-4 py-2.5 text-xs sm:text-sm"
-							>
-								<p className="flex items-center justify-center break-words">
-									{textPart.text}
-								</p>
-							</div>
-						);
+						if (isToolPart(part)) {
+							return (
+								<ToolCallBlock key={i} part={part} onShowVnc={onShowVnc} />
+							);
+						}
+
+						return null;
 					})}
 
-					{toolParts.map((part, i) => (
-						<ToolCallBlock
-							key={`tool-${i}`}
-							part={part as Record<string, unknown>}
-							onShowVnc={onShowVnc}
-						/>
-					))}
-
-					{thinkingTime != null && textParts.length > 0 && (
+					{thinkingTime != null && hasText && (
 						<p className="text-[9px] text-muted-foreground sm:text-[10px]">
 							{t("thoughtFor", { time: thinkingTime.toFixed(1) })}
 						</p>
