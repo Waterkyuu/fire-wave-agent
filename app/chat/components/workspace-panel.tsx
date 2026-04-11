@@ -155,9 +155,7 @@ const WorkspacePanel = () => {
 				{effectiveView === "dataset" && <DatasetPanel />}
 				{effectiveView === "file" && <FileInfoPanel />}
 				{effectiveView === "chart" && <ChartPanel />}
-				{effectiveView === "typst" && (
-					<TypstPreview content={typstContent} isShowToC={false} />
-				)}
+				{effectiveView === "typst" && <TypstPreview />}
 				{effectiveView === "vnc" && <VncPanel />}
 				{effectiveView === "empty" && (
 					<div className="flex h-full w-full items-center justify-center text-muted-foreground text-sm">

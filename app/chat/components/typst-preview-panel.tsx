@@ -1,25 +1,19 @@
+import { workspaceTypstContentAtom } from "@/atoms";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
 import { handleError } from "@/lib/error-handler";
-import { cn } from "@/lib/utils";
 import type { WorkerResponse } from "@/types/worker";
+import { useAtomValue } from "jotai";
 import { useEffect, useRef, useState } from "react";
 
-type TypstPreviewProps = {
-	content: string;
-	isShowToC: boolean;
-};
-
-const TypstPreview = ({
-	content = "",
-	isShowToC = false,
-}: TypstPreviewProps) => {
+const TypstPreview = () => {
 	const [loadingText, setLoadingText] = useState("");
 	const [isCompile, setIsCompile] = useState(false);
 	const [svgContent, setSvgContent] = useState<string>("");
 	const [isWorkerReady, setIsWorkerReady] = useState(false);
 	const workerRef = useRef<Worker | null>(null);
 	const pendingContentRef = useRef<string>("");
+	const typstContent = useAtomValue(workspaceTypstContentAtom);
 
 	useEffect(() => {
 		// Initialize worker
@@ -85,16 +79,16 @@ const TypstPreview = ({
 		if (isWorkerReady) {
 			workerRef.current.postMessage({
 				type: "compile",
-				content,
+				typstContent,
 			});
 		} else {
 			// Store content to compile after worker is ready
-			pendingContentRef.current = content;
+			pendingContentRef.current = typstContent;
 		}
-	}, [content, isWorkerReady]);
+	}, [typstContent, isWorkerReady]);
 
 	return (
-		<ScrollArea className={cn("h-full p-6", isShowToC ? "w-2/3" : "w-full")}>
+		<ScrollArea className="h-full w-full p-6">
 			<article className="max-w-none">
 				{loadingText && (
 					<div className="flex items-center justify-center py-12">
