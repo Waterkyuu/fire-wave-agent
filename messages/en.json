@@ -103,6 +103,7 @@
 		"loading": "Loading...",
 		"sendMessage": "Send a message to start...",
 		"viewSandbox": "View Sandbox",
+		"jumpToLatest": "Jump to latest",
 		"viewWorkspace": "View Workspace",
 		"sandboxViewer": "Sandbox Viewer",
 		"chartViewer": "Chart Viewer",

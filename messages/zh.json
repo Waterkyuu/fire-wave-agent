@@ -103,6 +103,7 @@
 		"loading": "加载中...",
 		"sendMessage": "发送消息开始对话...",
 		"viewSandbox": "查看沙盒",
+		"jumpToLatest": "回到底部",
 		"viewWorkspace": "查看工作区",
 		"sandboxViewer": "沙盒查看器",
 		"chartViewer": "图表查看器",

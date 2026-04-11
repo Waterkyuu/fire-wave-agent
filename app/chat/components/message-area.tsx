@@ -3,8 +3,9 @@
 import { cn } from "@/lib/utils";
 import type { ChatAttachment } from "@/types/chat";
 import type { UIMessage } from "ai";
+import { ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import ChatHistorySkeleton from "./chat-history-skeleton";
 import MessageItem from "./message-item";
 
@@ -17,6 +18,8 @@ type MessageAreaProps = {
 	isHistoryLoading?: boolean;
 };
 
+const AUTO_SCROLL_THRESHOLD = 80;
+
 const MessageArea = ({
 	messages,
 	thinkingTime,
@@ -26,14 +29,59 @@ const MessageArea = ({
 	isHistoryLoading = false,
 }: MessageAreaProps) => {
 	const t = useTranslations("chat");
-	const messagesEndRef = useRef<HTMLDivElement>(null);
-	const containerRef = useRef<HTMLDivElement>(null);
+	const scrollContainerRef = useRef<HTMLDivElement>(null);
+	const previousLastMessageRef = useRef<UIMessage | undefined>(undefined);
+	const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
+
+	const isNearBottom = (element: HTMLDivElement) => {
+		const distanceToBottom =
+			element.scrollHeight - element.scrollTop - element.clientHeight;
+
+		return distanceToBottom <= AUTO_SCROLL_THRESHOLD;
+	};
+
+	const scrollToBottom = (behavior: ScrollBehavior = "auto") => {
+		const container = scrollContainerRef.current;
+		if (!container) {
+			return;
+		}
+
+		container.scrollTo({
+			top: container.scrollHeight,
+			behavior,
+		});
+	};
+
+	const handleScroll = () => {
+		const container = scrollContainerRef.current;
+		if (!container) {
+			return;
+		}
+
+		setIsAutoScrollEnabled(isNearBottom(container));
+	};
 
 	useEffect(() => {
-		if (messagesEndRef.current) {
-			messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+		const lastMessage = messages.at(-1);
+		const previousLastMessage = previousLastMessageRef.current;
+
+		if (
+			lastMessage?.role === "user" &&
+			lastMessage.id !== previousLastMessage?.id
+		) {
+			setIsAutoScrollEnabled(true);
 		}
+
+		previousLastMessageRef.current = lastMessage;
 	}, [messages]);
+
+	useEffect(() => {
+		if (!isAutoScrollEnabled || isHistoryLoading) {
+			return;
+		}
+
+		scrollToBottom();
+	}, [isAutoScrollEnabled, isHistoryLoading, messages]);
 
 	const hasToolCalls = messages.some((msg) =>
 		msg.parts.some(
@@ -43,11 +91,15 @@ const MessageArea = ({
 
 	return (
 		<div
-			ref={containerRef}
 			data-slot="message-area"
 			className={cn("relative flex-1 overflow-hidden", className)}
 		>
-			<div className="custom-scrollbar flex h-full w-full flex-col overflow-y-auto px-2 py-4">
+			<div
+				ref={scrollContainerRef}
+				data-testid="message-area-scroll-container"
+				className="custom-scrollbar flex h-full w-full flex-col overflow-y-auto px-2 py-4"
+				onScroll={handleScroll}
+			>
 				{isHistoryLoading && <ChatHistorySkeleton className="px-2 py-0" />}
 
 				{!isHistoryLoading && messages.length === 0 && (
@@ -69,9 +121,22 @@ const MessageArea = ({
 							onShowVnc={onShowVnc}
 						/>
 					))}
-
-				<div ref={messagesEndRef} />
 			</div>
+			{messages.length > 0 && !isAutoScrollEnabled && (
+				<div className="pointer-events-none absolute right-4 bottom-4">
+					<button
+						type="button"
+						className="pointer-events-auto inline-flex items-center gap-2 rounded-full border bg-background px-3 py-2 text-xs shadow-sm transition-colors duration-200 hover:bg-muted sm:text-sm"
+						onClick={() => {
+							scrollToBottom("smooth");
+							setIsAutoScrollEnabled(true);
+						}}
+					>
+						<ChevronDown className="size-4" />
+						{t("jumpToLatest")}
+					</button>
+				</div>
+			)}
 		</div>
 	);
 };
