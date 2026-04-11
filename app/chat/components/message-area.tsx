@@ -5,7 +5,7 @@ import type { ChatAttachment } from "@/types/chat";
 import type { UIMessage } from "ai";
 import { ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import ChatHistorySkeleton from "./chat-history-skeleton";
 import MessageItem from "./message-item";
 
@@ -141,4 +141,4 @@ const MessageArea = ({
 	);
 };
 
-export default MessageArea;
+export default memo(MessageArea);

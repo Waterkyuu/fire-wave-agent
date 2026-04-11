@@ -13,7 +13,13 @@ import loginDialogAtom from "@/atoms/login-dialog";
 import type { ChatMessageMetadata, ToolCallEvent } from "@/types/chat";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+	startTransition,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 
 type ChatStatus = "submitted" | "streaming" | "ready" | "error";
 
@@ -44,6 +50,8 @@ type UseChatReturn = {
 	reload: () => Promise<void>;
 	stop: () => void;
 };
+
+const STREAM_RENDER_THROTTLE_MS = 80;
 
 const createAuthAwareChatFetch = (
 	fetchImpl: typeof fetch = fetch,
@@ -231,10 +239,15 @@ const useAgentChat = (options: UseChatOptions = {}): UseChatReturn => {
 
 	const [input, setInput] = useState("");
 	const [thinkingTime, setThinkingTime] = useState<number | null>(null);
+	const [renderedMessages, setRenderedMessages] =
+		useState<UIMessage[]>(initialMessages);
 	const reasoningStartTimeRef = useRef<number | null>(null);
 	const processedToolCallsRef = useRef(new Map<string, ToolCallEvent>());
 	const transportApiRef = useRef(api);
 	const transportRef = useRef<DefaultChatTransport<UIMessage> | null>(null);
+	const renderFlushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+		null,
+	);
 
 	if (!transportRef.current || transportApiRef.current !== api) {
 		transportRef.current = new DefaultChatTransport({
@@ -250,21 +263,56 @@ const useAgentChat = (options: UseChatOptions = {}): UseChatReturn => {
 		transport: transportRef.current,
 	});
 
-	const messages = chat.messages;
+	const rawMessages = chat.messages;
 	const status = chat.status;
 
 	useEffect(() => {
-		if (!sessionId || initialMessages.length === 0 || messages.length > 0) {
+		if (!sessionId || initialMessages.length === 0 || rawMessages.length > 0) {
 			return;
 		}
 
 		// Restore persisted history after the session is created before IndexedDB
 		// finishes loading, without overwriting an active in-memory conversation.
 		chat.setMessages(initialMessages);
-	}, [chat, initialMessages, messages.length, sessionId]);
+	}, [chat, initialMessages, rawMessages.length, sessionId]);
 
 	useEffect(() => {
-		for (const msg of messages) {
+		const flushRenderedMessages = (nextMessages: UIMessage[]) => {
+			startTransition(() => {
+				setRenderedMessages(nextMessages);
+			});
+		};
+
+		const clearPendingFlush = () => {
+			if (renderFlushTimeoutRef.current) {
+				clearTimeout(renderFlushTimeoutRef.current);
+				renderFlushTimeoutRef.current = null;
+			}
+		};
+
+		const lastMessage = rawMessages.at(-1);
+		const shouldFlushImmediately =
+			status !== "streaming" ||
+			lastMessage?.role !== "assistant" ||
+			rawMessages.length <= 1;
+
+		if (shouldFlushImmediately) {
+			clearPendingFlush();
+			flushRenderedMessages(rawMessages);
+			return;
+		}
+
+		clearPendingFlush();
+		renderFlushTimeoutRef.current = setTimeout(() => {
+			flushRenderedMessages(rawMessages);
+			renderFlushTimeoutRef.current = null;
+		}, STREAM_RENDER_THROTTLE_MS);
+
+		return clearPendingFlush;
+	}, [rawMessages, status]);
+
+	useEffect(() => {
+		for (const msg of rawMessages) {
 			if (msg.role !== "assistant") continue;
 			for (const part of msg.parts) {
 				if (
@@ -282,25 +330,25 @@ const useAgentChat = (options: UseChatOptions = {}): UseChatReturn => {
 				}
 			}
 		}
-	}, [messages]);
+	}, [rawMessages]);
 
 	useEffect(() => {
 		const events = extractToolEventsFromMessages(
-			messages,
+			rawMessages,
 			processedToolCallsRef.current,
 		);
 		for (const event of events) {
 			processedToolCallsRef.current.set(event.toolCallId, event);
 			jotaiStore.set(dispatchToolEventAtom, event);
 		}
-	}, [messages]);
+	}, [rawMessages]);
 
 	useEffect(() => {
-		if (status === "ready" && messages.length > 0) {
+		if (status === "ready" && rawMessages.length > 0) {
 			reasoningStartTimeRef.current = null;
-			onFinish?.(messages);
+			onFinish?.(rawMessages);
 		}
-	}, [status, messages.length, onFinish]);
+	}, [status, rawMessages, onFinish]);
 
 	useEffect(() => {
 		if (status === "error" && chat.error) {
@@ -345,7 +393,7 @@ const useAgentChat = (options: UseChatOptions = {}): UseChatReturn => {
 	return {
 		input,
 		setInput,
-		messages,
+		messages: renderedMessages,
 		setMessages: (msgs: UIMessage[]) => chat.setMessages(msgs),
 		status: status as ChatStatus,
 		isLoading: status === "submitted" || status === "streaming",
