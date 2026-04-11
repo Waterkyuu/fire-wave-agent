@@ -17,10 +17,10 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { BarChart3, FileSpreadsheet, Monitor } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { memo, useMemo } from "react";
+import ChartPanel from "./chart-panel";
+import DatasetPanel from "./dataset-panel";
+import FileInfoPanel from "./file-info-panel";
 import { VncViewer } from "./vnc-panel";
-import ChartPanel from "./workspace/chart-panel";
-import DatasetPanel from "./workspace/dataset-panel";
-import FileInfoPanel from "./workspace/file-info-panel";
 
 const WorkspacePanel = () => {
 	const t = useTranslations("chat");
