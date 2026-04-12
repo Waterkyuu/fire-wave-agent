@@ -40,6 +40,9 @@ const FAST_MODEL = process.env.GLM_FAST_MODEL ?? "glm-4.5-x";
 const parsePlanFromText = (text: string): PipelinePlan => {
 	const jsonMatch = text.match(/\{[\s\S]*"steps"[\s\S]*\}/);
 	if (!jsonMatch) {
+		if (text.includes("{") && text.includes('"steps"')) {
+			return { steps: [], reasoning: "Failed to parse plan JSON" };
+		}
 		return {
 			steps: [],
 			reasoning: "Could not parse plan from orchestrator response",

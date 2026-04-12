@@ -39,7 +39,7 @@ describe("parsePlanFromText", () => {
 	});
 
 	it("returns empty steps when JSON is malformed", () => {
-		const result = parsePlanFromText('{"steps": [broken json}');
+		const result = parsePlanFromText('{"steps": [broken json');
 		expect(result.steps).toEqual([]);
 		expect(result.reasoning).toBe("Failed to parse plan JSON");
 	});
