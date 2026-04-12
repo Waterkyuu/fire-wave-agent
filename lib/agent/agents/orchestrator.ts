@@ -8,7 +8,7 @@ const ORCHESTRATOR_PROMPT = `You are a pipeline planner for a data analysis syst
 Available stages:
 - data: Read files, clean data, handle missing values, merge datasets, compute summary statistics
 - chart: Generate visualizations (line, bar, scatter, pie, heatmap, etc.) from cleaned data
-- report: Write analysis reports or documents in Markdown/Typst incorporating data insights and charts
+- report: Write analysis reports or documents or notes in Typst incorporating data insights and charts 
 
 Rules:
 - "data" must come before "chart" if charts reference data
@@ -52,7 +52,7 @@ const parsePlanFromText = (text: string): PipelinePlan => {
 			return { steps: [], reasoning: "Invalid plan: steps is not an array" };
 		}
 
-		const validSteps = ["data", "chart", "report"] as const;
+		const validSteps = ["data", "chart", "report"];
 		parsed.steps = parsed.steps.filter((s: string) =>
 			validSteps.includes(s as "data" | "chart" | "report"),
 		) as PipelinePlan["steps"];
@@ -80,10 +80,9 @@ const runOrchestrator = async (
 		model: zhipu(FAST_MODEL),
 		system: ORCHESTRATOR_PROMPT,
 		messages: [{ role: "user", content: userMessage }],
-		maxOutputTokens: 512,
 	});
 
 	return parsePlanFromText(result.text);
 };
 
-export { runOrchestrator, ORCHESTRATOR_PROMPT };
+export { parsePlanFromText, runOrchestrator, ORCHESTRATOR_PROMPT };
