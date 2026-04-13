@@ -1,6 +1,6 @@
-# Fire Wave Agent
+# Refract.ai
 
-<video src="./videos/introduction.mp4" controls style="max-width:100%; border-radius:8px;"></video>
+Now I'm working on feat/general branch to build multi-agent
 
 [English](./README.md) | [中文](./README-ZH.md)
 
