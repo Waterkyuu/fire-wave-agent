@@ -1,5 +1,7 @@
 import type { PipelineStreamEvent } from "@/lib/agent/agents/types";
 import { executePipeline } from "@/lib/agent/pipeline/executor";
+import { buildChatSystemPrompt } from "@/lib/agent/prompts";
+import { createChatTools } from "@/lib/agent/tools";
 import { readFileRecord } from "@/lib/file-store";
 import type { FileRecord } from "@/types";
 import {
@@ -10,9 +12,6 @@ import {
 } from "ai";
 import { type NextRequest, NextResponse } from "next/server";
 import { zhipu } from "zhipu-ai-provider";
-
-import { buildChatSystemPrompt } from "@/lib/agent/prompts";
-import { createChatTools } from "@/lib/agent/tools";
 
 type ChatRequestBody = {
 	fileIds?: string[];

@@ -84,8 +84,8 @@ const executeStep = async (
 	onDelta: (content: string) => void,
 ): Promise<string> => {
 	const result = await streamText({
-		model: zhipu(MAIN_MODEL),
 		system: agentSystemPrompt,
+		model: zhipu(MAIN_MODEL),
 		messages: [{ role: "user", content: stepPrompt }],
 		tools: agentTools,
 		stopWhen: stepCountIs(agentMaxSteps),
