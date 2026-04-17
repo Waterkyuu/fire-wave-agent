@@ -546,11 +546,13 @@ const usePipelineChat = (
 			jotaiStore.set(clearToolEventsAtom);
 			jotaiStore.set(resetPipelineAtom);
 			jotaiStore.set(agentStatusAtom, "thinking");
+			setPipelineStatus("submitted");
 			setPipelineMessages([]);
 			setPipelineError(undefined);
 
 			const userMessage: UIMessage = {
 				id: crypto.randomUUID(),
+				metadata: opts?.metadata,
 				role: "user",
 				parts: [{ type: "text", text }],
 			};
@@ -590,6 +592,7 @@ const usePipelineChat = (
 			}
 
 			jotaiStore.set(agentStatusAtom, "thinking");
+			setPipelineStatus("ready");
 			setPipelineMessages([]);
 
 			await chat.sendMessage(

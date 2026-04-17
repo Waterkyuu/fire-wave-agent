@@ -60,7 +60,7 @@ const UserMessage = memo(
 					)}
 				</div>
 
-				<div className="mt-1 flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-white">
+				<div className="mt-1 flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-white md:size-8">
 					<img
 						src="/preset/avatar.webp"
 						alt="User avatar"
