@@ -23,6 +23,13 @@ type AssistantMessageProps = {
 };
 
 const MESSAGE_COLLAPSE_TEXT_LIMIT = 1800;
+const SANDBOX_LOCAL_PATH_PREFIXES = ["/home/user/", "/mnt/data/"];
+
+const isSandboxLocalPath = (value?: string | null) =>
+	Boolean(
+		value &&
+			SANDBOX_LOCAL_PATH_PREFIXES.some((prefix) => value.startsWith(prefix)),
+	);
 
 const ReasoningBlock = memo(({ text }: { text: string }) => {
 	const t = useTranslations("message");
@@ -188,6 +195,42 @@ const TextBlock = memo(({ text }: { text: string }) => {
 									<table {...props}>{children}</table>
 								</div>
 							),
+							a: ({ children, href, ...props }) => {
+								const stringHref = typeof href === "string" ? href : undefined;
+
+								if (isSandboxLocalPath(stringHref)) {
+									return (
+										<code className="break-all rounded bg-background/70 px-1 py-0.5 text-[0.85em]">
+											{stringHref}
+										</code>
+									);
+								}
+
+								return (
+									<a {...props} href={stringHref}>
+										{children}
+									</a>
+								);
+							},
+							img: ({ alt, src }) => {
+								const stringSrc = typeof src === "string" ? src : undefined;
+
+								if (isSandboxLocalPath(stringSrc)) {
+									return (
+										<code className="break-all rounded bg-background/70 px-1 py-0.5 text-[0.85em]">
+											{alt ? `${alt}: ${stringSrc}` : stringSrc}
+										</code>
+									);
+								}
+
+								return (
+									<img
+										alt={alt ?? ""}
+										className="max-w-full rounded-lg"
+										src={stringSrc}
+									/>
+								);
+							},
 						}}
 					>
 						{deferredText}
