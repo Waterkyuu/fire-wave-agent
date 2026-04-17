@@ -45,9 +45,11 @@ export {
 	FileRecordSchema,
 	MergeFileResponseSchema,
 	UploadedChunksSchema,
-	type DatasetPreviewRow,
-	type DatasetPreview,
-	type FileRecord,
-	type MergeFileResponse,
-	type UploadedChunks,
+};
+export type {
+	DatasetPreviewRow,
+	DatasetPreview,
+	FileRecord,
+	MergeFileResponse,
+	UploadedChunks,
 };

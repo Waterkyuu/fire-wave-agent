@@ -131,8 +131,6 @@ const getMessages = async (
 };
 
 export {
-	type SessionRow,
-	type MessageRow,
 	createSession,
 	getAllSessions,
 	getSession,
@@ -142,3 +140,4 @@ export {
 	saveMessages,
 	getMessages,
 };
+export type { SessionRow, MessageRow };

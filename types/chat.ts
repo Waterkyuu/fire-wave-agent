@@ -43,13 +43,12 @@ const SessionsSchema = z.array(SessionItemSchema);
 type SessionItem = z.infer<typeof SessionItemSchema>;
 type Sessions = SessionItem[];
 
-export {
-	SessionItemSchema,
-	SessionsSchema,
-	type AgentStatus,
-	type ChatAttachment,
-	type ChatMessageMetadata,
-	type ToolCallEvent,
-	type SessionItem,
-	type Sessions,
+export { SessionItemSchema, SessionsSchema };
+export type {
+	AgentStatus,
+	ChatAttachment,
+	ChatMessageMetadata,
+	ToolCallEvent,
+	SessionItem,
+	Sessions,
 };

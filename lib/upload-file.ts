@@ -312,4 +312,5 @@ const cancelUpload = async (filename: string): Promise<void> => {
 	}
 };
 
-export { cancelUpload, uploadFiles, uploadFile, type UploadResult };
+export { cancelUpload, uploadFiles, uploadFile };
+export type { UploadResult };
