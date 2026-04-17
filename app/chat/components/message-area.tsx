@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import type { ChatAttachment } from "@/types/chat";
 import type { UIMessage } from "ai";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, LoaderCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { memo, useEffect, useRef, useState } from "react";
 import ChatHistorySkeleton from "./chat-history-skeleton";
@@ -13,6 +13,7 @@ type MessageAreaProps = {
 	messages: UIMessage[];
 	thinkingTime: number | null;
 	className?: string;
+	isLoading?: boolean;
 	onSelectAttachment?: (attachment: ChatAttachment) => void;
 	onShowVnc?: () => void;
 	isHistoryLoading?: boolean;
@@ -24,6 +25,7 @@ const MessageArea = ({
 	messages,
 	thinkingTime,
 	className,
+	isLoading = false,
 	onSelectAttachment,
 	onShowVnc,
 	isHistoryLoading = false,
@@ -97,7 +99,7 @@ const MessageArea = ({
 			<div
 				ref={scrollContainerRef}
 				data-testid="message-area-scroll-container"
-				className="custom-scrollbar flex h-full w-full flex-col overflow-y-auto px-2 py-4"
+				className="custom-scrollbar flex h-full w-full flex-col overflow-y-auto overflow-x-hidden px-2 py-4"
 				onScroll={handleScroll}
 			>
 				{isHistoryLoading && <ChatHistorySkeleton className="px-2 py-0" />}
@@ -121,6 +123,31 @@ const MessageArea = ({
 							onShowVnc={onShowVnc}
 						/>
 					))}
+
+				{!isHistoryLoading && isLoading && (
+					<div
+						data-testid="message-area-loading"
+						className="flex justify-start gap-3 px-4 py-3"
+					>
+						<div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full border bg-white">
+							<img
+								src="/logo.svg"
+								alt="Assistant avatar"
+								className="size-4 object-contain"
+							/>
+						</div>
+						<div className="min-w-0 max-w-[min(80%,42rem)] rounded-2xl bg-muted px-4 py-3">
+							<div className="flex items-center gap-2 text-muted-foreground text-xs sm:text-sm">
+								<LoaderCircle className="size-4 animate-spin" />
+								<div className="flex items-center gap-1">
+									<span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current [animation-delay:0ms]" />
+									<span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current [animation-delay:150ms]" />
+									<span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current [animation-delay:300ms]" />
+								</div>
+							</div>
+						</div>
+					</div>
+				)}
 			</div>
 			{messages.length > 0 && !isAutoScrollEnabled && (
 				<div className="pointer-events-none absolute right-4 bottom-4">

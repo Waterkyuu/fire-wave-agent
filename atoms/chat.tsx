@@ -9,6 +9,8 @@ import { atom } from "jotai";
 
 const firstUserInputAtom = atom<string>("");
 
+const pendingHomePromptAtom = atom<string>("");
+
 const pendingHomeUploadsAtom = atom<ChatAttachment[]>([]);
 
 const vncUrlAtom = atom<string>("");
@@ -75,6 +77,7 @@ const showTypstWorkspaceAtom = atom(null, (_get, set, content: string) => {
 
 export {
 	firstUserInputAtom,
+	pendingHomePromptAtom,
 	pendingHomeUploadsAtom,
 	vncUrlAtom,
 	workspaceViewAtom,

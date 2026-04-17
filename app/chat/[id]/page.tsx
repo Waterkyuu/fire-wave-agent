@@ -3,6 +3,7 @@
 import jotaiStore from "@/atoms";
 import {
 	firstUserInputAtom,
+	pendingHomePromptAtom,
 	pendingHomeUploadsAtom,
 	showDatasetWorkspaceAtom,
 	showFileWorkspaceAtom,
@@ -36,8 +37,8 @@ import { useAtomValue } from "jotai";
 import { Monitor } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
-import DebugPanel from "../components/debug-panel";
 import MessageArea from "../components/message-area";
+import StepPanel from "../components/step-panel";
 import WorkspacePanel from "../components/workspace-panel";
 
 type ChatPageProps = {
@@ -85,7 +86,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 		});
 
 	const hasPendingFirstInput =
-		Boolean(jotaiStore.get(firstUserInputAtom)) || firstInputSentRef.current;
+		Boolean(jotaiStore.get(pendingHomePromptAtom)) || firstInputSentRef.current;
 	const isHistoryHydrating =
 		!!sessionId &&
 		historyLoading &&
@@ -96,10 +97,11 @@ const ChatPage = ({ params }: ChatPageProps) => {
 		if (firstInputSentRef.current) return;
 		if (!sessionId) return;
 
-		const firstInput = jotaiStore.get(firstUserInputAtom);
+		const firstInput = jotaiStore.get(pendingHomePromptAtom);
 		const pendingHomeUploads = jotaiStore.get(pendingHomeUploadsAtom);
 		if (firstInput) {
 			firstInputSentRef.current = true;
+			jotaiStore.set(pendingHomePromptAtom, "");
 			jotaiStore.set(firstUserInputAtom, "");
 			jotaiStore.set(pendingHomeUploadsAtom, []);
 
@@ -194,12 +196,13 @@ const ChatPage = ({ params }: ChatPageProps) => {
 					<MessageArea
 						messages={messages}
 						thinkingTime={thinkingTime}
+						isLoading={isLoading}
 						isHistoryLoading={isHistoryHydrating}
 						className="min-h-0 flex-1"
 						onSelectAttachment={handleSelectAttachment}
 						onShowVnc={handleShowVnc}
 					/>
-					<DebugPanel />
+					<StepPanel />
 					<div className="flex w-full shrink-0 items-center justify-center border-t px-4 py-2">
 						<InputField
 							input={input}
@@ -253,11 +256,12 @@ const ChatPage = ({ params }: ChatPageProps) => {
 							<MessageArea
 								messages={messages}
 								thinkingTime={thinkingTime}
+								isLoading={isLoading}
 								isHistoryLoading={isHistoryHydrating}
 								className="min-h-0 flex-1"
 								onSelectAttachment={handleSelectAttachment}
 							/>
-							<DebugPanel />
+							<StepPanel />
 							<div className="flex w-full shrink-0 items-center justify-center px-4 py-2">
 								<InputField
 									input={input}

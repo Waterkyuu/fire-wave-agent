@@ -1,7 +1,11 @@
 "use client";
 
 import { firstUserInputAtom, userAtom } from "@/atoms";
-import { pendingHomeUploadsAtom, showDatasetWorkspaceAtom } from "@/atoms/chat";
+import {
+	pendingHomePromptAtom,
+	pendingHomeUploadsAtom,
+	showDatasetWorkspaceAtom,
+} from "@/atoms/chat";
 import loginDialogAtom from "@/atoms/login-dialog";
 import FileCard from "@/components/share/file-card";
 import {
@@ -25,7 +29,7 @@ import { useAtom, useSetAtom } from "jotai";
 import { ArrowUp, Plus, Square, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "next/navigation";
-import { memo, useRef, useState } from "react";
+import { memo, startTransition, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type AppendFn = (
@@ -88,6 +92,7 @@ const InputField = ({
 	const [firstUserInput, setFirstUserInput] = useAtom(firstUserInputAtom);
 	const [user] = useAtom(userAtom);
 	const [, setIsLoginDialogOpen] = useAtom(loginDialogAtom);
+	const setPendingHomePrompt = useSetAtom(pendingHomePromptAtom);
 	const setPendingHomeUploads = useSetAtom(pendingHomeUploadsAtom);
 	const showDatasetWorkspace = useSetAtom(showDatasetWorkspaceAtom);
 
@@ -96,6 +101,7 @@ const InputField = ({
 	const [uploadingFiles, setUploadingFiles] = useState<Record<string, number>>(
 		{},
 	);
+	const [isHomeSubmitting, setIsHomeSubmitting] = useState(false);
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
 		const value = e.target.value;
@@ -266,14 +272,28 @@ const InputField = ({
 			let newInput = "";
 
 			if (firstUserInput && isHome) {
+				if (isHomeSubmitting) {
+					return;
+				}
+
 				if (!user?.id) {
 					setIsLoginDialogOpen(true);
 					return;
 				}
 
+				const trimmedInput = firstUserInput.trim();
+				if (!trimmedInput) {
+					return;
+				}
+
+				setPendingHomePrompt(trimmedInput);
 				setPendingHomeUploads(getAttachmentMetadata());
+				setIsHomeSubmitting(true);
+
 				const sessionID = generateId();
-				router.push(`/chat/${sessionID}`);
+				startTransition(() => {
+					router.push(`/chat/${sessionID}`);
+				});
 				return;
 			}
 			newInput = input;
@@ -407,6 +427,8 @@ const InputField = ({
 						className="rounded-full"
 						size="icon-xs"
 						disabled={
+							isHomeSubmitting ||
+							isLoading ||
 							Object.keys(uploadingFiles).length > 0 ||
 							!(isHome ? firstUserInput : input).trim()
 						}
