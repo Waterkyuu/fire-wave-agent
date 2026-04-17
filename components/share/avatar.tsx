@@ -39,9 +39,9 @@ const Avatar = ({ mode = "default", className = "" }: AvatarProps) => {
 	// Get user avatar and email
 	if (mode === "online") {
 		return (
-			<div className={cn("relative size-6 rounded-full md:size-8", className)}>
+			<div className={cn("relative size-8 rounded-full md:size-10", className)}>
 				<img
-					src="https://img.daisyui.com/images/profile/demo/yellingwoman@192.webp"
+					src="/preset/avatar.webp"
 					alt="User avatar"
 					className="rounded-full"
 				/>
@@ -52,9 +52,9 @@ const Avatar = ({ mode = "default", className = "" }: AvatarProps) => {
 
 	if (mode === "offline") {
 		return (
-			<div className={cn("relative size-6 rounded-full md:size-8", className)}>
+			<div className={cn("relative size-8 rounded-full md:size-10", className)}>
 				<img
-					src="https://img.daisyui.com/images/profile/demo/yellingwoman@192.webp" // Avatar
+					src="/preset/avatar.webp" // Avatar
 					alt="User avatar"
 					className="rounded-full"
 				/>
@@ -69,10 +69,10 @@ const Avatar = ({ mode = "default", className = "" }: AvatarProps) => {
 			<DropdownMenuTrigger asChild>
 				<button
 					type="button"
-					className="relative size-6 cursor-pointer rounded-full md:size-8"
+					className="relative size-8 cursor-pointer rounded-full md:size-10"
 				>
 					<img
-						src="https://img.daisyui.com/images/profile/demo/yellingwoman@192.webp"
+						src="/preset/avatar.webp"
 						alt="User avatar"
 						className="rounded-full"
 					/>

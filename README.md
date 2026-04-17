@@ -1,8 +1,19 @@
-# Fire Wave Agent
 
-<video src="./videos/introduction.mp4" controls style="max-width:100%; border-radius:8px;"></video>
+# Refract - 24/7 Agent Helper
+<p align="center">
+<a href="./README.md">English</a> | <a href="./README-ZH.md">中文</a>
+</p>
 
-[English](./README.md) | [中文](./README-ZH.md)
+<p align="center">
+  <img src="public/logo.svg" alt="Fire Wave Agent Logo" width="120" />
+</p>
+
+<p align="center">
+<a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+<a href="https://twitter.com/Refract.ai"><img src="https://img.shields.io/twitter/follow/Refract.ai?style=social" alt="Twitter Follow"></a>
+</p>
+
+
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Waterkyuu/agent-dashboard&env=ZHIPU_API_KEY,E2B_API_KEY,PUBLIC_NEON_AUTH_URL,NEON_DATA_PUBLIC_API_URL,CLOUDFLARE_ACCOUNT_ID,R2_ACCESS_KEY_ID,R2_SECRET_ACCESS_KEY&envDescription=API%20keys%20and%20service%20credentials%20required%20by%20Fire%20Wave%20Agent&project-name=fire-wave-agent&repository-name=agent-dashboard)
 
