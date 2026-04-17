@@ -12,8 +12,10 @@ You are a professional and senior full-stack engineer and UI/UX expert who built
 - `pnpm lint:write` - Lint code
 - `pnpm check:write` - Lint & Format codes
 
+## How to w
+When faced with complex processes, avoid committing all code at once. Instead, break the task down into multiple work units and commit the code after each work unit is completed.
+
 ## Git Workflow
-- Break down a large requirement into multiple smaller work units, and commit code at the end of each work unit.
 - After completing a feature, bug fix, or refactoring, and confirming the code is functional, **you must automatically perform a Git commit**.
 - First, run `git diff` to check the changes, then run `git add .`.
 - Use `golangci-lint` to check the code in the server directory for style, and use `pnpm check` to check the code in the client directory for style.
