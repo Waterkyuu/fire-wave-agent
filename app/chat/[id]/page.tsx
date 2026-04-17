@@ -125,7 +125,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 				});
 			}
 
-			void append(firstInput, {
+			append(firstInput, {
 				body: {
 					fileIds: pendingHomeUploads.map((file) => file.fileId),
 				},
@@ -137,6 +137,22 @@ const ChatPage = ({ params }: ChatPageProps) => {
 			});
 		}
 	}, [sessionId, append, createSession]);
+
+	const handleAppend = useCallback(
+		async (
+			msg: { role: string; content: string },
+			options?: {
+				metadata?: Record<string, unknown>;
+				requestBody?: Record<string, unknown>;
+			},
+		) => {
+			await append(msg.content ?? "", {
+				body: options?.requestBody,
+				metadata: options?.metadata,
+			});
+		},
+		[append],
+	);
 
 	const handleShowVnc = useCallback(() => {
 		if (isMobile) {
@@ -213,18 +229,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 						<InputField
 							input={input}
 							setInput={setInput}
-							append={async (msg, options) => {
-								const requestOptions = options as
-									| {
-											metadata?: Record<string, unknown>;
-											requestBody?: Record<string, unknown>;
-									  }
-									| undefined;
-								await append(msg.content ?? "", {
-									body: requestOptions?.requestBody,
-									metadata: requestOptions?.metadata,
-								});
-							}}
+							append={handleAppend}
 							isLoading={showPendingStreamState}
 							onOpenWorkspace={() => setVncSheetOpen(true)}
 							stop={stop}
@@ -272,18 +277,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 								<InputField
 									input={input}
 									setInput={setInput}
-									append={async (msg, options) => {
-										const requestOptions = options as
-											| {
-													metadata?: Record<string, unknown>;
-													requestBody?: Record<string, unknown>;
-											  }
-											| undefined;
-										await append(msg.content ?? "", {
-											body: requestOptions?.requestBody,
-											metadata: requestOptions?.metadata,
-										});
-									}}
+									append={handleAppend}
 									isLoading={showPendingStreamState}
 									onOpenWorkspace={handleShowVnc}
 									stop={stop}
