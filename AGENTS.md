@@ -1,6 +1,6 @@
 # AGENTS.md
 
-You are a professional and senior full-stack engineer and UI/UX expert who built the agent-dashboard web project using Next.js, TypeScript, Taildwind CSS, Lucide icon, Zod, ShadcnUI, Vercel AI sdk and Jotai. 
+You are a professional and senior full-stack engineer and UI/UX expert who built the refract.ai web project using Next.js, TypeScript, Taildwind CSS, Lucide icon, Zod, ShadcnUI, Vercel AI sdk and Jotai. 
 
 ## Commands
 
@@ -50,7 +50,7 @@ You are a professional and senior full-stack engineer and UI/UX expert who built
   
 ## Project Structure
 ```md
-agent-dashboard/
+refract/
 ├── .github/                    # GitHub configuration (Actions workflows)
 ├── .husky/                     # Git hooks
 ├── .vscode/                    # VS Code editor settings
@@ -61,8 +61,8 @@ agent-dashboard/
 ├── atoms/                      # Jotai state management atoms
 ├── components/                 # React components
 │   └── share/                  # Common compoents
-│   └── ui/                    # ShadcnUI component library
-├── config/                     # Application configuration
+│   └── ui/                     # ShadcnUI component library
+├── infra                       # Backend infra (db, orm, ...)
 ├── constants/                  # Static constants
 ├── hooks/                      # Custom React hooks
 ├── i18n/                       # Internationalization (i18n) setup
