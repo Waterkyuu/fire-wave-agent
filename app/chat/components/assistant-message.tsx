@@ -13,7 +13,7 @@ import {
 	XCircle,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { memo, useDeferredValue, useMemo, useState } from "react";
+import { memo, useDeferredValue, useEffect, useMemo, useState } from "react";
 import Markdown from "react-markdown";
 
 type AssistantMessageProps = {
@@ -199,6 +199,10 @@ const AssistantMessage = memo(
 	({ message, thinkingTime, onShowVnc }: AssistantMessageProps) => {
 		const t = useTranslations("message");
 		const [isExpanded, setIsExpanded] = useState(false);
+
+		useEffect(() => {
+			setIsExpanded(false);
+		}, [message.id]);
 
 		const renderableParts = useMemo(
 			() =>
