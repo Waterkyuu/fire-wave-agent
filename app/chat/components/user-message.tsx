@@ -3,7 +3,6 @@
 import FileCard from "@/components/share/file-card";
 import type { ChatAttachment, ChatMessageMetadata } from "@/types/chat";
 import type { UIMessage } from "ai";
-import { User } from "lucide-react";
 import { memo, useMemo } from "react";
 
 type UserMessageProps = {
@@ -61,8 +60,12 @@ const UserMessage = memo(
 					)}
 				</div>
 
-				<div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted">
-					<User className="size-3.5 text-muted-foreground" />
+				<div className="mt-1 flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-white">
+					<img
+						src="/preset/avatar.webp"
+						alt="User avatar"
+						className="size-full object-cover"
+					/>
 				</div>
 			</div>
 		);

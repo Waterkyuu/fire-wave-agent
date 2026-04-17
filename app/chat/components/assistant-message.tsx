@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { UIMessage } from "ai";
 import {
-	Bot,
 	CheckCircle2,
 	ChevronDown,
 	ChevronUp,
@@ -212,8 +211,12 @@ const AssistantMessage = memo(
 
 		return (
 			<div className="flex justify-start gap-3 px-4 py-3">
-				<div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-					<Bot className="size-3.5" />
+				<div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full border bg-white">
+					<img
+						src="/logo.svg"
+						alt="Assistant avatar"
+						className="size-4 object-contain"
+					/>
 				</div>
 
 				<div className="min-w-0 max-w-[min(80%,42rem)] space-y-1">
