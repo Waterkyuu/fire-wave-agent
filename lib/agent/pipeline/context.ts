@@ -5,6 +5,8 @@ import type {
 	PipelineStep,
 } from "@/types/agent";
 
+const getSandboxFilePath = (filename: string) => `/home/user/data/${filename}`;
+
 const formatAttachedFiles = (attachedFiles: FileRecord[]) => {
 	if (attachedFiles.length === 0) {
 		return "- none";
@@ -12,8 +14,8 @@ const formatAttachedFiles = (attachedFiles: FileRecord[]) => {
 
 	return attachedFiles
 		.map(
-			({ filename, kind, objectKey }) =>
-				`- ${filename} -> ${kind ?? "document"} -> ${objectKey ?? "unresolved"}`,
+			({ filename, kind }) =>
+				`- ${filename} -> ${kind ?? "document"} -> sandbox path: ${getSandboxFilePath(filename)}`,
 		)
 		.join("\n");
 };
@@ -27,6 +29,7 @@ const buildStepPrompt = (step: PipelineStep, ctx: PipelineContext): string => {
 			return `${base}
 ## Attached Files
 Files are synced to /home/user/data/ in the code sandbox.
+Only use the exact sandbox paths listed below. Do NOT prepend object keys, file IDs, or storage prefixes.
 ${formatAttachedFiles(ctx.attachedFiles)}
 
 ## Goal

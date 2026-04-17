@@ -1,6 +1,8 @@
 import { getSkillList } from "@/lib/agent/skills";
 import type { FileRecord } from "@/types";
 
+const getSandboxFilePath = (filename: string) => `/home/user/data/${filename}`;
+
 const formatAttachedFiles = (attachedFiles: FileRecord[]) => {
 	if (attachedFiles.length === 0) {
 		return "- none";
@@ -8,8 +10,8 @@ const formatAttachedFiles = (attachedFiles: FileRecord[]) => {
 
 	return attachedFiles
 		.map(
-			({ filename, kind, objectKey }) =>
-				`- ${filename} -> ${kind ?? "document"} -> ${objectKey ?? "unresolved"}`,
+			({ filename, kind }) =>
+				`- ${filename} -> ${kind ?? "document"} -> sandbox path: ${getSandboxFilePath(filename)}`,
 		)
 		.join("\n");
 };
@@ -46,6 +48,7 @@ ATTACHED FILES:
 ${formatAttachedFiles(attachedFiles)}
 
 If attached files exist, they will be synced into the code interpreter at /home/user/data before Python runs.
+Use only the explicit sandbox paths shown above. Never construct a path from object keys or file IDs.
 Use pandas to load them from that folder when the user asks for analysis, charting, cleaning, or exporting a new CSV.`;
 
 export { AGENT_SYSTEM_PROMPT, buildChatSystemPrompt };
