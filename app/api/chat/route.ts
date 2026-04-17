@@ -1,6 +1,6 @@
 import { executePipeline } from "@/lib/agent/pipeline/executor";
-import { buildChatSystemPrompt } from "@/lib/agent/prompts";
-import { createChatTools } from "@/lib/agent/tools";
+import { buildChatSystemPrompt } from "@/lib/agent/single-agent/prompt";
+import { createChatTools } from "@/lib/agent/single-agent/tools";
 import { createSandboxSession } from "@/lib/e2b";
 import { readFileRecord } from "@/lib/file-store";
 import type { FileRecord } from "@/types";
