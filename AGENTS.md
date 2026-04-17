@@ -46,6 +46,7 @@ You are a professional and senior full-stack engineer and UI/UX expert who built
 - Use transition-colors duration-200 for Interaction & Cursor
 - Responsive design needs to be considered.
 - The overall style leans towards shadcnui, with white as the main color and black as the secondary color.
+- Add loading interaction and button disabling for each data request
   
 ## Project Structure
 ```md
