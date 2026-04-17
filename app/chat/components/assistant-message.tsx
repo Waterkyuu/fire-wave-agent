@@ -222,7 +222,7 @@ const AssistantMessage = memo(
 
 		return (
 			<div className="flex justify-start gap-3 px-4 py-3">
-				<div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full border bg-white">
+				<div className="mt-1 flex size-6 shrink-0 items-center justify-center rounded-full border bg-white md:size-8">
 					<img
 						src="/logo.svg"
 						alt="Assistant avatar"
@@ -266,6 +266,18 @@ const AssistantMessage = memo(
 									onClick={() => setIsExpanded(true)}
 								>
 									{t("showMore")}
+								</button>
+							</div>
+						)}
+
+						{shouldCollapse && isExpanded && (
+							<div className="flex justify-end px-2 pt-2">
+								<button
+									type="button"
+									className="rounded-full border bg-background px-3 py-1.5 font-medium text-[10px] text-foreground shadow-sm transition-colors duration-200 hover:bg-muted sm:text-xs"
+									onClick={() => setIsExpanded(false)}
+								>
+									{t("showLess")}
 								</button>
 							</div>
 						)}
