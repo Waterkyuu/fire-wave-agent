@@ -47,6 +47,7 @@ type InputFieldProps = {
 	className?: string;
 	size?: "default" | "md" | "sm";
 	append?: AppendFn;
+	externalAttachments?: ChatAttachment[];
 	isLoading?: boolean;
 	onOpenWorkspace?: () => void;
 	stop?: () => void;
@@ -76,6 +77,7 @@ const InputField = ({
 	input = "",
 	setInput,
 	append,
+	externalAttachments = [],
 	isLoading = false,
 	onOpenWorkspace,
 	stop = () => {},
@@ -267,6 +269,61 @@ const InputField = ({
 			};
 		});
 
+	const displayAttachments =
+		attachments.length > 0
+			? attachments.map((file) => {
+					const ext = file.name.split(".").pop()?.toUpperCase() || "FILE";
+					const progress = uploadingFiles[file.name];
+					const isFileUploading = progress !== undefined;
+					const uploadedFile = uploadedFiles.find(
+						(item) => item.filename === file.name,
+					);
+					const isPreviewable = Boolean(uploadedFile?.preview);
+
+					return {
+						filename: file.name,
+						fileSize: file.size,
+						extension: ext,
+						isPreviewable,
+						progress: isFileUploading ? progress : undefined,
+						onClick: () => handlePreviewDataset(file.name),
+						action: (
+							<button
+								type="button"
+								onClick={(event) => {
+									event.stopPropagation();
+									void handleRemoveAttachment(
+										attachments.findIndex((item) => item === file),
+									);
+								}}
+								className="-right-2 -top-2 absolute hidden h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:text-red-500 group-hover:flex"
+							>
+								<X className="h-3 w-3" />
+							</button>
+						),
+					};
+				})
+			: externalAttachments.map((attachment) => ({
+					filename: attachment.filename,
+					fileSize: attachment.fileSize,
+					extension: attachment.extension,
+					isPreviewable: Boolean(attachment.preview),
+					progress: undefined,
+					onClick: () => {
+						if (!attachment.preview) {
+							return;
+						}
+
+						showDatasetWorkspace({
+							fileId: attachment.fileId,
+							filename: attachment.filename,
+							preview: attachment.preview,
+						});
+						onOpenWorkspace?.();
+					},
+					action: undefined,
+				}));
+
 	const handleSumit = async () => {
 		try {
 			let newInput = "";
@@ -332,37 +389,19 @@ const InputField = ({
 			)}
 		>
 			{/* Uploaded Files Display Area */}
-			{attachments.length > 0 && (
+			{displayAttachments.length > 0 && (
 				// Modification Points : Added w-full and justify-start to force filling and left-align, eliminating the possible centering phenomenon
 				<div className="flex w-full flex-wrap justify-start gap-3 px-4 pt-4 pb-1">
-					{attachments.map((file, index) => {
-						const ext = file.name.split(".").pop()?.toUpperCase() || "FILE";
-						const progress = uploadingFiles[file.name];
-						const isFileUploading = progress !== undefined;
-						const uploadedFile = uploadedFiles.find(
-							(item) => item.filename === file.name,
-						);
-						const isPreviewable = Boolean(uploadedFile?.preview);
+					{displayAttachments.map((attachment) => {
 						return (
-							<div key={index} onClick={() => handlePreviewDataset(file.name)}>
+							<div key={attachment.filename} onClick={attachment.onClick}>
 								<FileCard
-									action={
-										<button
-											type="button"
-											onClick={(event) => {
-												event.stopPropagation();
-												void handleRemoveAttachment(index);
-											}}
-											className="-right-2 -top-2 absolute hidden h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:text-red-500 group-hover:flex"
-										>
-											<X className="h-3 w-3" />
-										</button>
-									}
-									extension={ext}
-									fileName={file.name}
-									fileSize={file.size}
-									isClickable={isPreviewable}
-									progress={isFileUploading ? progress : undefined}
+									action={attachment.action}
+									extension={attachment.extension}
+									fileName={attachment.filename}
+									fileSize={attachment.fileSize}
+									isClickable={attachment.isPreviewable}
+									progress={attachment.progress}
 								/>
 							</div>
 						);

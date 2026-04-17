@@ -48,6 +48,11 @@ type ChatPageProps = {
 const ChatPage = ({ params }: ChatPageProps) => {
 	const [sessionId, setSessionId] = useState<string>("");
 	const [vncSheetOpen, setVncSheetOpen] = useState(false);
+	const [isInitialPipelinePending, setIsInitialPipelinePending] =
+		useState(false);
+	const [pendingInputAttachments, setPendingInputAttachments] = useState<
+		ChatAttachment[]
+	>([]);
 	const firstInputSentRef = useRef(false);
 	const sessionCreatedRef = useRef(false);
 	const isMobile = useIsMobile();
@@ -101,6 +106,8 @@ const ChatPage = ({ params }: ChatPageProps) => {
 		const pendingHomeUploads = jotaiStore.get(pendingHomeUploadsAtom);
 		if (firstInput) {
 			firstInputSentRef.current = true;
+			setIsInitialPipelinePending(true);
+			setPendingInputAttachments(pendingHomeUploads);
 			jotaiStore.set(pendingHomePromptAtom, "");
 			jotaiStore.set(firstUserInputAtom, "");
 			jotaiStore.set(pendingHomeUploadsAtom, []);
@@ -122,13 +129,16 @@ const ChatPage = ({ params }: ChatPageProps) => {
 				});
 			}
 
-			append(firstInput, {
+			void append(firstInput, {
 				body: {
 					fileIds: pendingHomeUploads.map((file) => file.fileId),
 				},
 				metadata: {
 					attachments: pendingHomeUploads,
 				},
+			}).finally(() => {
+				setIsInitialPipelinePending(false);
+				setPendingInputAttachments([]);
 			});
 		}
 	}, [sessionId, append, createSession]);
@@ -177,6 +187,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 		isMobile &&
 		hasWorkspaceContent &&
 		(hasToolCalls || Boolean(workspaceDataset));
+	const showPendingStreamState = isLoading || isInitialPipelinePending;
 
 	if (!sessionId) {
 		return (
@@ -196,7 +207,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 					<MessageArea
 						messages={messages}
 						thinkingTime={thinkingTime}
-						isLoading={isLoading}
+						isLoading={showPendingStreamState}
 						isHistoryLoading={isHistoryHydrating}
 						className="min-h-0 flex-1"
 						onSelectAttachment={handleSelectAttachment}
@@ -205,6 +216,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 					<StepPanel />
 					<div className="flex w-full shrink-0 items-center justify-center border-t px-4 py-2">
 						<InputField
+							externalAttachments={pendingInputAttachments}
 							input={input}
 							setInput={setInput}
 							append={async (msg, options) => {
@@ -219,7 +231,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 									metadata: requestOptions?.metadata,
 								});
 							}}
-							isLoading={isLoading}
+							isLoading={showPendingStreamState}
 							onOpenWorkspace={() => setVncSheetOpen(true)}
 							stop={stop}
 							size="md"
@@ -256,7 +268,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 							<MessageArea
 								messages={messages}
 								thinkingTime={thinkingTime}
-								isLoading={isLoading}
+								isLoading={showPendingStreamState}
 								isHistoryLoading={isHistoryHydrating}
 								className="min-h-0 flex-1"
 								onSelectAttachment={handleSelectAttachment}
@@ -264,6 +276,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 							<StepPanel />
 							<div className="flex w-full shrink-0 items-center justify-center px-4 py-2">
 								<InputField
+									externalAttachments={pendingInputAttachments}
 									input={input}
 									setInput={setInput}
 									append={async (msg, options) => {
@@ -278,7 +291,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 											metadata: requestOptions?.metadata,
 										});
 									}}
-									isLoading={isLoading}
+									isLoading={showPendingStreamState}
 									onOpenWorkspace={handleShowVnc}
 									stop={stop}
 								/>

@@ -90,6 +90,9 @@ const MessageArea = ({
 			(p) => typeof p.type === "string" && p.type.startsWith("tool-"),
 		),
 	);
+	const latestMessage = messages.at(-1);
+	const shouldShowLoading =
+		!isHistoryLoading && isLoading && latestMessage?.role !== "assistant";
 
 	return (
 		<div
@@ -124,7 +127,7 @@ const MessageArea = ({
 						/>
 					))}
 
-				{!isHistoryLoading && isLoading && (
+				{shouldShowLoading && (
 					<div
 						data-testid="message-area-loading"
 						className="flex justify-start gap-3 px-4 py-3"
