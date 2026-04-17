@@ -31,6 +31,7 @@ You are a professional and senior full-stack engineer and UI/UX expert who built
 - Avoid using `any`, use `unknown` when necessary.
 - Use arrow function to write typescript
 - Don't add emojis to my documents.
+- Shared business rules or path-building logic must have a single source of truth. If the same helper or string-building rule is needed in multiple files, extract it to a shared module instead of copying the same implementation.
 - Use destructuring assignment for object properties to improve code readability and reduce redundancy.
 - If the code is similar and repetitive, use array mapping instead of repeatedly writing similar code.
 - Whenever possible, place logic related to a component within the component's file, or encapsulate it and then import it into the component file.

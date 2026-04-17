@@ -1,24 +1,10 @@
+import { formatSandboxAttachedFiles } from "@/lib/agent/file-context";
 import type { FileRecord } from "@/types";
 import type {
 	PipelineContext,
 	PipelinePlan,
 	PipelineStep,
 } from "@/types/agent";
-
-const getSandboxFilePath = (filename: string) => `/home/user/data/${filename}`;
-
-const formatAttachedFiles = (attachedFiles: FileRecord[]) => {
-	if (attachedFiles.length === 0) {
-		return "- none";
-	}
-
-	return attachedFiles
-		.map(
-			({ filename, kind }) =>
-				`- ${filename} -> ${kind ?? "document"} -> sandbox path: ${getSandboxFilePath(filename)}`,
-		)
-		.join("\n");
-};
 
 // Build prompts for each step
 const buildStepPrompt = (step: PipelineStep, ctx: PipelineContext): string => {
@@ -30,7 +16,7 @@ const buildStepPrompt = (step: PipelineStep, ctx: PipelineContext): string => {
 ## Attached Files
 Files are synced to /home/user/data/ in the code sandbox.
 Only use the exact sandbox paths listed below. Do NOT prepend object keys, file IDs, or storage prefixes.
-${formatAttachedFiles(ctx.attachedFiles)}
+${formatSandboxAttachedFiles(ctx.attachedFiles)}
 
 ## Goal
 ${ctx.plan.dataGoal ?? "Read, inspect, clean, and summarize the data. Save cleaned data to /home/user/output/cleaned_data.csv"}`;

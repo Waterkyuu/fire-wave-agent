@@ -1,20 +1,6 @@
+import { formatSandboxAttachedFiles } from "@/lib/agent/file-context";
 import { getSkillList } from "@/lib/agent/skills";
 import type { FileRecord } from "@/types";
-
-const getSandboxFilePath = (filename: string) => `/home/user/data/${filename}`;
-
-const formatAttachedFiles = (attachedFiles: FileRecord[]) => {
-	if (attachedFiles.length === 0) {
-		return "- none";
-	}
-
-	return attachedFiles
-		.map(
-			({ filename, kind }) =>
-				`- ${filename} -> ${kind ?? "document"} -> sandbox path: ${getSandboxFilePath(filename)}`,
-		)
-		.join("\n");
-};
 
 const AGENT_SYSTEM_PROMPT = `You are an autonomous AI agent that helps users accomplish tasks using sandbox environments. You have access to two types of sandboxes:
 
@@ -45,7 +31,7 @@ ${getSkillList()}
 Use the loadSkill tool when you need detailed information about handling a specific type of request.
 
 ATTACHED FILES:
-${formatAttachedFiles(attachedFiles)}
+${formatSandboxAttachedFiles(attachedFiles)}
 
 If attached files exist, they will be synced into the code interpreter at /home/user/data before Python runs.
 Use only the explicit sandbox paths shown above. Never construct a path from object keys or file IDs.
