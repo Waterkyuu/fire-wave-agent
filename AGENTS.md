@@ -40,6 +40,7 @@ You are a professional and senior full-stack engineer and UI/UX expert who built
     isPreview && "md:grid-cols-2",
     )`
 - Don't write `export` before every function; just use a unified `export` at the end. For example export { xxx, xxx }
+- Separate runtime exports and type exports. When a file exports both values and types, prefer `export { foo, bar }` plus `export type { Foo, Bar }` instead of mixing them in one export block.
 - Unit tests are written in the same directory. Integration tests and end-to-end tests are written in the `tests` directory.
 
 ## UI/UX Design
