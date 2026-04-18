@@ -41,7 +41,7 @@ type StepExecutionResult = {
 	toolResults: StepToolResult[];
 };
 
-const MAIN_MODEL = process.env.GLM_MODEL ?? "glm-4.7";
+const MAIN_MODEL = process.env.GLM_MODEL ?? "glm-4.7-flash";
 const DEFAULT_CLEANED_DATA_PATH = "/home/user/output/cleaned_data.csv";
 
 const RelaxedDataOutputSchema = DataOutputSchema.omit({
@@ -285,6 +285,25 @@ const formatStepFailure = (error: Error, toolErrors: string[]) => {
 	return `${uniqueToolErrors.join("\n\n")}\n\n${error.message}`;
 };
 
+const firstDefined = <T>(...candidates: (T | undefined)[]): T =>
+	candidates.find((c): c is T => c !== undefined) as T;
+
+const firstNonEmpty = <T>(...candidates: (T[] | undefined)[]): T[] =>
+	candidates.find((c): c is T[] => Array.isArray(c) && c.length > 0) ?? [];
+
+/**
+ * Resolve a structured DataOutput from the raw result of the "data" pipeline step.
+ *
+ * Uses a three-tier fallback strategy per field:
+ *   1. Strict JSON parsed from LLM text → 2. Best-effort JSON → 3. Raw tool result fallback.
+ *
+ * @param stepResult - Raw execution result from the data step.
+ *   { text: "I cleaned the dataset...", toolErrors: [], toolResults: [{ toolName: "persistCodeFile", result: { artifact: {...} } }] }
+ *
+ * @returns Validated DataOutput object.
+ *   { filePath: "/home/user/output/cleaned_data.csv", summary: "Removed 12 null rows...", stats: "100 rows x 5 cols",
+ *     rowCount: 100, columns: ["name","age","city","score","date"], artifact: { kind: "dataset", filename: "cleaned_data.csv", ... } }
+ */
 const resolveDataOutput = (stepResult: StepExecutionResult): DataOutput => {
 	const textCandidates = [
 		stepResult.text,
@@ -299,47 +318,51 @@ const resolveDataOutput = (stepResult: StepExecutionResult): DataOutput => {
 		textCandidates,
 		BestEffortDataOutputSchema,
 	);
-	// Artifact resolution is intentionally defensive: final JSON, best-effort JSON, then raw tool output fallbacks.
+
+	const persistedArtifacts = extractArtifactsFromToolResults(
+		stepResult.toolResults,
+		"persistCodeFile",
+	);
+
 	const artifact =
 		parsedOutput?.artifact ??
 		bestEffortOutput?.artifact ??
-		extractArtifactsFromToolResults(
-			stepResult.toolResults,
-			"persistCodeFile",
-		).find((candidate) => candidate.kind === "dataset") ??
-		extractArtifactsFromToolResults(
-			stepResult.toolResults,
-			"persistCodeFile",
-		).at(-1);
+		persistedArtifacts.find((c) => c.kind === "dataset") ??
+		persistedArtifacts.at(-1);
 
 	if (!artifact) {
 		throw new Error("Data step did not persist the cleaned dataset.");
 	}
 
-	const fallbackColumns = artifact.preview?.columns ?? [];
-	const fallbackRowCount = artifact.preview?.totalRows ?? 0;
-	const columns =
-		parsedOutput?.columns && parsedOutput.columns.length > 0
-			? parsedOutput.columns
-			: bestEffortOutput?.columns && bestEffortOutput.columns.length > 0
-				? bestEffortOutput.columns
-				: fallbackColumns;
-	const rowCount =
-		parsedOutput?.rowCount ?? bestEffortOutput?.rowCount ?? fallbackRowCount;
-	const summary =
-		parsedOutput?.summary ??
-		bestEffortOutput?.summary ??
-		normalizeSummaryText(stepResult.text) ??
-		`Cleaned dataset persisted as ${artifact.filename}.`;
-	const filePath =
-		parsedOutput?.filePath ??
-		bestEffortOutput?.filePath ??
-		extractLikelyCsvPath(textCandidates) ??
-		DEFAULT_CLEANED_DATA_PATH;
-	const stats =
-		parsedOutput?.stats ??
-		bestEffortOutput?.stats ??
-		buildFallbackDataStats(rowCount, columns);
+	const columns = firstNonEmpty(
+		parsedOutput?.columns,
+		bestEffortOutput?.columns,
+		artifact.preview?.columns,
+		[],
+	);
+	const rowCount = firstDefined(
+		parsedOutput?.rowCount,
+		bestEffortOutput?.rowCount,
+		artifact.preview?.totalRows,
+		0,
+	);
+	const summary = firstDefined(
+		parsedOutput?.summary,
+		bestEffortOutput?.summary,
+		normalizeSummaryText(stepResult.text),
+		`Cleaned dataset persisted as ${artifact.filename}.`,
+	);
+	const filePath = firstDefined(
+		parsedOutput?.filePath,
+		bestEffortOutput?.filePath,
+		extractLikelyCsvPath(textCandidates),
+		DEFAULT_CLEANED_DATA_PATH,
+	);
+	const stats = firstDefined(
+		parsedOutput?.stats,
+		bestEffortOutput?.stats,
+		buildFallbackDataStats(rowCount, columns),
+	);
 
 	return DataOutputSchema.parse({
 		filePath,
@@ -351,6 +374,19 @@ const resolveDataOutput = (stepResult: StepExecutionResult): DataOutput => {
 	});
 };
 
+/**
+ * Resolve a structured ChartOutput from the raw result of the "chart" pipeline step.
+ *
+ * Uses a three-tier fallback strategy per field:
+ *   1. Strict JSON parsed from LLM text → 2. Best-effort JSON → 3. Raw tool result fallback.
+ *
+ * @param stepResult - Raw execution result from the chart step.
+ *   { text: "Generated 3 charts...", toolErrors: [], toolResults: [{ toolName: "persistLatestChart", result: { artifact: {...} } }] }
+ *
+ * @returns Validated ChartOutput object.
+ *   { chartCount: 3, descriptions: ["Bar chart of sales by region", "Line chart of trends", "Pie chart of distribution"],
+ *     artifacts: [{ kind: "image", filename: "chart_1.png", ... }] }
+ */
 const resolveChartOutput = (stepResult: StepExecutionResult): ChartOutput => {
 	const textCandidates = [
 		stepResult.text,
@@ -366,34 +402,33 @@ const resolveChartOutput = (stepResult: StepExecutionResult): ChartOutput => {
 		BestEffortChartOutputSchema,
 	);
 
-	const artifacts = extractArtifactsFromToolResults(
+	const toolArtifacts = extractArtifactsFromToolResults(
 		stepResult.toolResults,
 		"persistLatestChart",
 	);
-	// Prefer persisted chart artifacts from tool calls because they are guaranteed to be downloadable records.
 	const outputArtifacts =
-		artifacts.length > 0
-			? artifacts
+		toolArtifacts.length > 0
+			? toolArtifacts
 			: (parsedOutput?.artifacts ?? bestEffortOutput?.artifacts);
-	const fallbackDescriptionFromText =
-		normalizeSummaryText(stepResult.text) ??
-		"Chart generation did not complete successfully in this run.";
+
 	const fallbackDescription =
 		stepResult.toolErrors.length > 0
 			? `Chart generation encountered tool errors: ${stepResult.toolErrors.join(" | ")}`
-			: fallbackDescriptionFromText;
-	const descriptions =
-		parsedOutput?.descriptions && parsedOutput.descriptions.length > 0
-			? parsedOutput.descriptions
-			: bestEffortOutput?.descriptions &&
-					bestEffortOutput.descriptions.length > 0
-				? bestEffortOutput.descriptions
-				: [fallbackDescription];
-	const chartCount =
-		parsedOutput?.chartCount ??
-		bestEffortOutput?.chartCount ??
-		outputArtifacts?.length ??
-		0;
+			: firstDefined(
+					normalizeSummaryText(stepResult.text),
+					"Chart generation did not complete successfully in this run.",
+				);
+	const descriptions = firstNonEmpty(
+		parsedOutput?.descriptions,
+		bestEffortOutput?.descriptions,
+		[fallbackDescription],
+	);
+	const chartCount = firstDefined(
+		parsedOutput?.chartCount,
+		bestEffortOutput?.chartCount,
+		outputArtifacts?.length,
+		0,
+	);
 
 	return ChartOutputSchema.parse({
 		chartCount,
