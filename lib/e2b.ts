@@ -1,5 +1,5 @@
 import { basename } from "node:path/posix";
-import { formatSandboxOperationError } from "@/lib/agent/error-utils";
+import { formatSandboxOperationError } from "@/lib/agent/utils/error-utils";
 import { Sandbox as CodeSandbox } from "@e2b/code-interpreter";
 import { Sandbox as DesktopSandbox } from "@e2b/desktop";
 import { getUploadedFileBytes, storeFileRecordFromBytes } from "./file-store";

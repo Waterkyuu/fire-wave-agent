@@ -2,7 +2,7 @@ import {
 	formatCodeExecutionError,
 	formatSandboxOperationError,
 	formatUnknownError,
-} from "@/lib/agent/error-utils";
+} from "@/lib/agent/utils/error-utils";
 
 describe("formatUnknownError", () => {
 	it("returns message for Error instances", () => {

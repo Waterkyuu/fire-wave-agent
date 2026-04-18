@@ -1,4 +1,4 @@
-import { formatSandboxAttachedFiles } from "@/lib/agent/file-context";
+import { formatSandboxAttachedFiles } from "@/lib/agent/utils/file-context";
 import type { FileRecord } from "@/types";
 import type {
 	PipelineContext,

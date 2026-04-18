@@ -1,5 +1,5 @@
-import { formatSandboxAttachedFiles } from "@/lib/agent/file-context";
 import { getSkillList } from "@/lib/agent/skills";
+import { formatSandboxAttachedFiles } from "@/lib/agent/utils/file-context";
 import type { FileRecord } from "@/types";
 
 const AGENT_SYSTEM_PROMPT = `You are an autonomous AI agent that helps users accomplish tasks using sandbox environments. You have access to two types of sandboxes:

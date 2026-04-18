@@ -1,4 +1,4 @@
-import { formatUnknownError } from "@/lib/agent/error-utils";
+import { formatUnknownError } from "@/lib/agent/utils/error-utils";
 import {
 	type ChartOutput,
 	ChartOutputSchema,

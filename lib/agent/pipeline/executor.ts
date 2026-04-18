@@ -1,4 +1,3 @@
-import { formatUnknownError } from "@/lib/agent/error-utils";
 import { createChartAgent } from "@/lib/agent/multi-agents/chart-agent";
 import { createDataAgent } from "@/lib/agent/multi-agents/data-agent";
 import { runOrchestrator } from "@/lib/agent/multi-agents/orchestrator";
@@ -15,6 +14,7 @@ import {
 	resolveDataOutput,
 	resolveReportOutput,
 } from "@/lib/agent/pipeline/output-resolver";
+import { formatUnknownError } from "@/lib/agent/utils/error-utils";
 import type { SandboxSession } from "@/lib/e2b";
 import type { FileRecord } from "@/types";
 import type {

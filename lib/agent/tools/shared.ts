@@ -1,7 +1,7 @@
 import {
 	formatCodeExecutionError,
 	formatSandboxOperationError,
-} from "@/lib/agent/error-utils";
+} from "@/lib/agent/utils/error-utils";
 import type { SandboxSession } from "@/lib/e2b";
 import { tool, zodSchema } from "ai";
 import { z } from "zod";
