@@ -10,7 +10,7 @@ jest.mock("react-markdown", () => ({
 	default: ({ children }: { children?: ReactNode }) => <>{children}</>,
 }));
 
-const assistantMessageWithRoundArtifacts: UIMessage = {
+const assistantMessageWithRoundArtifacts = {
 	id: "assistant-round-artifacts",
 	role: "assistant",
 	parts: [
@@ -51,9 +51,9 @@ const assistantMessageWithRoundArtifacts: UIMessage = {
 			downloadUrl: "/api/file/report-1/download",
 		},
 	],
-};
+} as unknown as UIMessage;
 
-const assistantMessageWithMultipleCharts: UIMessage = {
+const assistantMessageWithMultipleCharts = {
 	id: "assistant-round-multi-chart",
 	role: "assistant",
 	parts: [
@@ -76,7 +76,7 @@ const assistantMessageWithMultipleCharts: UIMessage = {
 			extension: "png",
 		},
 	],
-};
+} as unknown as UIMessage;
 
 describe("AssistantMessage round artifact actions", () => {
 	it("renders per-category buttons with icon prefix and opens the selected artifact", () => {
