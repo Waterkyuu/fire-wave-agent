@@ -14,7 +14,7 @@ import {
 	ListTodo,
 	LoaderCircle,
 } from "lucide-react";
-import { memo, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 
 const STEP_CONFIG: Record<
 	PipelineStep,
@@ -33,6 +33,8 @@ const STEP_CONFIG: Record<
 		description: "Write the final analysis report",
 	},
 };
+
+const DEFAULT_STEP_ORDER: PipelineStep[] = ["data", "chart", "report"];
 
 const STATUS_CONFIG: Record<
 	StepStatus,
@@ -64,15 +66,19 @@ const STATUS_CONFIG: Record<
 	},
 };
 
-const STEP_ORDER: PipelineStep[] = ["data", "chart", "report"];
-
 const DebugPanel = memo(() => {
 	const { currentStep, plan, stepStatus } = useAtomValue(pipelineAtom);
 	const [isOpen, setIsOpen] = useState(false);
+	const displaySteps =
+		plan && plan.steps.length > 0 ? plan.steps : DEFAULT_STEP_ORDER;
+	const handleToggle = useCallback(() => {
+		setIsOpen((previousValue) => !previousValue);
+	}, []);
 
 	const completedCount = useMemo(
-		() => STEP_ORDER.filter((step) => stepStatus[step] === "completed").length,
-		[stepStatus],
+		() =>
+			displaySteps.filter((step) => stepStatus[step] === "completed").length,
+		[displaySteps, stepStatus],
 	);
 
 	return (
@@ -80,7 +86,7 @@ const DebugPanel = memo(() => {
 			<button
 				type="button"
 				className="flex w-full items-center gap-2 px-4 py-2 text-left transition-colors duration-200 hover:bg-muted/50"
-				onClick={() => setIsOpen(!isOpen)}
+				onClick={handleToggle}
 			>
 				<ListTodo className="size-3.5 text-muted-foreground" />
 				<span className="font-medium text-[10px] sm:text-xs">
@@ -90,7 +96,7 @@ const DebugPanel = memo(() => {
 					variant="secondary"
 					className="ml-auto text-[9px] sm:text-[10px]"
 				>
-					{completedCount}/{STEP_ORDER.length} completed
+					{completedCount}/{displaySteps.length} completed
 				</Badge>
 				{isOpen ? (
 					<ChevronDown className="size-3 text-muted-foreground" />
@@ -106,7 +112,7 @@ const DebugPanel = memo(() => {
 						</p>
 					) : null}
 					<div className="space-y-2">
-						{STEP_ORDER.map((step) => {
+						{displaySteps.map((step) => {
 							const { description, label } = STEP_CONFIG[step];
 							const status = stepStatus[step];
 							const {
