@@ -40,8 +40,7 @@ const executeStep = async (
 	agent: AgentDefinition,
 	stepPrompt: string,
 	step: PipelineStep,
-	onDelta: (content: string) => void,
-	onToolCall: (toolName: string) => void,
+	onEvent: (event: PipelineStreamEvent) => void,
 ): Promise<StepExecutionResult> => {
 	const result = await streamText({
 		system: agent.systemPrompt,
@@ -59,19 +58,45 @@ const executeStep = async (
 		switch (part.type) {
 			case "text-delta":
 				fullText += part.text;
-				onDelta(part.text);
+				onEvent({ type: "step-delta", step, content: part.text });
+				break;
+			case "reasoning-delta":
+				onEvent({ type: "reasoning", step, text: part.text });
 				break;
 			case "tool-call":
-				onToolCall(part.toolName);
+				onEvent({
+					type: "tool-call",
+					step,
+					toolCallId: part.toolCallId,
+					toolName: part.toolName,
+					args: part.input,
+				});
 				break;
 			case "tool-result":
 				toolResults.push({
 					toolName: part.toolName,
 					output: part.output,
 				});
+				onEvent({
+					type: "tool-result",
+					step,
+					toolCallId: part.toolCallId,
+					toolName: part.toolName,
+					output: part.output,
+				});
 				break;
 			case "tool-error":
 				toolErrors.push(formatToolError(part.toolName, part.error));
+				onEvent({
+					type: "tool-error",
+					step,
+					toolCallId: part.toolCallId,
+					toolName: part.toolName,
+					error:
+						part.error instanceof Error
+							? part.error.message
+							: String(part.error),
+				});
 				break;
 		}
 	}
@@ -115,13 +140,7 @@ const executePipeline = async (
 
 		try {
 			const stepPrompt = buildStepPrompt(step, ctx);
-			stepResult = await executeStep(
-				agent,
-				stepPrompt,
-				step,
-				(content: string) => onEvent({ type: "step-delta", step, content }),
-				(toolName: string) => onEvent({ type: "tool-call", step, toolName }),
-			);
+			stepResult = await executeStep(agent, stepPrompt, step, onEvent);
 
 			switch (step) {
 				case "data": {

@@ -79,7 +79,28 @@ type PipelineStreamEvent =
 	| { type: "plan"; plan: PipelinePlan }
 	| { type: "step-start"; step: PipelineStep }
 	| { type: "step-delta"; step: PipelineStep; content: string }
-	| { type: "tool-call"; step: PipelineStep; toolName: string }
+	| { type: "reasoning"; step: PipelineStep; text: string }
+	| {
+			type: "tool-call";
+			step: PipelineStep;
+			toolCallId: string;
+			toolName: string;
+			args: unknown;
+	  }
+	| {
+			type: "tool-result";
+			step: PipelineStep;
+			toolCallId: string;
+			toolName: string;
+			output: unknown;
+	  }
+	| {
+			type: "tool-error";
+			step: PipelineStep;
+			toolCallId: string;
+			toolName: string;
+			error: string;
+	  }
 	| {
 			type: "step-complete";
 			step: PipelineStep;

@@ -391,6 +391,20 @@ const usePipelineChat = (
 		pipelineStatus === "submitted" ||
 		pipelineStatus === "streaming";
 
+	type ToolPipelinePart = {
+		type: string;
+		toolCallId: string;
+		state: string;
+		input?: unknown;
+		output?: unknown;
+		errorText?: string;
+	};
+
+	type PipelinePart =
+		| { type: "text"; text: string }
+		| { type: "reasoning"; text: string }
+		| ToolPipelinePart;
+
 	const processPipelineStream = async (
 		response: Response,
 		historyMessages: UIMessage[],
@@ -401,10 +415,44 @@ const usePipelineChat = (
 
 		const decoder = new TextDecoder();
 		let buffer = "";
-		const assistantParts: Array<{ type: string; text: string }> = [];
+		const assistantParts: PipelinePart[] = [];
 
 		setPipelineStatus("streaming");
 		jotaiStore.set(agentStatusAtom, "thinking");
+
+		const findToolPart = (toolCallId: string): ToolPipelinePart | undefined =>
+			assistantParts.find(
+				(p): p is ToolPipelinePart =>
+					"toolCallId" in p && p.toolCallId === toolCallId,
+			);
+
+		const dispatchTool = (
+			toolCallId: string,
+			toolName: string,
+			state: ToolCallEvent["state"],
+			args?: unknown,
+			result?: unknown,
+		) => {
+			const prev = processedToolCallsRef.current.get(toolCallId);
+			const startedAt = prev?.startedAt ?? Date.now();
+			const finishedAt = state === "result" ? Date.now() : prev?.finishedAt;
+			const durationMs = finishedAt ? finishedAt - startedAt : prev?.durationMs;
+
+			const event: ToolCallEvent = {
+				id: prev?.id ?? crypto.randomUUID(),
+				toolCallId,
+				toolName,
+				args: (args as Record<string, unknown>) ?? {},
+				state,
+				result,
+				startedAt,
+				finishedAt,
+				durationMs,
+			};
+
+			processedToolCallsRef.current.set(toolCallId, event);
+			jotaiStore.set(dispatchToolEventAtom, event);
+		};
 
 		try {
 			while (true) {
@@ -451,15 +499,83 @@ const usePipelineChat = (
 						}
 						case "step-delta": {
 							const lastPart = assistantParts[assistantParts.length - 1];
-							if (lastPart && lastPart.type === "text") {
+							if (lastPart && "text" in lastPart && lastPart.type === "text") {
 								lastPart.text += evt.content;
 							}
 							break;
 						}
+						case "reasoning": {
+							if (reasoningStartTimeRef.current === null) {
+								reasoningStartTimeRef.current = Date.now();
+								jotaiStore.set(agentStatusAtom, "thinking");
+							}
+
+							const lastPart = assistantParts[assistantParts.length - 1];
+							if (
+								lastPart &&
+								"text" in lastPart &&
+								lastPart.type === "reasoning"
+							) {
+								lastPart.text += evt.text;
+							} else {
+								assistantParts.push({
+									type: "reasoning",
+									text: evt.text,
+								});
+							}
+							break;
+						}
 						case "tool-call": {
+							if (reasoningStartTimeRef.current !== null) {
+								const elapsed =
+									(Date.now() - reasoningStartTimeRef.current) / 1000;
+								setThinkingTime(elapsed);
+								reasoningStartTimeRef.current = null;
+							}
+							jotaiStore.set(agentStatusAtom, "acting");
+
 							assistantParts.push({
-								type: "text",
-								text: `\n> Calling tool: ${evt.toolName}...\n`,
+								type: `tool-${evt.toolName}`,
+								toolCallId: evt.toolCallId,
+								state: "input-available",
+								input: evt.args,
+							});
+
+							dispatchTool(evt.toolCallId, evt.toolName, "call", evt.args);
+							break;
+						}
+						case "tool-result": {
+							const toolPart = findToolPart(evt.toolCallId);
+							if (toolPart) {
+								toolPart.state = "output-available";
+								toolPart.output = evt.output;
+							}
+
+							dispatchTool(
+								evt.toolCallId,
+								evt.toolName,
+								"result",
+								undefined,
+								evt.output,
+							);
+							break;
+						}
+						case "tool-error": {
+							const toolPart = findToolPart(evt.toolCallId);
+							if (toolPart) {
+								toolPart.state = "output-error";
+								toolPart.errorText = evt.error;
+							} else {
+								assistantParts.push({
+									type: `tool-${evt.toolName}`,
+									toolCallId: evt.toolCallId,
+									state: "output-error",
+									errorText: evt.error,
+								});
+							}
+
+							dispatchTool(evt.toolCallId, evt.toolName, "result", undefined, {
+								error: evt.error,
 							});
 							break;
 						}
@@ -502,10 +618,7 @@ const usePipelineChat = (
 					const assistantMessage: UIMessage = {
 						id: `pipeline-${Date.now()}`,
 						role: "assistant",
-						parts: assistantParts.map((p) => ({
-							type: "text" as const,
-							text: p.text,
-						})),
+						parts: assistantParts as UIMessage["parts"],
 					};
 
 					setPipelineMessages([
@@ -524,10 +637,7 @@ const usePipelineChat = (
 				const finalMessage: UIMessage = {
 					id: `pipeline-${Date.now()}`,
 					role: "assistant",
-					parts: assistantParts.map((p) => ({
-						type: "text" as const,
-						text: p.text,
-					})),
+					parts: assistantParts as UIMessage["parts"],
 				};
 				const nextMessages = [...historyMessages, userMessage, finalMessage];
 				setPipelineMessages(nextMessages);
