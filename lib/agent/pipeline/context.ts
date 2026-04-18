@@ -19,7 +19,12 @@ Only use the exact sandbox paths listed below. Do NOT prepend object keys, file 
 ${formatSandboxAttachedFiles(ctx.attachedFiles)}
 
 ## Goal
-${ctx.plan.dataGoal ?? "Read, inspect, clean, and summarize the data. Save cleaned data to /home/user/output/cleaned_data.csv"}`;
+${ctx.plan.dataGoal ?? "Read, inspect, clean, and summarize the data. Save cleaned data to /home/user/output/cleaned_data.csv"}
+
+## Output Contract (Required)
+- Your final assistant message must be EXACTLY one valid JSON object and no extra text.
+- Include all fields: filePath, summary, stats, rowCount, columns, artifact.
+- artifact must come from persistCodeFile result and include fileId, filename, downloadUrl.`;
 
 		case "chart":
 			return `${base}

@@ -20,7 +20,10 @@ IMPORTANT RULES:
 - Persist the cleaned CSV by calling persistCodeFile with kind="dataset" after saving it
 - Report what cleaning operations you performed in a concise text summary
 - If the data is already clean, just load and summarize it
-- Always finish by printing a JSON block with the summary so the next agent can use it. Use the values returned by persistCodeFile in artifact. Format:
+- Your FINAL response must be EXACTLY ONE JSON object and nothing else (no markdown fences, no explanation text before/after JSON).
+- The JSON MUST be valid (double quotes, no trailing commas) and MUST include all required fields.
+- If a previous tool call failed, retry with a simpler cleaning approach and still output the required final JSON object.
+- Always finish by printing the JSON summary so the next agent can use it. Use the values returned by persistCodeFile in artifact. Format:
   {
     "filePath": "/home/user/output/cleaned_data.csv",
     "summary": "one-paragraph description of the dataset and cleaning done",

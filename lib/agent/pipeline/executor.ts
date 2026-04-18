@@ -42,10 +42,20 @@ type StepExecutionResult = {
 };
 
 const MAIN_MODEL = process.env.GLM_MODEL ?? "glm-4.7";
+const DEFAULT_CLEANED_DATA_PATH = "/home/user/output/cleaned_data.csv";
 
 const RelaxedDataOutputSchema = DataOutputSchema.omit({
 	artifact: true,
 }).extend({
+	artifact: PersistedArtifactSchema.optional(),
+});
+
+const BestEffortDataOutputSchema = z.object({
+	filePath: z.string().optional(),
+	summary: z.string().optional(),
+	stats: z.string().optional(),
+	rowCount: z.coerce.number().int().nonnegative().optional(),
+	columns: z.array(z.string()).optional(),
 	artifact: PersistedArtifactSchema.optional(),
 });
 
@@ -133,6 +143,99 @@ const parseStructuredOutput = <T>(
 	return undefined;
 };
 
+const parseStructuredOutputFromTexts = <T>(
+	texts: string[],
+	schema: z.ZodSchema<T>,
+): T | undefined => {
+	for (const text of texts) {
+		const parsed = parseStructuredOutput(text, schema);
+		if (parsed) {
+			return parsed;
+		}
+	}
+
+	return undefined;
+};
+
+const extractTextCandidatesFromToolResults = (
+	toolResults: StepToolResult[],
+): string[] =>
+	toolResults.flatMap(({ output }) => {
+		if (!output || typeof output !== "object") {
+			return [];
+		}
+
+		const outputRecord = output as Record<string, unknown>;
+		const textCandidates: string[] = [];
+
+		const pushCandidate = (candidate: unknown) => {
+			if (typeof candidate === "string" && candidate.trim().length > 0) {
+				textCandidates.push(candidate);
+				return;
+			}
+
+			if (candidate && typeof candidate === "object") {
+				try {
+					textCandidates.push(JSON.stringify(candidate));
+				} catch {
+					// ignore non-serializable values
+				}
+			}
+		};
+
+		pushCandidate(outputRecord.text);
+		pushCandidate(outputRecord.data);
+		pushCandidate(outputRecord.json);
+		pushCandidate(outputRecord.markdown);
+		pushCandidate(outputRecord.html);
+
+		if (Array.isArray(outputRecord.stdout)) {
+			for (const line of outputRecord.stdout) {
+				pushCandidate(line);
+			}
+		}
+
+		if (Array.isArray(outputRecord.stderr)) {
+			for (const line of outputRecord.stderr) {
+				pushCandidate(line);
+			}
+		}
+
+		if (Array.isArray(outputRecord.results)) {
+			for (const result of outputRecord.results) {
+				pushCandidate(result);
+			}
+		}
+
+		return textCandidates;
+	});
+
+const extractLikelyCsvPath = (texts: string[]): string | undefined => {
+	const csvPathRegex = /\/home\/user\/output\/[^\s"'`]+\.csv/g;
+	const matches = texts.flatMap((text) =>
+		Array.from(text.matchAll(csvPathRegex)),
+	);
+	const lastMatch = matches.at(-1);
+	return lastMatch?.[0];
+};
+
+const normalizeSummaryText = (text: string): string | undefined => {
+	const normalized = text.replace(/\s+/g, " ").trim();
+	if (normalized.length === 0) {
+		return undefined;
+	}
+
+	return normalized.slice(0, 600);
+};
+
+const buildFallbackDataStats = (
+	rowCount: number,
+	columns: string[],
+): string => {
+	const columnsLabel = columns.length > 0 ? columns.join(", ") : "unknown";
+	return `Rows: ${rowCount}. Columns (${columns.length}): ${columnsLabel}.`;
+};
+
 const formatToolError = (toolName: string, error: unknown) => {
 	if (error instanceof Error) {
 		return `${toolName}: ${error.message}`;
@@ -172,12 +275,22 @@ const formatStepFailure = (error: Error, toolErrors: string[]) => {
 };
 
 const resolveDataOutput = (stepResult: StepExecutionResult): DataOutput => {
-	const parsedOutput = parseStructuredOutput(
+	const textCandidates = [
 		stepResult.text,
+		...extractTextCandidatesFromToolResults(stepResult.toolResults),
+	].filter((text) => text.trim().length > 0);
+
+	const parsedOutput = parseStructuredOutputFromTexts(
+		textCandidates,
 		RelaxedDataOutputSchema,
+	);
+	const bestEffortOutput = parseStructuredOutputFromTexts(
+		textCandidates,
+		BestEffortDataOutputSchema,
 	);
 	const artifact =
 		parsedOutput?.artifact ??
+		bestEffortOutput?.artifact ??
 		extractArtifactsFromToolResults(
 			stepResult.toolResults,
 			"persistCodeFile",
@@ -187,16 +300,41 @@ const resolveDataOutput = (stepResult: StepExecutionResult): DataOutput => {
 			"persistCodeFile",
 		).at(-1);
 
-	if (!parsedOutput) {
-		throw new Error("Data step did not produce a valid JSON summary.");
-	}
-
 	if (!artifact) {
 		throw new Error("Data step did not persist the cleaned dataset.");
 	}
 
+	const fallbackColumns = artifact.preview?.columns ?? [];
+	const fallbackRowCount = artifact.preview?.totalRows ?? 0;
+	const columns =
+		parsedOutput?.columns && parsedOutput.columns.length > 0
+			? parsedOutput.columns
+			: bestEffortOutput?.columns && bestEffortOutput.columns.length > 0
+				? bestEffortOutput.columns
+				: fallbackColumns;
+	const rowCount =
+		parsedOutput?.rowCount ?? bestEffortOutput?.rowCount ?? fallbackRowCount;
+	const summary =
+		parsedOutput?.summary ??
+		bestEffortOutput?.summary ??
+		normalizeSummaryText(stepResult.text) ??
+		`Cleaned dataset persisted as ${artifact.filename}.`;
+	const filePath =
+		parsedOutput?.filePath ??
+		bestEffortOutput?.filePath ??
+		extractLikelyCsvPath(textCandidates) ??
+		DEFAULT_CLEANED_DATA_PATH;
+	const stats =
+		parsedOutput?.stats ??
+		bestEffortOutput?.stats ??
+		buildFallbackDataStats(rowCount, columns);
+
 	return DataOutputSchema.parse({
-		...parsedOutput,
+		filePath,
+		summary,
+		stats,
+		rowCount,
+		columns,
 		artifact,
 	});
 };
