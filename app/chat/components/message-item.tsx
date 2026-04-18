@@ -32,6 +32,7 @@ const MessageItem = memo(
 			<AssistantMessage
 				message={message}
 				thinkingTime={thinkingTime}
+				onSelectAttachment={onSelectAttachment}
 				onShowVnc={onShowVnc}
 			/>
 		);

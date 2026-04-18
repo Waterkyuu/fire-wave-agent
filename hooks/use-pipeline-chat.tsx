@@ -400,10 +400,20 @@ const usePipelineChat = (
 		errorText?: string;
 	};
 
+	type ArtifactPart = {
+		type: "artifact";
+		fileId: string;
+		filename: string;
+		extension: string;
+		kind?: string;
+		preview?: unknown;
+	};
+
 	type PipelinePart =
 		| { type: "text"; text: string }
 		| { type: "reasoning"; text: string }
-		| ToolPipelinePart;
+		| ToolPipelinePart
+		| ArtifactPart;
 
 	const processPipelineStream = async (
 		response: Response,
@@ -591,10 +601,21 @@ const usePipelineChat = (
 								evt.output.artifact.kind === "dataset" &&
 								evt.output.artifact.preview
 							) {
+								const { artifact } = evt.output;
+								const preview = artifact.preview;
+								if (!preview) break;
 								jotaiStore.set(showDatasetWorkspaceAtom, {
-									fileId: evt.output.artifact.fileId,
-									filename: evt.output.artifact.filename,
-									preview: evt.output.artifact.preview,
+									fileId: artifact.fileId,
+									filename: artifact.filename,
+									preview,
+								});
+								assistantParts.push({
+									type: "artifact",
+									fileId: artifact.fileId,
+									filename: artifact.filename,
+									extension: artifact.filename.split(".").pop() ?? "csv",
+									kind: artifact.kind,
+									preview,
 								});
 							}
 							break;

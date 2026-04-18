@@ -20,7 +20,7 @@ type MessageRow = {
 };
 
 const MESSAGE_BATCH_PRECISION = 1000;
-const CHAT_DB_NAME = "firewave-agent-v2";
+const CHAT_DB_NAME = "refract-v2";
 
 const db = new Dexie(CHAT_DB_NAME) as Dexie & {
 	sessions: EntityTable<SessionRow, "id">;

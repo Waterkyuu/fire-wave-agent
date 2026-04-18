@@ -1,7 +1,9 @@
 "use client";
 
+import FileCard from "@/components/share/file-card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import type { ChatAttachment } from "@/types/chat";
 import type { UIMessage } from "ai";
 import {
 	CheckCircle2,
@@ -19,6 +21,7 @@ import Markdown from "react-markdown";
 type AssistantMessageProps = {
 	message: UIMessage;
 	thinkingTime: number | null;
+	onSelectAttachment?: (attachment: ChatAttachment) => void;
 	onShowVnc?: () => void;
 };
 
@@ -194,7 +197,7 @@ const TextBlock = memo(({ text }: { text: string }) => {
 		<div className="relative">
 			<div
 				className={cn(
-					"min-w-0 max-w-full overflow-hidden rounded-2xl bg-muted px-4 py-2.5 text-xs sm:text-sm",
+					"min-w-0 max-w-full overflow-hidden rounded-2xl py-2.5 text-xs sm:text-sm",
 					shouldCollapse && !isExpanded && "max-h-96",
 				)}
 			>
@@ -301,8 +304,22 @@ const isReasoningPart = (
 const isToolPart = (p: Record<string, unknown>): boolean =>
 	typeof p.type === "string" && p.type.startsWith("tool-");
 
+const isArtifactPart = (
+	p: Record<string, unknown>,
+): p is {
+	type: "artifact";
+	fileId: string;
+	filename: string;
+	extension: string;
+} => p.type === "artifact" && "fileId" in p && "filename" in p;
+
 const AssistantMessage = memo(
-	({ message, thinkingTime, onShowVnc }: AssistantMessageProps) => {
+	({
+		message,
+		thinkingTime,
+		onSelectAttachment,
+		onShowVnc,
+	}: AssistantMessageProps) => {
 		const t = useTranslations("message");
 
 		const renderableParts = useMemo(
@@ -352,6 +369,31 @@ const AssistantMessage = memo(
 									part={part}
 									onShowVnc={onShowVnc}
 								/>
+							);
+						}
+
+						if (isArtifactPart(part)) {
+							const attachment: ChatAttachment = {
+								extension: part.extension,
+								fileId: part.fileId,
+								filename: part.filename,
+								preview: (part as Record<string, unknown>)
+									.preview as ChatAttachment["preview"],
+							};
+							return (
+								<button
+									key={`${message.id}-artifact-${i}`}
+									type="button"
+									className="rounded-2xl"
+									onClick={() => onSelectAttachment?.(attachment)}
+								>
+									<FileCard
+										className="w-[15rem] max-w-full"
+										extension={part.extension}
+										fileName={part.filename}
+										isClickable
+									/>
+								</button>
 							);
 						}
 
