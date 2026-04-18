@@ -10,6 +10,7 @@ import {
 	workspaceChartAtom,
 	workspaceDatasetAtom,
 	workspaceFileAtom,
+	workspaceHydratingAtom,
 	workspaceTypstContentAtom,
 	workspaceViewAtom,
 } from "@/atoms/chat";
@@ -27,6 +28,7 @@ import VncPanel from "./vnc-panel";
 
 const WorkspacePanel = () => {
 	const t = useTranslations("chat");
+	const isWorkspaceHydrating = useAtomValue(workspaceHydratingAtom);
 	const activeView = useAtomValue(workspaceViewAtom);
 	const vncUrl = useAtomValue(vncUrlAtom);
 	const chart = useAtomValue(workspaceChartAtom);
@@ -123,6 +125,23 @@ const WorkspacePanel = () => {
 		const fallback = dataMap.find(([, data]) => data);
 		return fallback?.[0] ?? "empty";
 	}, [activeView, dataMap]);
+
+	if (isWorkspaceHydrating) {
+		return (
+			<div
+				className="flex h-full w-full flex-col bg-muted/30"
+				data-testid="workspace-panel-skeleton"
+			>
+				<div className="flex items-center gap-2 border-b px-4 py-3">
+					<div className="h-8 w-24 animate-pulse rounded-md bg-muted" />
+					<div className="h-8 w-28 animate-pulse rounded-md bg-muted" />
+				</div>
+				<div className="min-h-0 flex-1 p-4">
+					<div className="h-full w-full animate-pulse rounded-xl border bg-background/70" />
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="flex h-full w-full flex-col bg-muted/30">

@@ -1,3 +1,8 @@
+import {
+	EMPTY_WORKSPACE_SNAPSHOT,
+	type WorkspaceSnapshot,
+	cloneWorkspaceSnapshot,
+} from "@/lib/chat/workspace-hydration";
 import type {
 	WorkspaceChart,
 	WorkspaceDataset,
@@ -6,6 +11,7 @@ import type {
 } from "@/types";
 import type { AgentStatus, ChatAttachment, ToolCallEvent } from "@/types/chat";
 import { atom } from "jotai";
+import type { Getter, Setter } from "jotai/vanilla";
 
 const firstUserInputAtom = atom<string>("");
 
@@ -13,17 +19,164 @@ const pendingHomePromptAtom = atom<string>("");
 
 const pendingHomeUploadsAtom = atom<ChatAttachment[]>([]);
 
-const vncUrlAtom = atom<string>("");
+type WorkspaceBySessionState = Record<string, WorkspaceSnapshot>;
+type WorkspaceHydratingBySessionState = Record<string, boolean>;
+const DEFAULT_WORKSPACE_SESSION_ID = "__global__";
 
-const workspaceViewAtom = atom<WorkspaceView>("empty");
+const activeWorkspaceSessionIdAtom = atom<string>(DEFAULT_WORKSPACE_SESSION_ID);
 
-const workspaceChartAtom = atom<WorkspaceChart | null>(null);
+const workspaceBySessionAtom = atom<WorkspaceBySessionState>({});
 
-const workspaceDatasetAtom = atom<WorkspaceDataset | null>(null);
+const workspaceHydratingBySessionAtom = atom<WorkspaceHydratingBySessionState>(
+	{},
+);
 
-const workspaceFileAtom = atom<WorkspaceFile | null>(null);
+const getWorkspaceSnapshotForSession = (
+	state: WorkspaceBySessionState,
+	sessionId: string,
+): WorkspaceSnapshot => {
+	const targetSessionId = sessionId || DEFAULT_WORKSPACE_SESSION_ID;
 
-const workspaceTypstContentAtom = atom<string>("");
+	const sessionWorkspace = state[targetSessionId];
+	if (!sessionWorkspace) {
+		return cloneWorkspaceSnapshot(EMPTY_WORKSPACE_SNAPSHOT);
+	}
+
+	return sessionWorkspace;
+};
+
+const setWorkspaceForSession = (
+	state: WorkspaceBySessionState,
+	sessionId: string,
+	workspace: WorkspaceSnapshot,
+): WorkspaceBySessionState => ({
+	...state,
+	[sessionId]: cloneWorkspaceSnapshot(workspace),
+});
+
+const updateActiveWorkspace = (
+	get: Getter,
+	set: Setter,
+	updater: (current: WorkspaceSnapshot) => WorkspaceSnapshot,
+) => {
+	const sessionId = get(activeWorkspaceSessionIdAtom);
+	const targetSessionId = sessionId || DEFAULT_WORKSPACE_SESSION_ID;
+
+	const state = get(workspaceBySessionAtom);
+	const current = getWorkspaceSnapshotForSession(state, targetSessionId);
+	const updated = updater(current);
+	set(
+		workspaceBySessionAtom,
+		setWorkspaceForSession(state, targetSessionId, updated),
+	);
+};
+
+const currentWorkspaceSnapshotAtom = atom((get) => {
+	const activeSessionId = get(activeWorkspaceSessionIdAtom);
+	const workspaceBySession = get(workspaceBySessionAtom);
+	return getWorkspaceSnapshotForSession(workspaceBySession, activeSessionId);
+});
+
+const workspaceHydratingAtom = atom((get) => {
+	const activeSessionId = get(activeWorkspaceSessionIdAtom);
+	if (!activeSessionId) {
+		return false;
+	}
+
+	const hydratingState = get(workspaceHydratingBySessionAtom);
+	return Boolean(hydratingState[activeSessionId]);
+});
+
+const setActiveWorkspaceSessionAtom = atom(
+	null,
+	(_get, set, sessionId: string) => {
+		set(
+			activeWorkspaceSessionIdAtom,
+			sessionId || DEFAULT_WORKSPACE_SESSION_ID,
+		);
+	},
+);
+
+const setWorkspaceSnapshotForSessionAtom = atom(
+	null,
+	(get, set, payload: { sessionId: string; snapshot: WorkspaceSnapshot }) => {
+		const { sessionId, snapshot } = payload;
+		const state = get(workspaceBySessionAtom);
+		set(
+			workspaceBySessionAtom,
+			setWorkspaceForSession(state, sessionId, snapshot),
+		);
+	},
+);
+
+const setWorkspaceHydratingAtom = atom(
+	null,
+	(
+		get,
+		set,
+		payload: {
+			sessionId: string;
+			hydrating: boolean;
+		},
+	) => {
+		const { sessionId, hydrating } = payload;
+		const state = get(workspaceHydratingBySessionAtom);
+
+		if (hydrating) {
+			set(workspaceHydratingBySessionAtom, { ...state, [sessionId]: true });
+			return;
+		}
+
+		const nextState = { ...state };
+		delete nextState[sessionId];
+		set(workspaceHydratingBySessionAtom, nextState);
+	},
+);
+
+const vncUrlAtom = atom(
+	(get) => get(currentWorkspaceSnapshotAtom).vncUrl,
+	(get, set, vncUrl: string) => {
+		updateActiveWorkspace(get, set, (current) => ({ ...current, vncUrl }));
+	},
+);
+
+const workspaceViewAtom = atom(
+	(get) => get(currentWorkspaceSnapshotAtom).view,
+	(get, set, view: WorkspaceView) => {
+		updateActiveWorkspace(get, set, (current) => ({ ...current, view }));
+	},
+);
+
+const workspaceChartAtom = atom(
+	(get) => get(currentWorkspaceSnapshotAtom).chart,
+	(get, set, chart: WorkspaceChart | null) => {
+		updateActiveWorkspace(get, set, (current) => ({ ...current, chart }));
+	},
+);
+
+const workspaceDatasetAtom = atom(
+	(get) => get(currentWorkspaceSnapshotAtom).dataset,
+	(get, set, dataset: WorkspaceDataset | null) => {
+		updateActiveWorkspace(get, set, (current) => ({ ...current, dataset }));
+	},
+);
+
+const workspaceFileAtom = atom(
+	(get) => get(currentWorkspaceSnapshotAtom).file,
+	(get, set, file: WorkspaceFile | null) => {
+		updateActiveWorkspace(get, set, (current) => ({ ...current, file }));
+	},
+);
+
+const workspaceTypstContentAtom = atom(
+	(get) => get(currentWorkspaceSnapshotAtom).typstContent,
+	(get, set, typstContent: string) => {
+		updateActiveWorkspace(get, set, (current) => ({
+			...current,
+			typstContent,
+		}));
+	},
+);
 
 const agentStatusAtom = atom<AgentStatus>("idle");
 
@@ -79,6 +232,13 @@ export {
 	firstUserInputAtom,
 	pendingHomePromptAtom,
 	pendingHomeUploadsAtom,
+	activeWorkspaceSessionIdAtom,
+	workspaceBySessionAtom,
+	workspaceHydratingBySessionAtom,
+	workspaceHydratingAtom,
+	setActiveWorkspaceSessionAtom,
+	setWorkspaceSnapshotForSessionAtom,
+	setWorkspaceHydratingAtom,
 	vncUrlAtom,
 	workspaceViewAtom,
 	workspaceChartAtom,

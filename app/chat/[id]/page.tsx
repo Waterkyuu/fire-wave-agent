@@ -5,6 +5,10 @@ import {
 	firstUserInputAtom,
 	pendingHomePromptAtom,
 	pendingHomeUploadsAtom,
+	setActiveWorkspaceSessionAtom,
+	setWorkspaceHydratingAtom,
+	setWorkspaceSnapshotForSessionAtom,
+	showChartWorkspaceAtom,
 	showDatasetWorkspaceAtom,
 	showFileWorkspaceAtom,
 	vncUrlAtom,
@@ -28,12 +32,18 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import usePipelineChat from "@/hooks/use-pipeline-chat";
 import {
+	type WorkspaceRoundArtifact,
+	deriveWorkspaceSnapshotFromMessages,
+	getFileDownloadUrl,
+	getFileExtension,
+} from "@/lib/chat/workspace-hydration";
+import {
 	useChatHistory,
 	useCreateSession,
 	useSaveMessages,
 } from "@/services/chat";
 import type { ChatAttachment } from "@/types/chat";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { Monitor } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -57,6 +67,11 @@ const ChatPage = ({ params }: ChatPageProps) => {
 	const workspaceChart = useAtomValue(workspaceChartAtom);
 	const workspaceDataset = useAtomValue(workspaceDatasetAtom);
 	const workspaceFile = useAtomValue(workspaceFileAtom);
+	const setActiveWorkspaceSession = useSetAtom(setActiveWorkspaceSessionAtom);
+	const setWorkspaceHydrating = useSetAtom(setWorkspaceHydratingAtom);
+	const setWorkspaceSnapshotForSession = useSetAtom(
+		setWorkspaceSnapshotForSessionAtom,
+	);
 	const t = useTranslations("chat");
 
 	useEffect(() => {
@@ -94,6 +109,40 @@ const ChatPage = ({ params }: ChatPageProps) => {
 		historyLoading &&
 		messages.length === 0 &&
 		!hasPendingFirstInput;
+
+	useEffect(() => {
+		if (!sessionId) {
+			return;
+		}
+
+		setActiveWorkspaceSession(sessionId);
+		setWorkspaceHydrating({ sessionId, hydrating: true });
+	}, [sessionId, setActiveWorkspaceSession, setWorkspaceHydrating]);
+
+	useEffect(() => {
+		if (!sessionId || historyLoading) {
+			return;
+		}
+
+		const snapshot = deriveWorkspaceSnapshotFromMessages(historyMessages);
+		setWorkspaceSnapshotForSession({ sessionId, snapshot });
+		setWorkspaceHydrating({ sessionId, hydrating: false });
+	}, [
+		historyLoading,
+		historyMessages,
+		sessionId,
+		setWorkspaceHydrating,
+		setWorkspaceSnapshotForSession,
+	]);
+
+	useEffect(() => {
+		if (!sessionId || historyLoading) {
+			return;
+		}
+
+		const snapshot = deriveWorkspaceSnapshotFromMessages(messages);
+		setWorkspaceSnapshotForSession({ sessionId, snapshot });
+	}, [historyLoading, messages, sessionId, setWorkspaceSnapshotForSession]);
 
 	useEffect(() => {
 		if (firstInputSentRef.current) return;
@@ -185,6 +234,57 @@ const ChatPage = ({ params }: ChatPageProps) => {
 		[isMobile],
 	);
 
+	const handleSelectRoundArtifact = useCallback(
+		(artifact: WorkspaceRoundArtifact) => {
+			if (artifact.category === "chart") {
+				jotaiStore.set(showChartWorkspaceAtom, {
+					chart: artifact.chart,
+					downloadUrl: artifact.downloadUrl,
+					fileId: artifact.fileId,
+					filename: artifact.filename,
+					generatedAt: artifact.createdAt || Date.now(),
+					png: artifact.png,
+					title: artifact.title ?? artifact.label,
+					toolCallId: artifact.toolCallId ?? artifact.id,
+				});
+			} else if (artifact.category === "data") {
+				if (artifact.preview && artifact.fileId && artifact.filename) {
+					jotaiStore.set(showDatasetWorkspaceAtom, {
+						fileId: artifact.fileId,
+						filename: artifact.filename,
+						preview: artifact.preview,
+					});
+				} else if (artifact.fileId && artifact.filename) {
+					jotaiStore.set(showFileWorkspaceAtom, {
+						downloadUrl: getFileDownloadUrl(
+							artifact.fileId,
+							artifact.downloadUrl,
+						),
+						extension:
+							artifact.extension ?? getFileExtension(artifact.filename),
+						fileId: artifact.fileId,
+						filename: artifact.filename,
+					});
+				}
+			} else if (artifact.fileId && artifact.filename) {
+				jotaiStore.set(showFileWorkspaceAtom, {
+					downloadUrl: getFileDownloadUrl(
+						artifact.fileId,
+						artifact.downloadUrl,
+					),
+					extension: artifact.extension ?? getFileExtension(artifact.filename),
+					fileId: artifact.fileId,
+					filename: artifact.filename,
+				});
+			}
+
+			if (isMobile) {
+				setVncSheetOpen(true);
+			}
+		},
+		[isMobile],
+	);
+
 	const hasToolCalls = messages.some((msg) =>
 		msg.parts.some(
 			(p) => typeof p.type === "string" && p.type.startsWith("tool-"),
@@ -222,6 +322,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 						isHistoryLoading={isHistoryHydrating}
 						className="min-h-0 flex-1"
 						onSelectAttachment={handleSelectAttachment}
+						onSelectRoundArtifact={handleSelectRoundArtifact}
 						onShowVnc={handleShowVnc}
 					/>
 					<StepPanel />
@@ -271,6 +372,7 @@ const ChatPage = ({ params }: ChatPageProps) => {
 								isHistoryLoading={isHistoryHydrating}
 								className="min-h-0 flex-1"
 								onSelectAttachment={handleSelectAttachment}
+								onSelectRoundArtifact={handleSelectRoundArtifact}
 							/>
 							<StepPanel />
 							<div className="flex w-full shrink-0 items-center justify-center px-4 py-2">

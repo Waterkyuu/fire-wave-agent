@@ -2,14 +2,23 @@
 
 import FileCard from "@/components/share/file-card";
 import { Badge } from "@/components/ui/badge";
+import {
+	type WorkspaceRoundArtifact,
+	type WorkspaceRoundArtifacts,
+	deriveRoundArtifactsFromMessage,
+	hasWorkspaceRoundArtifacts,
+} from "@/lib/chat/workspace-hydration";
 import { cn } from "@/lib/utils";
 import type { ChatAttachment } from "@/types/chat";
 import type { UIMessage } from "ai";
 import {
+	BarChart3,
 	CheckCircle2,
 	ChevronDown,
 	ChevronUp,
 	Clock,
+	Database,
+	FileText,
 	Loader2,
 	Wrench,
 	XCircle,
@@ -22,6 +31,7 @@ type AssistantMessageProps = {
 	message: UIMessage;
 	thinkingTime: number | null;
 	onSelectAttachment?: (attachment: ChatAttachment) => void;
+	onSelectRoundArtifact?: (artifact: WorkspaceRoundArtifact) => void;
 	onShowVnc?: () => void;
 };
 
@@ -318,9 +328,13 @@ const AssistantMessage = memo(
 		message,
 		thinkingTime,
 		onSelectAttachment,
+		onSelectRoundArtifact,
 		onShowVnc,
 	}: AssistantMessageProps) => {
 		const t = useTranslations("message");
+		const [expandedRoundCategory, setExpandedRoundCategory] = useState<
+			"data" | "chart" | "report" | null
+		>(null);
 
 		const renderableParts = useMemo(
 			() =>
@@ -333,6 +347,41 @@ const AssistantMessage = memo(
 		const hasText = renderableParts.some(
 			(p) => p.type === "text" && (p as { text: string }).text,
 		);
+
+		const roundArtifacts = useMemo<WorkspaceRoundArtifacts>(
+			() => deriveRoundArtifactsFromMessage(message),
+			[message],
+		);
+		const hasRoundArtifacts = hasWorkspaceRoundArtifacts(roundArtifacts);
+
+		const roundButtons = useMemo(
+			() =>
+				[
+					{
+						category: "data" as const,
+						items: roundArtifacts.data,
+						icon: Database,
+						label: "Data",
+					},
+					{
+						category: "chart" as const,
+						items: roundArtifacts.chart,
+						icon: BarChart3,
+						label: "Chart",
+					},
+					{
+						category: "report" as const,
+						items: roundArtifacts.report,
+						icon: FileText,
+						label: "Report",
+					},
+				].filter((button) => button.items.length > 0),
+			[roundArtifacts],
+		);
+
+		useEffect(() => {
+			setExpandedRoundCategory(null);
+		}, [message.id]);
 
 		return (
 			<div className="flex justify-start gap-3 px-4 py-3">
@@ -404,6 +453,72 @@ const AssistantMessage = memo(
 						<p className="text-[9px] text-muted-foreground sm:text-[10px]">
 							{t("thoughtFor", { time: thinkingTime.toFixed(1) })}
 						</p>
+					)}
+
+					{hasRoundArtifacts && onSelectRoundArtifact && (
+						<div className="space-y-2 pt-2">
+							<div className="flex flex-wrap gap-2">
+								{roundButtons.map((button) => {
+									const Icon = button.icon;
+									const isExpanded = expandedRoundCategory === button.category;
+
+									return (
+										<button
+											key={`${message.id}-${button.category}-button`}
+											type="button"
+											className={cn(
+												"inline-flex items-center gap-1.5 rounded-full border bg-background px-3 py-1 text-[10px] transition-colors duration-200 hover:bg-muted sm:text-xs",
+												isExpanded &&
+													"border-primary bg-primary/5 text-primary",
+											)}
+											onClick={() => {
+												if (button.items.length === 1) {
+													const firstItem = button.items[0];
+													if (firstItem) {
+														onSelectRoundArtifact(firstItem);
+													}
+													return;
+												}
+
+												setExpandedRoundCategory((previousCategory) =>
+													previousCategory === button.category
+														? null
+														: button.category,
+												);
+											}}
+										>
+											<Icon className="size-3" />
+											<span>{button.label}</span>
+											<span className="text-muted-foreground">
+												({button.items.length})
+											</span>
+										</button>
+									);
+								})}
+							</div>
+
+							{expandedRoundCategory && (
+								<div className="space-y-1 rounded-xl border bg-muted/30 p-2">
+									{roundButtons
+										.find((button) => button.category === expandedRoundCategory)
+										?.items.map((artifact, index) => (
+											<button
+												key={artifact.id}
+												type="button"
+												className="flex w-full items-center justify-between rounded-lg bg-background px-2.5 py-1.5 text-left text-[10px] transition-colors duration-200 hover:bg-muted sm:text-xs"
+												onClick={() => onSelectRoundArtifact(artifact)}
+											>
+												<span className="line-clamp-1 flex-1">
+													{artifact.label || artifact.filename || artifact.id}
+												</span>
+												<span className="ml-3 shrink-0 text-muted-foreground">
+													v{index + 1}
+												</span>
+											</button>
+										))}
+								</div>
+							)}
+						</div>
 					)}
 				</div>
 			</div>

@@ -3,10 +3,6 @@ import {
 	agentStatusAtom,
 	clearToolEventsAtom,
 	dispatchToolEventAtom,
-	showChartWorkspaceAtom,
-	showDatasetWorkspaceAtom,
-	vncUrlAtom,
-	workspaceChartAtom,
 } from "@/atoms/chat";
 import loginDialogAtom from "@/atoms/login-dialog";
 import {
@@ -127,102 +123,6 @@ const extractToolEventsFromMessages = (
 			};
 
 			events.push(event);
-
-			if (
-				toolName === "createSandbox" &&
-				partState === "output-available" &&
-				partOutput
-			) {
-				const output = partOutput as { vncUrl?: string };
-				if (output.vncUrl) {
-					jotaiStore.set(vncUrlAtom, output.vncUrl);
-				}
-			}
-
-			if (
-				toolName === "codeInterpreter" &&
-				partState === "output-available" &&
-				partOutput
-			) {
-				const output = partOutput as {
-					results?: Array<{
-						chart?: Record<string, unknown>;
-						png?: string;
-						text?: string;
-					}>;
-				};
-				const chartResult = output.results?.find(
-					(result) => result.chart || result.png,
-				);
-
-				if (chartResult) {
-					jotaiStore.set(showChartWorkspaceAtom, {
-						chart: chartResult.chart,
-						generatedAt: Date.now(),
-						png: chartResult.png,
-						title:
-							typeof chartResult.chart?.title === "string"
-								? chartResult.chart.title
-								: chartResult.text,
-						toolCallId,
-					});
-				}
-			}
-
-			if (
-				toolName === "persistCodeFile" &&
-				partState === "output-available" &&
-				partOutput
-			) {
-				const output = partOutput as {
-					fileId?: string;
-					filename?: string;
-					kind?: string;
-					preview?: {
-						activeSheet: string;
-						columns: string[];
-						rows: string[][];
-						sheetNames: string[];
-						totalColumns: number;
-						totalRows: number;
-					};
-				};
-
-				if (
-					output.kind === "dataset" &&
-					output.fileId &&
-					output.filename &&
-					output.preview
-				) {
-					jotaiStore.set(showDatasetWorkspaceAtom, {
-						fileId: output.fileId,
-						filename: output.filename,
-						preview: output.preview,
-					});
-				}
-			}
-
-			if (
-				toolName === "persistLatestChart" &&
-				partState === "output-available" &&
-				partOutput
-			) {
-				const output = partOutput as {
-					downloadUrl?: string;
-					fileId?: string;
-					filename?: string;
-				};
-				const currentChart = jotaiStore.get(workspaceChartAtom);
-
-				if (currentChart && output.downloadUrl) {
-					jotaiStore.set(showChartWorkspaceAtom, {
-						...currentChart,
-						downloadUrl: output.downloadUrl,
-						fileId: output.fileId,
-						filename: output.filename,
-					});
-				}
-			}
 		}
 	}
 
@@ -405,8 +305,12 @@ const usePipelineChat = (
 		fileId: string;
 		filename: string;
 		extension: string;
+		category?: "data" | "chart" | "report";
 		kind?: string;
+		downloadUrl?: string;
 		preview?: unknown;
+		title?: string;
+		toolCallId?: string;
 	};
 
 	type PipelinePart =
@@ -604,18 +508,55 @@ const usePipelineChat = (
 								const { artifact } = evt.output;
 								const preview = artifact.preview;
 								if (!preview) break;
-								jotaiStore.set(showDatasetWorkspaceAtom, {
-									fileId: artifact.fileId,
-									filename: artifact.filename,
-									preview,
-								});
 								assistantParts.push({
 									type: "artifact",
+									category: "data",
 									fileId: artifact.fileId,
 									filename: artifact.filename,
 									extension: artifact.filename.split(".").pop() ?? "csv",
 									kind: artifact.kind,
+									downloadUrl: artifact.downloadUrl,
 									preview,
+								});
+							}
+
+							if (
+								evt.step === "chart" &&
+								"artifacts" in evt.output &&
+								Array.isArray(evt.output.artifacts)
+							) {
+								for (const artifact of evt.output.artifacts) {
+									if (!artifact?.fileId || !artifact.filename) {
+										continue;
+									}
+
+									assistantParts.push({
+										type: "artifact",
+										category: "chart",
+										fileId: artifact.fileId,
+										filename: artifact.filename,
+										extension: artifact.filename.split(".").pop() ?? "png",
+										kind: artifact.kind,
+										downloadUrl: artifact.downloadUrl,
+									});
+								}
+							}
+
+							if (
+								evt.step === "report" &&
+								"artifact" in evt.output &&
+								evt.output.artifact.fileId &&
+								evt.output.artifact.filename
+							) {
+								const { artifact } = evt.output;
+								assistantParts.push({
+									type: "artifact",
+									category: "report",
+									fileId: artifact.fileId,
+									filename: artifact.filename,
+									extension: artifact.filename.split(".").pop() ?? "md",
+									kind: artifact.kind,
+									downloadUrl: artifact.downloadUrl,
 								});
 							}
 							break;

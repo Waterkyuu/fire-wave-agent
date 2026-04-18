@@ -1,5 +1,6 @@
 "use client";
 
+import type { WorkspaceRoundArtifact } from "@/lib/chat/workspace-hydration";
 import { cn } from "@/lib/utils";
 import type { ChatAttachment } from "@/types/chat";
 import type { UIMessage } from "ai";
@@ -15,6 +16,7 @@ type MessageAreaProps = {
 	className?: string;
 	isLoading?: boolean;
 	onSelectAttachment?: (attachment: ChatAttachment) => void;
+	onSelectRoundArtifact?: (artifact: WorkspaceRoundArtifact) => void;
 	onShowVnc?: () => void;
 	isHistoryLoading?: boolean;
 };
@@ -27,6 +29,7 @@ const MessageArea = ({
 	className,
 	isLoading = false,
 	onSelectAttachment,
+	onSelectRoundArtifact,
 	onShowVnc,
 	isHistoryLoading = false,
 }: MessageAreaProps) => {
@@ -123,6 +126,7 @@ const MessageArea = ({
 							thinkingTime={message.role === "assistant" ? thinkingTime : null}
 							hasToolCalls={hasToolCalls}
 							onSelectAttachment={onSelectAttachment}
+							onSelectRoundArtifact={onSelectRoundArtifact}
 							onShowVnc={onShowVnc}
 						/>
 					))}

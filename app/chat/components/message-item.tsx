@@ -1,3 +1,4 @@
+import type { WorkspaceRoundArtifact } from "@/lib/chat/workspace-hydration";
 import type { ChatAttachment } from "@/types/chat";
 import type { UIMessage } from "ai";
 import { memo } from "react";
@@ -9,6 +10,7 @@ type MessageItemProps = {
 	thinkingTime: number | null;
 	hasToolCalls: boolean;
 	onSelectAttachment?: (attachment: ChatAttachment) => void;
+	onSelectRoundArtifact?: (artifact: WorkspaceRoundArtifact) => void;
 	onShowVnc?: () => void;
 };
 
@@ -17,6 +19,7 @@ const MessageItem = memo(
 		message,
 		thinkingTime,
 		onSelectAttachment,
+		onSelectRoundArtifact,
 		onShowVnc,
 	}: MessageItemProps) => {
 		if (message.role === "user") {
@@ -33,6 +36,7 @@ const MessageItem = memo(
 				message={message}
 				thinkingTime={thinkingTime}
 				onSelectAttachment={onSelectAttachment}
+				onSelectRoundArtifact={onSelectRoundArtifact}
 				onShowVnc={onShowVnc}
 			/>
 		);
