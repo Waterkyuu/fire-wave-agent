@@ -44,7 +44,12 @@ ${ctx.dataOutput?.columns.join(", ") ?? "unknown"}
 ${ctx.dataOutput?.rowCount ?? "unknown"}
 
 ## Goal
-${ctx.plan.chartGoal ?? "Create appropriate visualizations from the cleaned data"}`;
+${ctx.plan.chartGoal ?? "Create appropriate visualizations from the cleaned data"}
+
+## Output Contract (Required)
+- Your final assistant message must be EXACTLY one valid JSON object and no extra text.
+- Include all fields: chartCount, descriptions, artifacts.
+- If chart execution fails, still return valid JSON with chartCount=0 and a failure reason in descriptions.`;
 
 		case "report":
 			return `${base}

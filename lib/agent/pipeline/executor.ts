@@ -63,6 +63,12 @@ const RelaxedChartOutputSchema = ChartOutputSchema.extend({
 	artifacts: z.array(PersistedArtifactSchema).optional(),
 });
 
+const BestEffortChartOutputSchema = z.object({
+	chartCount: z.coerce.number().int().nonnegative().optional(),
+	descriptions: z.array(z.string()).optional(),
+	artifacts: z.array(PersistedArtifactSchema).optional(),
+});
+
 const RelaxedReportOutputSchema = ReportOutputSchema.omit({
 	artifact: true,
 }).extend({
@@ -340,23 +346,52 @@ const resolveDataOutput = (stepResult: StepExecutionResult): DataOutput => {
 };
 
 const resolveChartOutput = (stepResult: StepExecutionResult): ChartOutput => {
-	const parsedOutput = parseStructuredOutput(
+	const textCandidates = [
 		stepResult.text,
+		...extractTextCandidatesFromToolResults(stepResult.toolResults),
+	].filter((text) => text.trim().length > 0);
+
+	const parsedOutput = parseStructuredOutputFromTexts(
+		textCandidates,
 		RelaxedChartOutputSchema,
 	);
-
-	if (!parsedOutput) {
-		throw new Error("Chart step did not produce a valid JSON summary.");
-	}
+	const bestEffortOutput = parseStructuredOutputFromTexts(
+		textCandidates,
+		BestEffortChartOutputSchema,
+	);
 
 	const artifacts = extractArtifactsFromToolResults(
 		stepResult.toolResults,
 		"persistLatestChart",
 	);
+	const outputArtifacts =
+		artifacts.length > 0
+			? artifacts
+			: (parsedOutput?.artifacts ?? bestEffortOutput?.artifacts);
+	const fallbackDescriptionFromText =
+		normalizeSummaryText(stepResult.text) ??
+		"Chart generation did not complete successfully in this run.";
+	const fallbackDescription =
+		stepResult.toolErrors.length > 0
+			? `Chart generation encountered tool errors: ${stepResult.toolErrors.join(" | ")}`
+			: fallbackDescriptionFromText;
+	const descriptions =
+		parsedOutput?.descriptions && parsedOutput.descriptions.length > 0
+			? parsedOutput.descriptions
+			: bestEffortOutput?.descriptions &&
+					bestEffortOutput.descriptions.length > 0
+				? bestEffortOutput.descriptions
+				: [fallbackDescription];
+	const chartCount =
+		parsedOutput?.chartCount ??
+		bestEffortOutput?.chartCount ??
+		outputArtifacts?.length ??
+		0;
 
 	return ChartOutputSchema.parse({
-		...parsedOutput,
-		artifacts: artifacts.length > 0 ? artifacts : parsedOutput.artifacts,
+		chartCount,
+		descriptions,
+		artifacts: outputArtifacts,
 	});
 };
 

@@ -20,6 +20,9 @@ IMPORTANT RULES:
   plt.rcParams['axes.unicode_minus'] = False
 - Make charts publication-ready: proper DPI (150+), clear labels, no overlapping text
 - Generate each chart in a separate code cell for clarity
+- Your FINAL response must be EXACTLY ONE JSON object and nothing else (no markdown fences, no explanation text before/after JSON).
+- The JSON MUST be valid (double quotes, no trailing commas) and MUST include required fields.
+- If code execution fails or no chart can be generated, still output a valid JSON object with chartCount=0 and a short failure reason in descriptions.
 - After generating all charts, print a JSON block:
   {
     "chartCount": <number>,
