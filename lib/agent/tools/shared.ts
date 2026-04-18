@@ -1,3 +1,7 @@
+import {
+	formatCodeExecutionError,
+	formatSandboxOperationError,
+} from "@/lib/agent/error-utils";
 import type { SandboxSession } from "@/lib/e2b";
 import { tool, zodSchema } from "ai";
 import { z } from "zod";
@@ -6,12 +10,6 @@ type CodeInterpreterOptions = {
 	fileIds?: string[];
 	sandboxSession: SandboxSession;
 };
-
-const formatCodeExecutionError = (error: {
-	name: string;
-	value: string;
-	traceback: string;
-}) => [error.name, error.value, error.traceback].filter(Boolean).join("\n\n");
 
 const createCodeInterpreterTool = ({
 	fileIds = [],
@@ -26,10 +24,23 @@ const createCodeInterpreterTool = ({
 			}),
 		),
 		execute: async ({ code }: { code: string }) => {
-			const result = await sandboxSession.executeCode(code, fileIds);
+			let result: Awaited<ReturnType<SandboxSession["executeCode"]>>;
+			try {
+				result = await sandboxSession.executeCode(code, fileIds);
+			} catch (error) {
+				throw new Error(
+					formatSandboxOperationError("codeInterpreter.execute", error),
+				);
+			}
 
 			if (result.error) {
-				throw new Error(formatCodeExecutionError(result.error));
+				throw new Error(
+					formatCodeExecutionError({
+						error: result.error,
+						stderr: result.stderr,
+						stdout: result.stdout,
+					}),
+				);
 			}
 
 			return {

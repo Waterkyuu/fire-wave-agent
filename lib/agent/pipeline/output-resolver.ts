@@ -1,3 +1,4 @@
+import { formatUnknownError } from "@/lib/agent/error-utils";
 import {
 	type ChartOutput,
 	ChartOutputSchema,
@@ -240,19 +241,7 @@ const buildFallbackDataStats = (
 
 // --- Error formatting ---
 const formatToolError = (toolName: string, error: unknown) => {
-	if (error instanceof Error) {
-		return `${toolName}: ${error.message}`;
-	}
-
-	if (typeof error === "string") {
-		return `${toolName}: ${error}`;
-	}
-
-	try {
-		return `${toolName}: ${JSON.stringify(error)}`;
-	} catch {
-		return `${toolName}: Unknown tool error`;
-	}
+	return `${toolName}: ${formatUnknownError(error)}`;
 };
 
 const formatStepFailure = (error: Error, toolErrors: string[]) => {

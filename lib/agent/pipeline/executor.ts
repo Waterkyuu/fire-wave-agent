@@ -1,3 +1,4 @@
+import { formatUnknownError } from "@/lib/agent/error-utils";
 import { createChartAgent } from "@/lib/agent/multi-agents/chart-agent";
 import { createDataAgent } from "@/lib/agent/multi-agents/data-agent";
 import { runOrchestrator } from "@/lib/agent/multi-agents/orchestrator";
@@ -85,19 +86,18 @@ const executeStep = async (
 					output: part.output,
 				});
 				break;
-			case "tool-error":
+			case "tool-error": {
 				toolErrors.push(formatToolError(part.toolName, part.error));
+				const errorMessage = formatUnknownError(part.error);
 				onEvent({
 					type: "tool-error",
 					step,
 					toolCallId: part.toolCallId,
 					toolName: part.toolName,
-					error:
-						part.error instanceof Error
-							? part.error.message
-							: String(part.error),
+					error: errorMessage,
 				});
 				break;
+			}
 		}
 	}
 

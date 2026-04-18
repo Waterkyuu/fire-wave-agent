@@ -1,4 +1,5 @@
 import { basename } from "node:path/posix";
+import { formatSandboxOperationError } from "@/lib/agent/error-utils";
 import { Sandbox as CodeSandbox } from "@e2b/code-interpreter";
 import { Sandbox as DesktopSandbox } from "@e2b/desktop";
 import { getUploadedFileBytes, storeFileRecordFromBytes } from "./file-store";
@@ -14,7 +15,6 @@ if (!E2B_API_KEY) {
 const SANDBOX_TIMEOUT_MS = 5 * 60 * 1000;
 const CODE_DATA_DIR = "/home/user/data";
 const CODE_OUTPUT_DIR = "/home/user/output";
-const LEGACY_OUTPUT_DIR = "/mnt/data";
 
 type ManagedDesktopSandbox = {
 	sandbox: DesktopSandbox;
@@ -219,27 +219,46 @@ const createSandboxSession = (): SandboxSession => {
 		return codeEntry;
 	};
 
+	const ensureCodeDirectories = async (entry: ManagedCodeSandbox) => {
+		try {
+			await Promise.all([
+				entry.sandbox.files.makeDir(CODE_DATA_DIR),
+				entry.sandbox.files.makeDir(CODE_OUTPUT_DIR),
+			]);
+		} catch (error) {
+			throw new Error(
+				formatSandboxOperationError("prepare code sandbox directories", error),
+			);
+		}
+	};
+
 	const syncFilesToCodeSandbox = async (fileIds: string[]) => {
 		if (fileIds.length === 0) {
 			return;
 		}
 
 		const entry = await ensureCodeSandbox();
-		await entry.sandbox.commands.run(`mkdir -p ${CODE_DATA_DIR}`);
+		await ensureCodeDirectories(entry);
 
 		for (const fileId of fileIds) {
 			if (entry.syncedFileIds.has(fileId)) {
 				continue;
 			}
 
-			const { bytes, record } = await getUploadedFileBytes(fileId);
-			const fileBuffer = new ArrayBuffer(bytes.byteLength);
-			new Uint8Array(fileBuffer).set(bytes);
-			await entry.sandbox.files.write(
-				`${CODE_DATA_DIR}/${record.filename}`,
-				fileBuffer,
-			);
-			entry.syncedFileIds.add(fileId);
+			try {
+				const { bytes, record } = await getUploadedFileBytes(fileId);
+				const fileBuffer = new ArrayBuffer(bytes.byteLength);
+				new Uint8Array(fileBuffer).set(bytes);
+				await entry.sandbox.files.write(
+					`${CODE_DATA_DIR}/${record.filename}`,
+					fileBuffer,
+				);
+				entry.syncedFileIds.add(fileId);
+			} catch (error) {
+				throw new Error(
+					formatSandboxOperationError(`sync uploaded file "${fileId}"`, error),
+				);
+			}
 		}
 	};
 
@@ -294,12 +313,15 @@ const createSandboxSession = (): SandboxSession => {
 			fileIds: string[] = [],
 		): Promise<CodeExecutionResult> => {
 			const entry = await ensureCodeSandbox();
-			await entry.sandbox.commands.run(
-				`mkdir -p ${CODE_DATA_DIR} ${CODE_OUTPUT_DIR} ${LEGACY_OUTPUT_DIR}`,
-			);
+			await ensureCodeDirectories(entry);
 			await syncFilesToCodeSandbox(fileIds);
 
-			const execution = await entry.sandbox.runCode(code);
+			let execution: Awaited<ReturnType<CodeSandbox["runCode"]>>;
+			try {
+				execution = await entry.sandbox.runCode(code);
+			} catch (error) {
+				throw new Error(formatSandboxOperationError("run Python code", error));
+			}
 			const latestChartResult = execution.results.find((result) => result.png);
 
 			entry.lastChartArtifact = latestChartResult?.png

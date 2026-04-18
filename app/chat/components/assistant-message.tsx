@@ -31,6 +31,23 @@ const isSandboxLocalPath = (value?: string | null) =>
 			SANDBOX_LOCAL_PATH_PREFIXES.some((prefix) => value.startsWith(prefix)),
 	);
 
+const formatToolDetail = (value: unknown): string | undefined => {
+	if (value === undefined || value === null) {
+		return undefined;
+	}
+
+	if (typeof value === "string") {
+		const text = value.trim();
+		return text.length > 0 ? text : undefined;
+	}
+
+	try {
+		return JSON.stringify(value, null, 2);
+	} catch {
+		return String(value);
+	}
+};
+
 const ReasoningBlock = memo(({ text }: { text: string }) => {
 	const t = useTranslations("message");
 
@@ -63,8 +80,16 @@ const ToolCallBlock = memo(
 		const state = part.state as string;
 		const input = part.input as Record<string, unknown> | undefined;
 		const output = part.output as Record<string, unknown> | undefined;
-		const errorText = part.errorText as string | undefined;
-		const hasDetails = Boolean(input || output || errorText);
+		const inputText = formatToolDetail(input);
+		const outputText = formatToolDetail(output);
+		const errorText = formatToolDetail(part.errorText);
+		const hasDetails = Boolean(inputText || outputText || errorText);
+
+		useEffect(() => {
+			if (state === "output-error") {
+				setIsExpanded(true);
+			}
+		}, [state]);
 
 		const stateIconMap: Record<string, React.ReactNode> = {
 			"input-streaming": (
@@ -133,20 +158,20 @@ const ToolCallBlock = memo(
 				</div>
 				{isExpanded && (
 					<>
-						{input && (
+						{inputText && (
 							<pre className="mt-1.5 max-h-24 overflow-auto rounded bg-background p-1.5 font-mono text-[9px] sm:text-[10px]">
-								{JSON.stringify(input, null, 2)}
+								{inputText}
 							</pre>
 						)}
-						{output && state === "output-available" && (
+						{outputText && (
 							<pre className="mt-1.5 max-h-24 overflow-auto rounded bg-background p-1.5 font-mono text-[9px] sm:text-[10px]">
-								{JSON.stringify(output, null, 2)}
+								{outputText}
 							</pre>
 						)}
 						{errorText && (
-							<p className="mt-1.5 text-[10px] text-red-500 sm:text-xs">
+							<pre className="mt-1.5 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded bg-red-50 p-1.5 font-mono text-[9px] text-red-600 sm:text-[10px]">
 								{errorText}
-							</p>
+							</pre>
 						)}
 					</>
 				)}
