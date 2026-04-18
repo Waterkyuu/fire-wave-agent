@@ -456,6 +456,13 @@ const usePipelineChat = (
 							}
 							break;
 						}
+						case "tool-call": {
+							assistantParts.push({
+								type: "text",
+								text: `\n> Calling tool: ${evt.toolName}...\n`,
+							});
+							break;
+						}
 						case "step-complete": {
 							jotaiStore.set(updatePipelineStepAtom, {
 								step: evt.step,

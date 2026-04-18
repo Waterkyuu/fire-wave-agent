@@ -39,7 +39,9 @@ const MAIN_MODEL = process.env.GLM_MODEL ?? "glm-4.7-flash";
 const executeStep = async (
 	agent: AgentDefinition,
 	stepPrompt: string,
+	step: PipelineStep,
 	onDelta: (content: string) => void,
+	onToolCall: (toolName: string) => void,
 ): Promise<StepExecutionResult> => {
 	const result = await streamText({
 		system: agent.systemPrompt,
@@ -58,6 +60,9 @@ const executeStep = async (
 			case "text-delta":
 				fullText += part.text;
 				onDelta(part.text);
+				break;
+			case "tool-call":
+				onToolCall(part.toolName);
 				break;
 			case "tool-result":
 				toolResults.push({
@@ -110,8 +115,12 @@ const executePipeline = async (
 
 		try {
 			const stepPrompt = buildStepPrompt(step, ctx);
-			stepResult = await executeStep(agent, stepPrompt, (content: string) =>
-				onEvent({ type: "step-delta", step, content }),
+			stepResult = await executeStep(
+				agent,
+				stepPrompt,
+				step,
+				(content: string) => onEvent({ type: "step-delta", step, content }),
+				(toolName: string) => onEvent({ type: "tool-call", step, toolName }),
 			);
 
 			switch (step) {

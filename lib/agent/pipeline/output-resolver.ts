@@ -55,7 +55,6 @@ const RelaxedReportOutputSchema = ReportOutputSchema.omit({
 });
 
 // --- JSON extraction & structured parsing ---
-
 const extractJsonCandidates = (text: string): string[] => {
 	const candidates: string[] = [];
 	let start = -1;
@@ -145,7 +144,6 @@ const parseStructuredOutputFromTexts = <T>(
 };
 
 // --- Tool result extraction ---
-
 const extractTextCandidatesFromToolResults = (
 	toolResults: StepToolResult[],
 ): string[] =>
@@ -241,7 +239,6 @@ const buildFallbackDataStats = (
 };
 
 // --- Error formatting ---
-
 const formatToolError = (toolName: string, error: unknown) => {
 	if (error instanceof Error) {
 		return `${toolName}: ${error.message}`;
@@ -276,7 +273,6 @@ const firstNonEmpty = <T>(...candidates: (T[] | undefined)[]): T[] =>
 	candidates.find((c): c is T[] => Array.isArray(c) && c.length > 0) ?? [];
 
 // --- Resolve functions ---
-
 /**
  * Resolve a structured DataOutput from the raw result of the "data" pipeline step.
  *
