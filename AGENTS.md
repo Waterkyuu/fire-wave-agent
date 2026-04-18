@@ -18,7 +18,7 @@ When faced with complex processes, avoid committing all code at once. Instead, b
 ## Git Workflow
 - After completing a feature, bug fix, or refactoring, and confirming the code is functional, **you must automatically perform a Git commit**.
 - First, run `git diff` to check the changes, then run `git add .`.
-- Use `golangci-lint` to check the code in the server directory for style, and use `pnpm check` to check the code in the client directory for style.
+- Use `pnpm check` to check the code in the directory for style.
 - Finally, run `git commit -m "..."`.
 - Commit messages must follow Conventional Commits guidelines (e.g., feat:, fix:, refactor:, etc.).
 - Please execute these terminal commands directly; do not ask if you need to commit.
