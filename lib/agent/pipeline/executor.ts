@@ -437,6 +437,7 @@ const executeStep = async (
 	stepPrompt: string,
 	onDelta: (content: string) => void,
 ): Promise<StepExecutionResult> => {
+	// Execute a single specialist agent with bounded tool-loop steps to avoid runaway calls.
 	const result = await streamText({
 		system: agent.systemPrompt,
 		model: zhipu(MAIN_MODEL),
@@ -454,15 +455,18 @@ const executeStep = async (
 		switch (part.type) {
 			case "text-delta":
 				fullText += part.text;
+				// Forward incremental text so the caller can stream step progress in real time.
 				onDelta(part.text);
 				break;
 			case "tool-result":
+				// Keep raw tool payloads; downstream resolvers can recover structured output from them.
 				toolResults.push({
 					toolName: part.toolName,
 					output: part.output,
 				});
 				break;
 			case "tool-error":
+				// Record tool errors without aborting immediately; the step can still produce usable output.
 				toolErrors.push(formatToolError(part.toolName, part.error));
 				break;
 		}
@@ -484,6 +488,7 @@ const executePipeline = async (
 ): Promise<PipelineContext> => {
 	const { onEvent } = callbacks;
 
+	// Orchestrator decides which stages to run and in what order for this specific request.
 	const pipelinePlan = await runOrchestrator(userRequest, attachedFiles);
 	onEvent({ type: "plan", plan: pipelinePlan });
 
@@ -498,6 +503,7 @@ const executePipeline = async (
 		report: createReportAgent(sandboxSession),
 	};
 
+	// Context is a mutable baton passed stage-by-stage; each step enriches it for subsequent prompts.
 	const ctx = createInitialContext(userRequest, attachedFiles, pipelinePlan);
 
 	for (const step of pipelinePlan.steps) {
@@ -506,11 +512,13 @@ const executePipeline = async (
 		onEvent({ type: "step-start", step });
 
 		try {
+			// Build prompt from the latest context so each stage sees upstream validated outputs.
 			const stepPrompt = buildStepPrompt(step, ctx);
 			stepResult = await executeStep(agent, stepPrompt, (content: string) =>
 				onEvent({ type: "step-delta", step, content }),
 			);
 
+			// Resolve and persist typed stage outputs back into the shared pipeline context.
 			switch (step) {
 				case "data": {
 					const output = resolveDataOutput(stepResult);
