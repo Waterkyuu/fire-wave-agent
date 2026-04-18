@@ -53,6 +53,7 @@ When faced with complex processes, avoid committing all code at once. Instead, b
 - Responsive design needs to be considered.
 - The overall style leans towards shadcnui, with white as the main color and black as the secondary color.
 - Add loading interaction and button disabling for each data request
+- Follow .agents\skills\design-taste-frontend rule
   
 ## Project Structure
 ```md

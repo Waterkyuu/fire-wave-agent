@@ -1,6 +1,11 @@
 {
 	"version": 1,
 	"skills": {
+		"design-taste-frontend": {
+			"source": "Leonxlnx/taste-skill",
+			"sourceType": "github",
+			"computedHash": "d823593e24d7493ab740db8f082cbe3b148ed29af9e804d11f5302ad79e4b96d"
+		},
 		"fireworks-tech-graph": {
 			"source": "yizhiyanhua-ai/fireworks-tech-graph",
 			"sourceType": "github",
