@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@/lib/utils";
 import { type ComponentPropsWithoutRef, memo, useDeferredValue } from "react";
 import Markdown, { type Components } from "react-markdown";
