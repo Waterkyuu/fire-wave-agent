@@ -15,6 +15,7 @@ const PersistedArtifactSchema = z.object({
 	fileId: z.string(),
 	filename: z.string(),
 	downloadUrl: z.string(),
+	fileSize: z.number().nullable().optional(),
 	kind: z.enum(["dataset", "document"]).optional(),
 	contentType: z.string().nullable().optional(),
 });

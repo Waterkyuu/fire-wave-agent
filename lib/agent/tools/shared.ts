@@ -103,6 +103,7 @@ const createPersistCodeFileTool = (sandboxSession: SandboxSession) =>
 				contentType: record.contentType,
 				downloadUrl: getFileDownloadUrl(record),
 				fileId: record.id,
+				fileSize: record.fileSize,
 				filename: record.filename,
 				kind: record.kind,
 				status: "success" as const,
@@ -143,6 +144,7 @@ const createPersistLatestChartTool = (sandboxSession: SandboxSession) =>
 				contentType: record.contentType,
 				downloadUrl: getFileDownloadUrl(record),
 				fileId: record.id,
+				fileSize: record.fileSize,
 				filename: record.filename,
 				status: "success" as const,
 			};

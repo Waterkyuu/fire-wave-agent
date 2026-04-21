@@ -305,6 +305,7 @@ const usePipelineChat = (
 		fileId: string;
 		filename: string;
 		extension: string;
+		fileSize?: number;
 		category?: "data" | "chart" | "report";
 		kind?: string;
 		downloadUrl?: string;
@@ -554,6 +555,7 @@ const usePipelineChat = (
 									type: "artifact",
 									category: "data",
 									fileId: artifact.fileId,
+									fileSize: artifact.fileSize ?? undefined,
 									filename: artifact.filename,
 									extension: artifact.filename.split(".").pop() ?? "csv",
 									kind: artifact.kind,
@@ -575,6 +577,7 @@ const usePipelineChat = (
 										type: "artifact",
 										category: "chart",
 										fileId: artifact.fileId,
+										fileSize: artifact.fileSize ?? undefined,
 										filename: artifact.filename,
 										extension: artifact.filename.split(".").pop() ?? "png",
 										kind: artifact.kind,
@@ -594,6 +597,7 @@ const usePipelineChat = (
 									type: "artifact",
 									category: "report",
 									fileId: artifact.fileId,
+									fileSize: artifact.fileSize ?? undefined,
 									filename: artifact.filename,
 									extension: artifact.filename.split(".").pop() ?? "md",
 									kind: artifact.kind,

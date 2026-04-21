@@ -28,8 +28,9 @@ const FileCard = ({
 }: FileCardProps) => {
 	const sizeLabel =
 		typeof fileSize === "number" ? formatFileSize(fileSize) : undefined;
+	const extensionLabel = extension.trim().toUpperCase();
 	const detailText =
-		subtitle ?? [extension, sizeLabel].filter(Boolean).join(" ");
+		subtitle ?? [extensionLabel, sizeLabel].filter(Boolean).join(" ");
 
 	return (
 		<div

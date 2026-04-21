@@ -24,6 +24,7 @@ const assistantMessageWithRoundArtifacts = {
 			fileId: "dataset-1",
 			filename: "cleaned.csv",
 			extension: "csv",
+			fileSize: 312,
 			kind: "dataset",
 			preview: {
 				sheetNames: ["Sheet1"],
@@ -133,5 +134,17 @@ describe("AssistantMessage round artifact actions", () => {
 				fileId: "chart-a",
 			}),
 		);
+	});
+
+	it("shows normalized artifact file details for assistant file cards", () => {
+		render(
+			<MessageItem
+				message={assistantMessageWithRoundArtifacts}
+				thinkingTime={null}
+				hasToolCalls={false}
+			/>,
+		);
+
+		expect(screen.getByText("CSV 312 Bytes")).toBeInTheDocument();
 	});
 });

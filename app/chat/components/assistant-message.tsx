@@ -360,6 +360,10 @@ const AssistantMessage = memo(
 										: undefined,
 								extension: part.extension,
 								fileId: part.fileId,
+								fileSize:
+									typeof partRecord.fileSize === "number"
+										? partRecord.fileSize
+										: undefined,
 								filename: part.filename,
 								kind:
 									partRecord.kind === "dataset" ||
@@ -378,6 +382,7 @@ const AssistantMessage = memo(
 										className="w-[15rem] max-w-full"
 										extension={part.extension}
 										fileName={part.filename}
+										fileSize={attachment.fileSize}
 										isClickable
 									/>
 								</button>
