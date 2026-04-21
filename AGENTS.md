@@ -25,7 +25,7 @@ When faced with complex processes, avoid committing all code at once. Instead, b
 
 ## Code Style/Quality   
 - Comments are in English.
-- Add necessary comments to complex logic sections.
+- Add necessary comments wherever the logic is complex.
 - Add specific input/output examples to complex functions.
 - Write maintainable and readable code. Code should not be redundant.
 - When rendering multiple similar UI components, a data-driven approach must be used.
