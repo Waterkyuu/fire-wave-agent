@@ -16,6 +16,7 @@ import {
 } from "@/lib/agent/pipeline/output-resolver";
 import type { SandboxSession } from "@/lib/agent/sandbox/e2b";
 import { formatUnknownError } from "@/lib/agent/utils/error-utils";
+import { getFileDownloadUrl } from "@/lib/file-store";
 import type { FileRecord } from "@/types";
 import type {
 	AgentDefinition,
@@ -36,6 +37,84 @@ type StepToolResult = {
 };
 
 const MAIN_MODEL = process.env.GLM_MODEL ?? "glm-4.7-flash";
+
+const hasPersistedChartArtifact = (toolResults: StepToolResult[]) =>
+	toolResults.some(({ output, toolName }) => {
+		if (
+			toolName !== "persistLatestChart" ||
+			!output ||
+			typeof output !== "object"
+		) {
+			return false;
+		}
+
+		const outputRecord = output as Record<string, unknown>;
+		return (
+			typeof outputRecord.fileId === "string" &&
+			typeof outputRecord.filename === "string" &&
+			typeof outputRecord.downloadUrl === "string"
+		);
+	});
+
+const hasGeneratedChartResult = (toolResults: StepToolResult[]) =>
+	toolResults.some(({ output, toolName }) => {
+		if (
+			toolName !== "codeInterpreter" ||
+			!output ||
+			typeof output !== "object"
+		) {
+			return false;
+		}
+
+		const outputRecord = output as Record<string, unknown>;
+		if (!Array.isArray(outputRecord.results)) {
+			return false;
+		}
+
+		return outputRecord.results.some((result) => {
+			if (!result || typeof result !== "object") {
+				return false;
+			}
+
+			const resultRecord = result as Record<string, unknown>;
+			return (
+				typeof resultRecord.png === "string" ||
+				(typeof resultRecord.chart === "object" && resultRecord.chart !== null)
+			);
+		});
+	});
+
+const ensurePersistedChartArtifacts = async (
+	stepResult: StepExecutionResult,
+	sandboxSession: SandboxSession,
+): Promise<StepExecutionResult> => {
+	if (
+		hasPersistedChartArtifact(stepResult.toolResults) ||
+		!hasGeneratedChartResult(stepResult.toolResults)
+	) {
+		return stepResult;
+	}
+
+	const record = await sandboxSession.persistLatestChart();
+
+	return {
+		...stepResult,
+		toolResults: [
+			...stepResult.toolResults,
+			{
+				toolName: "persistLatestChart",
+				output: {
+					contentType: record.contentType,
+					downloadUrl: getFileDownloadUrl(record),
+					fileId: record.id,
+					fileSize: record.fileSize,
+					filename: record.filename,
+					status: "success" as const,
+				},
+			},
+		],
+	};
+};
 
 const executeStep = async (
 	agent: AgentDefinition,
@@ -150,6 +229,10 @@ const executePipeline = async (
 					break;
 				}
 				case "chart": {
+					stepResult = await ensurePersistedChartArtifacts(
+						stepResult,
+						sandboxSession,
+					);
 					const output = resolveChartOutput(stepResult);
 					ctx.chartOutput = output;
 					onEvent({ type: "step-complete", step, output });
@@ -176,4 +259,4 @@ const executePipeline = async (
 	return ctx;
 };
 
-export { executePipeline, MAIN_MODEL };
+export { executePipeline, MAIN_MODEL, ensurePersistedChartArtifacts };
