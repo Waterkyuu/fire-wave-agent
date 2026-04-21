@@ -54,21 +54,33 @@ const formatToolDetail = (value: unknown): string | undefined => {
 	}
 };
 
-const ReasoningBlock = memo(({ text }: { text: string }) => {
-	const t = useTranslations("message");
+const ReasoningBlock = memo(
+	({
+		text,
+		thinkingTime,
+	}: {
+		text: string;
+		thinkingTime: number | null;
+	}) => {
+		const t = useTranslations("message");
+		const heading =
+			thinkingTime == null
+				? t("thinking")
+				: t("thoughtFor", { time: thinkingTime.toFixed(1) });
 
-	return (
-		<div className="mb-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
-			<div className="mb-1 flex items-center gap-1.5 font-medium text-[10px] text-amber-600 sm:text-xs">
-				<Clock className="size-3" />
-				{t("thinking")}
+		return (
+			<div className="mb-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
+				<div className="mb-1 flex items-center gap-1.5 font-medium text-[10px] text-amber-600 sm:text-xs">
+					<Clock className="size-3" />
+					{heading}
+				</div>
+				<p className="whitespace-pre-wrap break-words text-[10px] text-amber-800 sm:text-xs">
+					{text}
+				</p>
 			</div>
-			<p className="whitespace-pre-wrap break-words text-[10px] text-amber-800 sm:text-xs">
-				{text}
-			</p>
-		</div>
-	);
-});
+		);
+	},
+);
 
 const ToolCallBlock = memo(
 	({
@@ -277,6 +289,7 @@ const AssistantMessage = memo(
 		const hasText = renderableParts.some(
 			(p) => p.type === "text" && (p as { text: string }).text,
 		);
+		const hasReasoning = renderableParts.some(isReasoningPart);
 
 		const roundArtifacts = useMemo<WorkspaceRoundArtifacts>(
 			() => deriveRoundArtifactsFromMessage(message),
@@ -330,6 +343,7 @@ const AssistantMessage = memo(
 								<ReasoningBlock
 									key={`${message.id}-reasoning-${i}`}
 									text={part.text}
+									thinkingTime={thinkingTime}
 								/>
 							);
 						}
@@ -392,7 +406,7 @@ const AssistantMessage = memo(
 						return null;
 					})}
 
-					{thinkingTime != null && hasText && (
+					{thinkingTime != null && hasText && !hasReasoning && (
 						<p className="text-[9px] text-muted-foreground sm:text-[10px]">
 							{t("thoughtFor", { time: thinkingTime.toFixed(1) })}
 						</p>

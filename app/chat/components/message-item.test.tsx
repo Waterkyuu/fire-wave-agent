@@ -1,7 +1,13 @@
 import "@testing-library/jest-dom";
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { UIMessage } from "ai";
+import type { ReactNode } from "react";
 import MessageItem from "./message-item";
+
+jest.mock("react-markdown", () => ({
+	__esModule: true,
+	default: ({ children }: { children?: ReactNode }) => <>{children}</>,
+}));
 
 const toolMessage: UIMessage = {
 	id: "assistant-tool-message",
@@ -13,6 +19,21 @@ const toolMessage: UIMessage = {
 			state: "output-available",
 			input: { query: "test query" },
 			output: { result: "tool result payload" },
+		},
+	],
+};
+
+const reasoningMessage: UIMessage = {
+	id: "assistant-reasoning-message",
+	role: "assistant",
+	parts: [
+		{
+			type: "reasoning",
+			text: "I am analyzing the dataset.",
+		},
+		{
+			type: "text",
+			text: "Analysis complete.",
 		},
 	],
 };
@@ -33,5 +54,19 @@ describe("MessageItem tool details", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Hide tool details" }));
 
 		expect(screen.queryByText(/tool result payload/i)).not.toBeInTheDocument();
+	});
+
+	it("shows completed reasoning time instead of a stale thinking label", () => {
+		render(
+			<MessageItem
+				message={reasoningMessage}
+				thinkingTime={1.2}
+				hasToolCalls={false}
+			/>,
+		);
+
+		expect(screen.getByText("Thought for 1.2s")).toBeInTheDocument();
+		expect(screen.getAllByText("Thought for 1.2s")).toHaveLength(1);
+		expect(screen.queryByText("Thinking...")).not.toBeInTheDocument();
 	});
 });
