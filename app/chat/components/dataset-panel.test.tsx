@@ -78,4 +78,30 @@ describe("DatasetPanel", () => {
 			"https://public.example/cleaned_data.csv",
 		);
 	});
+
+	it("does not refetch preview when the same dataset file id is updated", async () => {
+		act(() => {
+			jotaiStore.set(workspaceDatasetAtom, {
+				downloadUrl: "https://public.example/cleaned_data.csv",
+				fileId: "dataset-1",
+				filename: "cleaned_data.csv",
+			});
+		});
+
+		render(<DatasetPanel />);
+
+		await waitFor(() => {
+			expect(zodGetMock).toHaveBeenCalledTimes(1);
+		});
+
+		act(() => {
+			jotaiStore.set(workspaceDatasetAtom, {
+				downloadUrl: "https://public.example/cleaned_data-v2.csv",
+				fileId: "dataset-1",
+				filename: "cleaned_data.csv",
+			});
+		});
+
+		expect(zodGetMock).toHaveBeenCalledTimes(1);
+	});
 });

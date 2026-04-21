@@ -19,6 +19,10 @@ const resultEnum: Record<string, number> = {
 	sensitive: 105,
 };
 
+const isCanceledRequest = (error: AxiosError<ApiResponse>): boolean => {
+	return error.code === "ERR_CANCELED" || axios.isCancel(error);
+};
+
 apiClient.interceptors.request.use(
 	(config: InternalAxiosRequestConfig) => {
 		return config;
@@ -40,6 +44,11 @@ apiClient.interceptors.response.use(
 	},
 
 	(error: AxiosError<ApiResponse>) => {
+		if (isCanceledRequest(error)) {
+			// Request aborts are expected in effect cleanups and should stay silent.
+			return Promise.reject(error);
+		}
+
 		const data = error.response?.data;
 
 		const code = data?.code;
@@ -61,4 +70,5 @@ apiClient.interceptors.response.use(
 	},
 );
 
+export { isCanceledRequest };
 export default apiClient;

@@ -7,12 +7,14 @@ import { zodGet } from "@/services/request";
 import { DatasetDataResponseSchema } from "@/types";
 import { useAtomValue } from "jotai";
 import { useTranslations } from "next-intl";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 
 const DEFAULT_PREVIEW_ROWS = 200;
 
 const DatasetPanel = memo(() => {
 	const dataset = useAtomValue(workspaceDatasetAtom);
+	const datasetFileId = dataset?.fileId;
+	const datasetPreview = dataset?.preview;
 	const t = useTranslations("chat");
 	const [preview, setPreview] = useState(dataset?.preview ?? null);
 	const [previewError, setPreviewError] = useState<string | null>(null);
@@ -20,15 +22,30 @@ const DatasetPanel = memo(() => {
 	const [resolvedDownloadUrl, setResolvedDownloadUrl] = useState(
 		dataset?.downloadUrl,
 	);
+	const lastDatasetFileIdRef = useRef<string | null>(dataset?.fileId ?? null);
 
 	useEffect(() => {
-		setPreview(dataset?.preview ?? null);
-		setResolvedDownloadUrl(dataset?.downloadUrl);
+		if (!dataset) {
+			lastDatasetFileIdRef.current = null;
+			setPreview(null);
+			setResolvedDownloadUrl(undefined);
+			setPreviewError(null);
+			return;
+		}
+
+		const hasFileChanged = lastDatasetFileIdRef.current !== dataset.fileId;
+		lastDatasetFileIdRef.current = dataset.fileId;
+		setResolvedDownloadUrl(dataset.downloadUrl);
 		setPreviewError(null);
-	}, [dataset]);
+
+		// Keep locally fetched preview when only metadata changes for the same file.
+		if (hasFileChanged || dataset.preview) {
+			setPreview(dataset.preview ?? null);
+		}
+	}, [dataset?.downloadUrl, dataset?.fileId, dataset?.preview]);
 
 	useEffect(() => {
-		if (!dataset || dataset.preview) {
+		if (!datasetFileId || datasetPreview || preview) {
 			return;
 		}
 
@@ -39,7 +56,7 @@ const DatasetPanel = memo(() => {
 			try {
 				// Load dataset rows on demand to keep persisted chat payload small.
 				const payload = await zodGet(
-					`/file/${dataset.fileId}/dataset?rows=${DEFAULT_PREVIEW_ROWS}`,
+					`/file/${datasetFileId}/dataset?rows=${DEFAULT_PREVIEW_ROWS}`,
 					DatasetDataResponseSchema,
 					{ signal: controller.signal },
 				);
@@ -63,12 +80,12 @@ const DatasetPanel = memo(() => {
 			}
 		};
 
-		void loadDatasetPreview();
+		loadDatasetPreview();
 
 		return () => {
 			controller.abort();
 		};
-	}, [dataset]);
+	}, [datasetFileId, datasetPreview, preview]);
 
 	if (!dataset) {
 		return (
