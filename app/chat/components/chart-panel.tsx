@@ -6,18 +6,11 @@ import { useAtomValue } from "jotai";
 import { useTranslations } from "next-intl";
 import { memo } from "react";
 
-const toImageSrc = (value?: string) => {
-	if (!value) {
-		return "";
-	}
-
-	return value.startsWith("data:") ? value : `data:image/png;base64,${value}`;
-};
-
 const ChartPanel = memo(() => {
 	const chart = useAtomValue(workspaceChartAtom);
 	const t = useTranslations("chat");
-	const imageSrc = toImageSrc(chart?.png);
+	// Prefer URL-based rendering to avoid persisting large base64 payloads.
+	const imageSrc = chart?.downloadUrl ?? "";
 
 	if (!chart) {
 		return (

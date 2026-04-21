@@ -2,6 +2,7 @@ import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { S3 } from "@/infra/r2";
+import { isDatasetFilename } from "@/lib/file";
 import {
 	type DatasetPreview,
 	type FileRecord,
@@ -14,8 +15,10 @@ const BUCKET_NAME = process.env.BUCKET_NAME ?? "";
 const FILE_STORE_ROOT = join(tmpdir(), "refract-files");
 const CHUNKS_ROOT = join(FILE_STORE_ROOT, "chunks");
 const RECORDS_ROOT = join(FILE_STORE_ROOT, "records");
-const DATASET_EXTENSIONS = new Set(["csv", "xlsx", "xls"]);
 const DATASET_PREVIEW_ROW_LIMIT = 50;
+const DATASET_PREVIEW_ROW_LIMIT_MAX = 5000;
+const DATASET_PREVIEW_ROW_LIMIT_MIN = 1;
+const R2_PUBLIC_BASE_URL = process.env.R2_PUBLIC_BASE_URL?.trim();
 
 const ensureStorageDirs = async () => {
 	await mkdir(CHUNKS_ROOT, { recursive: true });
@@ -23,12 +26,6 @@ const ensureStorageDirs = async () => {
 };
 
 const sanitizeFilename = (filename: string) => basename(filename);
-
-const getFilenameExtension = (filename: string) =>
-	sanitizeFilename(filename).split(".").pop()?.toLowerCase() ?? "";
-
-const isDatasetFilename = (filename: string) =>
-	DATASET_EXTENSIONS.has(getFilenameExtension(filename));
 
 const getFilenameToken = (filename: string) =>
 	Buffer.from(sanitizeFilename(filename)).toString("base64url");
@@ -48,13 +45,28 @@ const normalizePreviewRows = (rows: unknown[][], totalColumns: number) =>
 		),
 	);
 
+const normalizePreviewLimit = (rowLimit: number) => {
+	const normalized = Math.floor(rowLimit);
+	if (!Number.isFinite(normalized)) {
+		return DATASET_PREVIEW_ROW_LIMIT;
+	}
+
+	return Math.min(
+		Math.max(normalized, DATASET_PREVIEW_ROW_LIMIT_MIN),
+		DATASET_PREVIEW_ROW_LIMIT_MAX,
+	);
+};
+
 const buildDatasetPreview = (
 	buffer: Buffer,
 	filename: string,
+	rowLimit = DATASET_PREVIEW_ROW_LIMIT,
 ): DatasetPreview | undefined => {
 	if (!isDatasetFilename(filename)) {
 		return undefined;
 	}
+
+	const limit = normalizePreviewLimit(rowLimit);
 
 	const workbook = read(buffer, {
 		type: "buffer",
@@ -101,13 +113,21 @@ const buildDatasetPreview = (
 		sheetNames: workbook.SheetNames,
 		activeSheet,
 		columns,
-		rows: normalizePreviewRows(
-			bodyRows.slice(0, DATASET_PREVIEW_ROW_LIMIT),
-			totalColumns,
-		),
+		rows: normalizePreviewRows(bodyRows.slice(0, limit), totalColumns),
 		totalRows: bodyRows.length,
 		totalColumns,
 	};
+};
+
+// Build a direct public URL when R2 is publicly exposed; fallback to API proxy.
+const getFileDownloadUrl = (record: Pick<FileRecord, "id" | "objectKey">) => {
+	if (R2_PUBLIC_BASE_URL && record.objectKey) {
+		const base = R2_PUBLIC_BASE_URL.replace(/\/+$/, "");
+		const key = record.objectKey.replace(/^\/+/, "");
+		return `${base}/${key}`;
+	}
+
+	return `/api/file/${record.id}/download`;
 };
 
 const saveFileRecord = async (record: FileRecord) => {
@@ -269,6 +289,26 @@ const getUploadedFileBytes = async (fileId: string) => {
 	};
 };
 
+const getDatasetPreviewByFileId = async (fileId: string, rowLimit = 200) => {
+	const { bytes, record } = await getUploadedFileBytes(fileId);
+	const preview = buildDatasetPreview(
+		Buffer.from(bytes),
+		record.filename,
+		rowLimit,
+	);
+
+	if (!preview) {
+		throw new Error(`File ${record.filename} is not a supported dataset.`);
+	}
+
+	return {
+		downloadUrl: getFileDownloadUrl(record),
+		fileId: record.id,
+		filename: record.filename,
+		preview,
+	};
+};
+
 const hasChunkFile = async (filename: string, index: number) => {
 	try {
 		await stat(getChunkPath(filename, index));
@@ -290,9 +330,10 @@ const listUploadedChunks = async (filename: string, totalChunks: number) => {
 
 export {
 	cancelUploadByFilename,
+	getDatasetPreviewByFileId,
+	getFileDownloadUrl,
 	getFileRecordStatus,
 	getUploadedFileBytes,
-	isDatasetFilename,
 	listUploadedChunks,
 	mergeUploadedFile,
 	readFileRecord,

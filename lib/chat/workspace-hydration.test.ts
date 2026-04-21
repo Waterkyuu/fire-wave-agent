@@ -161,4 +161,59 @@ describe("workspace hydration", () => {
 		expect(Object.keys(byMessage)).toEqual(["assistant-round"]);
 		expect(byMessage["assistant-round"]?.chart).toHaveLength(1);
 	});
+
+	it("hydrates dataset view from dataset attachment metadata without preview", () => {
+		const userMessage: UIMessage = {
+			id: "user-dataset-no-preview",
+			role: "user",
+			parts: [{ type: "text", text: "use uploaded dataset" }],
+			metadata: {
+				attachments: [
+					{
+						fileId: "upload-dataset-no-preview",
+						filename: "upload.csv",
+						extension: "CSV",
+					},
+				],
+			},
+		};
+
+		const snapshot = deriveWorkspaceSnapshotFromMessages([userMessage]);
+
+		expect(snapshot.dataset).toEqual(
+			expect.objectContaining({
+				fileId: "upload-dataset-no-preview",
+				filename: "upload.csv",
+			}),
+		);
+		expect(snapshot.view).toBe("dataset");
+	});
+
+	it("hydrates data artifacts without preview into dataset workspace", () => {
+		const assistantMessage: UIMessage = {
+			id: "assistant-data-artifact-no-preview",
+			role: "assistant",
+			parts: [
+				{
+					type: "artifact",
+					category: "data",
+					fileId: "dataset-without-preview",
+					filename: "cleaned_data.csv",
+					extension: "csv",
+					kind: "dataset",
+					downloadUrl: "https://public.example/cleaned_data.csv",
+				},
+			],
+		};
+
+		const snapshot = deriveWorkspaceSnapshotFromMessages([assistantMessage]);
+
+		expect(snapshot.dataset).toEqual(
+			expect.objectContaining({
+				fileId: "dataset-without-preview",
+				filename: "cleaned_data.csv",
+			}),
+		);
+		expect(snapshot.view).toBe("dataset");
+	});
 });

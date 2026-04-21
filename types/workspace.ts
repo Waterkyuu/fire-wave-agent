@@ -8,15 +8,15 @@ type WorkspaceChart = {
 	fileId?: string;
 	filename?: string;
 	generatedAt: number;
-	png?: string;
 	title?: string;
 	toolCallId: string;
 };
 
 type WorkspaceDataset = {
+	downloadUrl?: string;
 	fileId: string;
 	filename: string;
-	preview: DatasetPreview;
+	preview?: DatasetPreview;
 };
 
 type WorkspaceFile = {

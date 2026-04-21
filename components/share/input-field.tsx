@@ -22,6 +22,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { handleError } from "@/lib/error-handler";
+import { isDatasetExtension } from "@/lib/file";
 import { type UploadResult, cancelUpload, uploadFile } from "@/lib/upload-file";
 import { cn, generateId } from "@/lib/utils";
 import type { ChatAttachment } from "@/types/chat";
@@ -188,11 +189,11 @@ const InputField = ({
 					});
 
 					setUploadedFiles((prev) => [...prev, result]);
-					if (result.preview) {
+					if (result.kind === "dataset") {
 						showDatasetWorkspace({
+							downloadUrl: result.downloadUrl,
 							fileId: result.fileId,
 							filename: result.filename,
-							preview: result.preview,
 						});
 						onOpenWorkspace?.();
 					}
@@ -250,14 +251,14 @@ const InputField = ({
 		const uploadedFile = uploadedFiles.find(
 			(file) => file.filename === filename,
 		);
-		if (!uploadedFile?.preview) {
+		if (!uploadedFile || uploadedFile.kind !== "dataset") {
 			return;
 		}
 
 		showDatasetWorkspace({
+			downloadUrl: uploadedFile.downloadUrl,
 			fileId: uploadedFile.fileId,
 			filename: uploadedFile.filename,
-			preview: uploadedFile.preview,
 		});
 		onOpenWorkspace?.();
 	};
@@ -271,11 +272,12 @@ const InputField = ({
 				uploadedFile.filename.split(".").pop()?.toUpperCase() || "FILE";
 
 			return {
+				downloadUrl: uploadedFile.downloadUrl,
 				extension,
 				fileId: uploadedFile.fileId,
 				filename: uploadedFile.filename,
 				fileSize: localFile?.size,
-				preview: uploadedFile.preview,
+				kind: uploadedFile.kind,
 			};
 		});
 
@@ -288,7 +290,8 @@ const InputField = ({
 					const uploadedFile = uploadedFiles.find(
 						(item) => item.filename === file.name,
 					);
-					const isPreviewable = Boolean(uploadedFile?.preview);
+					const isPreviewable =
+						uploadedFile?.kind === "dataset" || isDatasetExtension(ext);
 
 					return {
 						filename: file.name,
@@ -317,14 +320,20 @@ const InputField = ({
 					filename: attachment.filename,
 					fileSize: attachment.fileSize,
 					extension: attachment.extension,
-					isPreviewable: Boolean(attachment.preview),
+					isPreviewable:
+						attachment.kind === "dataset" ||
+						isDatasetExtension(attachment.extension),
 					progress: undefined,
 					onClick: () => {
-						if (!attachment.preview) {
+						const isDatasetAttachment =
+							attachment.kind === "dataset" ||
+							isDatasetExtension(attachment.extension);
+						if (!isDatasetAttachment) {
 							return;
 						}
 
 						showDatasetWorkspace({
+							downloadUrl: attachment.downloadUrl,
 							fileId: attachment.fileId,
 							filename: attachment.filename,
 							preview: attachment.preview,

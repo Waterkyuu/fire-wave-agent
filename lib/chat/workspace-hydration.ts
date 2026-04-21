@@ -6,6 +6,7 @@ import type {
 } from "@/types";
 import type { ChatAttachment, ChatMessageMetadata } from "@/types/chat";
 import type { UIMessage } from "ai";
+import { isDatasetExtension } from "../file";
 
 type WorkspaceArtifactCategory = "data" | "chart" | "report";
 
@@ -20,7 +21,6 @@ type WorkspaceRoundArtifact = {
 	extension?: string;
 	preview?: WorkspaceDataset["preview"];
 	chart?: Record<string, unknown>;
-	png?: string;
 	title?: string;
 	toolCallId?: string;
 };
@@ -99,24 +99,31 @@ const getFileDownloadUrl = (
 	return undefined;
 };
 
-const resolvePreviewAttachment = (
+// Resolve dataset attachments from user metadata even when preview is omitted.
+const resolveDatasetAttachment = (
 	attachments: ChatAttachment[] | undefined,
 ): WorkspaceDataset | null => {
 	if (!attachments || attachments.length === 0) {
 		return null;
 	}
 
-	const previewAttachment = attachments.findLast(
-		(attachment) => attachment.preview,
-	);
-	if (!previewAttachment?.preview) {
+	const datasetAttachment = attachments.findLast(({ extension, kind }) => {
+		if (kind === "dataset") {
+			return true;
+		}
+
+		return isDatasetExtension(extension);
+	});
+
+	if (!datasetAttachment) {
 		return null;
 	}
 
 	return {
-		fileId: previewAttachment.fileId,
-		filename: previewAttachment.filename,
-		preview: previewAttachment.preview,
+		downloadUrl: datasetAttachment.downloadUrl,
+		fileId: datasetAttachment.fileId,
+		filename: datasetAttachment.filename,
+		preview: datasetAttachment.preview,
 	};
 };
 
@@ -282,9 +289,7 @@ const deriveRoundArtifactsFromMessage = (
 
 				const resultRecord = result as Record<string, unknown>;
 				const hasChartPayload =
-					(typeof resultRecord.chart === "object" &&
-						resultRecord.chart !== null) ||
-					typeof resultRecord.png === "string";
+					typeof resultRecord.chart === "object" && resultRecord.chart !== null;
 				if (!hasChartPayload) {
 					continue;
 				}
@@ -308,8 +313,6 @@ const deriveRoundArtifactsFromMessage = (
 					label: title,
 					title,
 					chart: chartPayload,
-					png:
-						typeof resultRecord.png === "string" ? resultRecord.png : undefined,
 					toolCallId,
 				});
 			}
@@ -429,7 +432,7 @@ const deriveWorkspaceSnapshotFromMessages = (
 
 	for (const message of messages) {
 		const metadata = message.metadata as ChatMessageMetadata | undefined;
-		const datasetFromAttachment = resolvePreviewAttachment(
+		const datasetFromAttachment = resolveDatasetAttachment(
 			metadata?.attachments,
 		);
 		if (datasetFromAttachment) {
@@ -450,28 +453,18 @@ const deriveWorkspaceSnapshotFromMessages = (
 
 		for (const artifact of roundEntries) {
 			if (artifact.category === "data") {
-				if (artifact.preview && artifact.fileId && artifact.filename) {
+				if (artifact.fileId && artifact.filename) {
 					snapshot.dataset = {
+						downloadUrl: getFileDownloadUrl(
+							artifact.fileId,
+							artifact.downloadUrl,
+						),
 						fileId: artifact.fileId,
 						filename: artifact.filename,
 						preview: artifact.preview,
 					};
 					markViewUpdated("dataset");
 					continue;
-				}
-
-				if (artifact.fileId && artifact.filename) {
-					snapshot.file = {
-						fileId: artifact.fileId,
-						filename: artifact.filename,
-						extension:
-							artifact.extension ?? getFileExtension(artifact.filename),
-						downloadUrl: getFileDownloadUrl(
-							artifact.fileId,
-							artifact.downloadUrl,
-						),
-					};
-					markViewUpdated("file");
 				}
 				continue;
 			}
@@ -483,7 +476,6 @@ const deriveWorkspaceSnapshotFromMessages = (
 					fileId: artifact.fileId,
 					filename: artifact.filename,
 					generatedAt: artifact.createdAt,
-					png: artifact.png,
 					title: artifact.title ?? artifact.label,
 					toolCallId: artifact.toolCallId ?? artifact.id,
 				};

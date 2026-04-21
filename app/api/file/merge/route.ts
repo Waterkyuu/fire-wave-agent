@@ -1,4 +1,4 @@
-import { mergeUploadedFile } from "@/lib/file-store";
+import { getFileDownloadUrl, mergeUploadedFile } from "@/lib/file-store";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -22,8 +22,9 @@ const POST = async (req: Request) => {
 			success: true,
 			message: "File merged.",
 			data: {
+				download_url: getFileDownloadUrl(record),
 				file_id: record.id,
-				preview: record.preview,
+				kind: record.kind,
 			},
 		});
 	} catch (error) {

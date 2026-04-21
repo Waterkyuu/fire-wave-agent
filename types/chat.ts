@@ -18,10 +18,12 @@ type ToolCallEvent = {
 };
 
 type ChatAttachment = {
+	downloadUrl?: string;
 	extension: string;
 	fileId: string;
 	filename: string;
 	fileSize?: number;
+	kind?: "dataset" | "document";
 	preview?: DatasetPreview;
 };
 

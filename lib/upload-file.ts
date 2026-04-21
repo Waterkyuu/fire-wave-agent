@@ -1,10 +1,6 @@
 import apiClient from "@/services/api-client";
 import { voidPost, zodGet, zodPost } from "@/services/request";
-import {
-	type DatasetPreview,
-	FileRecordSchema,
-	MergeFileResponseSchema,
-} from "@/types";
+import { FileRecordSchema, MergeFileResponseSchema } from "@/types";
 import { handleError } from "./error-handler";
 
 const DEFAULT_CHUNK_SIZE = 2 * 1024 * 1024;
@@ -17,9 +13,10 @@ const DEFAULT_STATUS_TIMEOUT = 60_000;
 type UploadProgressHandler = (progress: number) => void;
 
 type UploadResult = {
+	downloadUrl: string;
 	fileId: string;
 	filename: string;
-	preview?: DatasetPreview;
+	kind?: "dataset" | "document";
 };
 
 type CreateChunksOptions = {
@@ -179,9 +176,10 @@ const mergeFile = async ({
 	);
 
 	return {
+		downloadUrl: result.download_url,
 		fileId: result.file_id,
 		filename,
-		preview: result.preview,
+		kind: result.kind,
 	};
 };
 

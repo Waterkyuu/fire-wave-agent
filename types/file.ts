@@ -16,8 +16,16 @@ const UploadedChunksSchema = z.object({
 });
 
 const MergeFileResponseSchema = z.object({
+	download_url: z.string(),
 	file_id: z.string(),
-	preview: DatasetPreviewSchema.optional(),
+	kind: z.enum(["dataset", "document"]).optional(),
+});
+
+const DatasetDataResponseSchema = z.object({
+	download_url: z.string(),
+	file_id: z.string(),
+	filename: z.string(),
+	preview: DatasetPreviewSchema,
 });
 
 const FileRecordSchema = z.object({
@@ -39,14 +47,17 @@ type DatasetPreview = z.infer<typeof DatasetPreviewSchema>;
 type UploadedChunks = z.infer<typeof UploadedChunksSchema>;
 type FileRecord = z.infer<typeof FileRecordSchema>;
 type MergeFileResponse = z.infer<typeof MergeFileResponseSchema>;
+type DatasetDataResponse = z.infer<typeof DatasetDataResponseSchema>;
 
 export {
 	DatasetPreviewSchema,
+	DatasetDataResponseSchema,
 	FileRecordSchema,
 	MergeFileResponseSchema,
 	UploadedChunksSchema,
 };
 export type {
+	DatasetDataResponse,
 	DatasetPreviewRow,
 	DatasetPreview,
 	FileRecord,
