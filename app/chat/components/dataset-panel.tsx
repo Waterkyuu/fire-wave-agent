@@ -3,88 +3,20 @@
 import { workspaceDatasetAtom } from "@/atoms/chat";
 import VirtualList from "@/components/share/virtual-list";
 import { Button } from "@/components/ui/button";
-import { zodGet } from "@/services/request";
-import { DatasetDataResponseSchema, type DatasetPreview } from "@/types";
+import { useDatasetPreview } from "@/services/dataset-panel";
 import { useAtomValue } from "jotai";
+import { Download } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { memo, useEffect, useRef, useState } from "react";
-
-const DEFAULT_PREVIEW_ROWS = 200;
+import { memo } from "react";
 
 const DatasetPanel = memo(() => {
 	const dataset = useAtomValue(workspaceDatasetAtom);
-	const datasetFileId = dataset?.fileId;
 	const t = useTranslations("chat");
-	const [preview, setPreview] = useState<DatasetPreview | null>(null);
-	const [previewError, setPreviewError] = useState<string | null>(null);
-	const [isPreviewLoading, setIsPreviewLoading] = useState(false);
-	const [resolvedDownloadUrl, setResolvedDownloadUrl] = useState(
-		dataset?.downloadUrl,
-	);
-	const lastDatasetFileIdRef = useRef<string | null>(dataset?.fileId ?? null);
-
-	useEffect(() => {
-		if (!dataset) {
-			lastDatasetFileIdRef.current = null;
-			setPreview(null);
-			setResolvedDownloadUrl(undefined);
-			setPreviewError(null);
-			return;
-		}
-
-		const hasFileChanged = lastDatasetFileIdRef.current !== dataset.fileId;
-		lastDatasetFileIdRef.current = dataset.fileId;
-		setResolvedDownloadUrl(dataset.downloadUrl);
-		setPreviewError(null);
-
-		// Keep locally fetched preview when only metadata changes for the same file.
-		if (hasFileChanged) {
-			setPreview(null);
-		}
-	}, [dataset?.downloadUrl, dataset?.fileId]);
-
-	useEffect(() => {
-		if (!datasetFileId || preview) {
-			return;
-		}
-
-		const controller = new AbortController();
-
-		const loadDatasetPreview = async () => {
-			setIsPreviewLoading(true);
-			try {
-				// Load dataset rows on demand to keep persisted chat payload small.
-				const payload = await zodGet(
-					`/file/${datasetFileId}/dataset?rows=${DEFAULT_PREVIEW_ROWS}`,
-					DatasetDataResponseSchema,
-					{ signal: controller.signal },
-				);
-
-				setPreview(payload.preview);
-				setResolvedDownloadUrl(payload.download_url);
-				setPreviewError(null);
-			} catch (error) {
-				if (controller.signal.aborted) {
-					return;
-				}
-				setPreviewError(
-					error instanceof Error
-						? error.message
-						: "Failed to load dataset preview.",
-				);
-			} finally {
-				if (!controller.signal.aborted) {
-					setIsPreviewLoading(false);
-				}
-			}
-		};
-
-		loadDatasetPreview();
-
-		return () => {
-			controller.abort();
-		};
-	}, [datasetFileId]);
+	const {
+		data: datasetPreviewData,
+		error: previewError,
+		isLoading: isPreviewLoading,
+	} = useDatasetPreview(dataset?.fileId);
 
 	if (!dataset) {
 		return (
@@ -95,7 +27,11 @@ const DatasetPanel = memo(() => {
 	}
 
 	const downloadUrl =
-		resolvedDownloadUrl ?? `/api/file/${dataset.fileId}/download`;
+		dataset.downloadUrl ??
+		datasetPreviewData?.download_url ??
+		`/api/file/${dataset.fileId}/download`;
+	const preview = datasetPreviewData?.preview ?? null;
+	const previewErrorText = previewError?.message ?? null;
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">
@@ -113,11 +49,18 @@ const DatasetPanel = memo(() => {
 							</p>
 						) : (
 							<p className="text-muted-foreground text-xs">
-								{isPreviewLoading ? t("waitingDataset") : (previewError ?? "-")}
+								{isPreviewLoading
+									? t("waitingDataset")
+									: (previewErrorText ?? "-")}
 							</p>
 						)}
 					</div>
-					<Button asChild size="sm" variant="outline">
+					<Button
+						size="sm"
+						variant="outline"
+						className="flex items-center justify-center gap-1"
+					>
+						<Download className="size-3 md:size-4" />
 						<a href={downloadUrl}>{t("downloadArtifact")}</a>
 					</Button>
 				</div>
@@ -125,7 +68,7 @@ const DatasetPanel = memo(() => {
 
 			{!preview ? (
 				<div className="flex h-full w-full items-center justify-center text-muted-foreground text-sm">
-					{isPreviewLoading ? t("waitingDataset") : (previewError ?? "-")}
+					{isPreviewLoading ? t("waitingDataset") : (previewErrorText ?? "-")}
 				</div>
 			) : (
 				<VirtualList

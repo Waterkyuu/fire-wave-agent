@@ -2,7 +2,9 @@ import jotaiStore from "@/atoms";
 import { workspaceDatasetAtom } from "@/atoms/chat";
 import { zodGet } from "@/services/request";
 import { DatasetDataResponseSchema } from "@/types";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
 import DatasetPanel from "./dataset-panel";
 
 jest.mock("@/services/request", () => ({
@@ -22,6 +24,23 @@ const previewPayload = {
 };
 
 const zodGetMock = zodGet as jest.MockedFunction<typeof zodGet>;
+
+const createTestWrapper = () => {
+	const queryClient = new QueryClient({
+		defaultOptions: {
+			queries: {
+				retry: false,
+			},
+		},
+	});
+
+	return ({ children }: { children: ReactNode }) => (
+		<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+	);
+};
+
+const renderDatasetPanel = () =>
+	render(<DatasetPanel />, { wrapper: createTestWrapper() });
 
 describe("DatasetPanel", () => {
 	beforeEach(() => {
@@ -47,13 +66,12 @@ describe("DatasetPanel", () => {
 			filename: "cleaned_data.csv",
 		});
 
-		render(<DatasetPanel />);
+		renderDatasetPanel();
 
 		await waitFor(() =>
 			expect(zodGetMock).toHaveBeenCalledWith(
 				"/file/dataset-1/dataset?rows=200",
 				DatasetDataResponseSchema,
-				expect.objectContaining({ signal: expect.any(AbortSignal) }),
 			),
 		);
 
@@ -70,7 +88,7 @@ describe("DatasetPanel", () => {
 			filename: "cleaned_data.csv",
 		});
 
-		render(<DatasetPanel />);
+		renderDatasetPanel();
 
 		const downloadLink = await screen.findByRole("link", { name: /download/i });
 		expect(downloadLink).toHaveAttribute(
@@ -88,7 +106,7 @@ describe("DatasetPanel", () => {
 			});
 		});
 
-		render(<DatasetPanel />);
+		renderDatasetPanel();
 
 		await waitFor(() => {
 			expect(zodGetMock).toHaveBeenCalledTimes(1);
@@ -103,5 +121,59 @@ describe("DatasetPanel", () => {
 		});
 
 		expect(zodGetMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("refetches preview when switching to a different dataset file id", async () => {
+		zodGetMock
+			.mockResolvedValueOnce({
+				download_url: "https://public.example/uploaded-data.csv",
+				file_id: "dataset-1",
+				filename: "uploaded-data.csv",
+				preview: {
+					...previewPayload,
+					rows: [["original", "10"]],
+				},
+			})
+			.mockResolvedValueOnce({
+				download_url: "https://public.example/cleaned-data.csv",
+				file_id: "dataset-2",
+				filename: "cleaned-data.csv",
+				preview: {
+					...previewPayload,
+					rows: [["cleaned", "20"]],
+				},
+			});
+
+		act(() => {
+			jotaiStore.set(workspaceDatasetAtom, {
+				downloadUrl: "https://public.example/uploaded-data.csv",
+				fileId: "dataset-1",
+				filename: "uploaded-data.csv",
+			});
+		});
+
+		renderDatasetPanel();
+
+		await screen.findByText("original");
+
+		act(() => {
+			jotaiStore.set(workspaceDatasetAtom, {
+				downloadUrl: "https://public.example/cleaned-data.csv",
+				fileId: "dataset-2",
+				filename: "cleaned-data.csv",
+			});
+		});
+
+		await waitFor(() =>
+			expect(zodGetMock).toHaveBeenNthCalledWith(
+				2,
+				"/file/dataset-2/dataset?rows=200",
+				DatasetDataResponseSchema,
+			),
+		);
+
+		await waitFor(() => {
+			expect(screen.getByText("cleaned")).toBeInTheDocument();
+		});
 	});
 });
