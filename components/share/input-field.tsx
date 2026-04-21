@@ -336,7 +336,6 @@ const InputField = ({
 							downloadUrl: attachment.downloadUrl,
 							fileId: attachment.fileId,
 							filename: attachment.filename,
-							preview: attachment.preview,
 						});
 						onOpenWorkspace?.();
 					},

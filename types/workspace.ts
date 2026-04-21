@@ -1,5 +1,3 @@
-import type { DatasetPreview } from "./file";
-
 type WorkspaceView = "empty" | "vnc" | "chart" | "dataset" | "file" | "typst";
 
 type WorkspaceChart = {
@@ -16,7 +14,6 @@ type WorkspaceDataset = {
 	downloadUrl?: string;
 	fileId: string;
 	filename: string;
-	preview?: DatasetPreview;
 };
 
 type WorkspaceFile = {

@@ -19,7 +19,6 @@ type WorkspaceRoundArtifact = {
 	filename?: string;
 	downloadUrl?: string;
 	extension?: string;
-	preview?: WorkspaceDataset["preview"];
 	chart?: Record<string, unknown>;
 	title?: string;
 	toolCallId?: string;
@@ -123,7 +122,6 @@ const resolveDatasetAttachment = (
 		downloadUrl: datasetAttachment.downloadUrl,
 		fileId: datasetAttachment.fileId,
 		filename: datasetAttachment.filename,
-		preview: datasetAttachment.preview,
 	};
 };
 
@@ -247,7 +245,6 @@ const deriveRoundArtifactsFromMessage = (
 						? partRecord.downloadUrl
 						: undefined,
 				),
-				preview: partRecord.preview as WorkspaceDataset["preview"] | undefined,
 				label: filename ?? inferredCategory,
 				title:
 					typeof partRecord.title === "string"
@@ -368,7 +365,6 @@ const deriveRoundArtifactsFromMessage = (
 			const filename =
 				typeof output.filename === "string" ? output.filename : undefined;
 			const kind = output.kind;
-			const preview = output.preview as WorkspaceDataset["preview"] | undefined;
 
 			if (!fileId || !filename) {
 				continue;
@@ -392,7 +388,6 @@ const deriveRoundArtifactsFromMessage = (
 				fileId,
 				filename,
 				extension: getFileExtension(filename),
-				preview,
 				downloadUrl: getFileDownloadUrl(fileId),
 				toolCallId,
 			});
@@ -463,7 +458,6 @@ const deriveWorkspaceSnapshotFromMessages = (
 						),
 						fileId: artifact.fileId,
 						filename: artifact.filename,
-						preview: artifact.preview,
 					};
 					markViewUpdated("dataset");
 					continue;

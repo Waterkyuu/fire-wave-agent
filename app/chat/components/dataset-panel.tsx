@@ -4,7 +4,7 @@ import { workspaceDatasetAtom } from "@/atoms/chat";
 import VirtualList from "@/components/share/virtual-list";
 import { Button } from "@/components/ui/button";
 import { zodGet } from "@/services/request";
-import { DatasetDataResponseSchema } from "@/types";
+import { DatasetDataResponseSchema, type DatasetPreview } from "@/types";
 import { useAtomValue } from "jotai";
 import { useTranslations } from "next-intl";
 import { memo, useEffect, useRef, useState } from "react";
@@ -14,9 +14,8 @@ const DEFAULT_PREVIEW_ROWS = 200;
 const DatasetPanel = memo(() => {
 	const dataset = useAtomValue(workspaceDatasetAtom);
 	const datasetFileId = dataset?.fileId;
-	const datasetPreview = dataset?.preview;
 	const t = useTranslations("chat");
-	const [preview, setPreview] = useState(dataset?.preview ?? null);
+	const [preview, setPreview] = useState<DatasetPreview | null>(null);
 	const [previewError, setPreviewError] = useState<string | null>(null);
 	const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 	const [resolvedDownloadUrl, setResolvedDownloadUrl] = useState(
@@ -39,13 +38,13 @@ const DatasetPanel = memo(() => {
 		setPreviewError(null);
 
 		// Keep locally fetched preview when only metadata changes for the same file.
-		if (hasFileChanged || dataset.preview) {
-			setPreview(dataset.preview ?? null);
+		if (hasFileChanged) {
+			setPreview(null);
 		}
-	}, [dataset?.downloadUrl, dataset?.fileId, dataset?.preview]);
+	}, [dataset?.downloadUrl, dataset?.fileId]);
 
 	useEffect(() => {
-		if (!datasetFileId || datasetPreview || preview) {
+		if (!datasetFileId || preview) {
 			return;
 		}
 
@@ -85,7 +84,7 @@ const DatasetPanel = memo(() => {
 		return () => {
 			controller.abort();
 		};
-	}, [datasetFileId, datasetPreview, preview]);
+	}, [datasetFileId]);
 
 	if (!dataset) {
 		return (

@@ -308,7 +308,6 @@ const usePipelineChat = (
 		category?: "data" | "chart" | "report";
 		kind?: string;
 		downloadUrl?: string;
-		preview?: unknown;
 		title?: string;
 		toolCallId?: string;
 	};

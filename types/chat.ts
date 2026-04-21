@@ -1,5 +1,4 @@
 import { z } from "zod";
-import type { DatasetPreview } from "./file";
 
 // Agent execution status
 type AgentStatus = "idle" | "thinking" | "acting" | "completed" | "error";
@@ -24,7 +23,6 @@ type ChatAttachment = {
 	filename: string;
 	fileSize?: number;
 	kind?: "dataset" | "document";
-	preview?: DatasetPreview;
 };
 
 type ChatMessageMetadata = {

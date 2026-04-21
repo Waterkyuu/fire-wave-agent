@@ -1,4 +1,4 @@
-import { DatasetPreviewSchema, type FileRecord } from "@/types";
+import type { FileRecord } from "@/types";
 import { z } from "zod";
 
 const PipelineStepSchema = z.enum(["data", "chart", "report"]);
@@ -17,7 +17,6 @@ const PersistedArtifactSchema = z.object({
 	downloadUrl: z.string(),
 	kind: z.enum(["dataset", "document"]).optional(),
 	contentType: z.string().nullable().optional(),
-	preview: DatasetPreviewSchema.optional(),
 });
 
 const DataOutputSchema = z.object({

@@ -174,14 +174,6 @@ const extractToolEventsFromMessages = (
 					fileId?: string;
 					filename?: string;
 					kind?: string;
-					preview?: {
-						activeSheet: string;
-						columns: string[];
-						rows: string[][];
-						sheetNames: string[];
-						totalColumns: number;
-						totalRows: number;
-					};
 				};
 
 				if (output.kind === "dataset" && output.fileId && output.filename) {
@@ -189,7 +181,6 @@ const extractToolEventsFromMessages = (
 						downloadUrl: output.downloadUrl,
 						fileId: output.fileId,
 						filename: output.filename,
-						preview: output.preview,
 					});
 				}
 			}

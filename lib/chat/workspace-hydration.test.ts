@@ -119,7 +119,6 @@ describe("workspace hydration", () => {
 						fileId: "upload-dataset",
 						filename: "upload.csv",
 						extension: "CSV",
-						preview: datasetPreview,
 					},
 				],
 			},
@@ -137,6 +136,7 @@ describe("workspace hydration", () => {
 				filename: "cleaned.csv",
 			}),
 		);
+		expect(snapshot.dataset).not.toHaveProperty("preview");
 		expect(snapshot.chart).toEqual(
 			expect.objectContaining({
 				fileId: "chart-1",

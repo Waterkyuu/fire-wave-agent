@@ -308,13 +308,11 @@ const resolveDataOutput = (stepResult: StepExecutionResult): DataOutput => {
 	const columns = firstNonEmpty(
 		parsedOutput?.columns,
 		bestEffortOutput?.columns,
-		artifact.preview?.columns,
 		[],
 	);
 	const rowCount = firstDefined(
 		parsedOutput?.rowCount,
 		bestEffortOutput?.rowCount,
-		artifact.preview?.totalRows,
 		0,
 	);
 	const summary = firstDefined(

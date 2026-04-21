@@ -174,7 +174,6 @@ const ChatPage = ({ params }: ChatPageProps) => {
 					downloadUrl: firstDataset.downloadUrl,
 					fileId: firstDataset.fileId,
 					filename: firstDataset.filename,
-					preview: firstDataset.preview,
 				});
 			}
 
@@ -224,7 +223,6 @@ const ChatPage = ({ params }: ChatPageProps) => {
 					downloadUrl: attachment.downloadUrl,
 					fileId: attachment.fileId,
 					filename: attachment.filename,
-					preview: attachment.preview,
 				});
 			} else {
 				jotaiStore.set(showFileWorkspaceAtom, {
@@ -267,7 +265,6 @@ const ChatPage = ({ params }: ChatPageProps) => {
 						),
 						fileId: artifact.fileId,
 						filename: artifact.filename,
-						preview: artifact.preview,
 					});
 				}
 			} else if (artifact.fileId && artifact.filename) {

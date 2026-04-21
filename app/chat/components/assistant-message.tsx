@@ -352,12 +352,20 @@ const AssistantMessage = memo(
 						}
 
 						if (isArtifactPart(part)) {
+							const partRecord = part as Record<string, unknown>;
 							const attachment: ChatAttachment = {
+								downloadUrl:
+									typeof partRecord.downloadUrl === "string"
+										? partRecord.downloadUrl
+										: undefined,
 								extension: part.extension,
 								fileId: part.fileId,
 								filename: part.filename,
-								preview: (part as Record<string, unknown>)
-									.preview as ChatAttachment["preview"],
+								kind:
+									partRecord.kind === "dataset" ||
+									partRecord.kind === "document"
+										? partRecord.kind
+										: undefined,
 							};
 							return (
 								<button

@@ -87,15 +87,6 @@ jest.mock("@/components/ui/sheet", () => ({
 	SheetTitle: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 
-const datasetPreview = {
-	sheetNames: ["Sheet1"],
-	activeSheet: "Sheet1",
-	columns: ["a"],
-	rows: [["1"]],
-	totalRows: 1,
-	totalColumns: 1,
-};
-
 describe("ChatPage workspace reset", () => {
 	beforeEach(() => {
 		mockUseChatHistory.mockReturnValue({ data: [], isLoading: false });
@@ -115,7 +106,6 @@ describe("ChatPage workspace reset", () => {
 		jotaiStore.set(workspaceDatasetAtom, {
 			fileId: "old-dataset",
 			filename: "old.csv",
-			preview: datasetPreview,
 		});
 		jotaiStore.set(workspaceFileAtom, {
 			extension: "CSV",

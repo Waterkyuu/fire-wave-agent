@@ -105,7 +105,6 @@ const createPersistCodeFileTool = (sandboxSession: SandboxSession) =>
 				fileId: record.id,
 				filename: record.filename,
 				kind: record.kind,
-				preview: record.preview,
 				status: "success" as const,
 			};
 		},
