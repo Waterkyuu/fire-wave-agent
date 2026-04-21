@@ -47,6 +47,7 @@ When faced with complex processes, avoid committing all code at once. Instead, b
 - Don't write `export` before every function; just use a unified `export` at the end. For example export { xxx, xxx }
 - Separate runtime exports and type exports. When a file exports both values and types, prefer `export { foo, bar }` plus `export type { Foo, Bar }` instead of mixing them in one export block.
 - Do not write inline arrow functions as prop values in JSX, especially repeated ones. Extract them into named `useCallback` handlers so they are reusable, memoized, and easy to maintain.
+- Not allowed to write `void` before a function call, for example, `void demo()`.
 - Unit tests are written in the same directory. Integration tests and end-to-end tests are written in the `tests` directory.
 
 ## UI/UX Design
