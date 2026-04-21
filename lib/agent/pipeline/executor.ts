@@ -36,7 +36,7 @@ type StepToolResult = {
 	output: unknown;
 };
 
-const MAIN_MODEL = process.env.GLM_MODEL ?? "glm-4.7-flash";
+const MAIN_MODEL = process.env.GLM_MODEL ?? "glm-4.6";
 
 const hasPersistedChartArtifact = (toolResults: StepToolResult[]) =>
 	toolResults.some(({ output, toolName }) => {
