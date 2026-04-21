@@ -11,7 +11,7 @@ import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { read, utils } from "xlsx";
 
 const BUCKET_NAME = process.env.BUCKET_NAME ?? "";
-const FILE_STORE_ROOT = join(tmpdir(), "agent-dashboard-files");
+const FILE_STORE_ROOT = join(tmpdir(), "refract-files");
 const CHUNKS_ROOT = join(FILE_STORE_ROOT, "chunks");
 const RECORDS_ROOT = join(FILE_STORE_ROOT, "records");
 const DATASET_EXTENSIONS = new Set(["csv", "xlsx", "xls"]);
