@@ -49,9 +49,9 @@ const ChartPanel = memo(() => {
 						className="mx-auto max-h-full rounded-xl border bg-white shadow-sm"
 					/>
 				) : (
-					<pre className="overflow-auto rounded-xl border bg-background p-4 text-xs">
-						{JSON.stringify(chart.chart, null, 2)}
-					</pre>
+					<div className="flex h-full w-full items-center justify-center text-muted-foreground text-sm">
+						{t("waitingChart")}
+					</div>
 				)}
 			</div>
 		</div>
