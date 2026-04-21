@@ -208,8 +208,8 @@ const deriveRoundArtifactsFromMessage = (
 	};
 
 	for (const part of message.parts) {
-		if (part.type === "artifact") {
-			const partRecord = part as Record<string, unknown>;
+		const partRecord = part as Record<string, unknown>;
+		if (partRecord.type === "artifact") {
 			const fileId =
 				typeof partRecord.fileId === "string" ? partRecord.fileId : undefined;
 			const filename =
@@ -261,16 +261,18 @@ const deriveRoundArtifactsFromMessage = (
 			continue;
 		}
 
-		if (typeof part.type !== "string" || !part.type.startsWith("tool-")) {
+		if (
+			typeof partRecord.type !== "string" ||
+			!partRecord.type.startsWith("tool-")
+		) {
 			continue;
 		}
 
-		const partRecord = part as Record<string, unknown>;
 		if (partRecord.state !== "output-available") {
 			continue;
 		}
 
-		const toolName = part.type.slice(5);
+		const toolName = partRecord.type.slice(5);
 		const toolCallId =
 			typeof partRecord.toolCallId === "string"
 				? partRecord.toolCallId

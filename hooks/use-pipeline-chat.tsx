@@ -340,6 +340,48 @@ const usePipelineChat = (
 					"toolCallId" in p && p.toolCallId === toolCallId,
 			);
 
+		// Avoid persisting large binary/tool payloads (e.g. chart base64 and dataset preview)
+		// in message history, while keeping enough structured output for debugging.
+		const sanitizeToolOutput = (toolName: string, output: unknown) => {
+			if (!output || typeof output !== "object") {
+				return output;
+			}
+
+			const outputRecord = output as Record<string, unknown>;
+
+			if (toolName === "codeInterpreter") {
+				const normalizedResults = Array.isArray(outputRecord.results)
+					? outputRecord.results.map((result) => {
+							if (!result || typeof result !== "object") {
+								return result;
+							}
+
+							const resultRecord = result as Record<string, unknown>;
+							const {
+								jpeg: _jpeg,
+								pdf: _pdf,
+								png: _png,
+								svg: _svg,
+								...rest
+							} = resultRecord;
+							return rest;
+						})
+					: outputRecord.results;
+
+				return {
+					...outputRecord,
+					results: normalizedResults,
+				};
+			}
+
+			if (toolName === "persistCodeFile") {
+				const { preview: _preview, ...rest } = outputRecord;
+				return rest;
+			}
+
+			return output;
+		};
+
 		const dispatchTool = (
 			toolCallId: string,
 			toolName: string,
@@ -459,10 +501,15 @@ const usePipelineChat = (
 							break;
 						}
 						case "tool-result": {
+							const sanitizedOutput = sanitizeToolOutput(
+								evt.toolName,
+								evt.output,
+							);
+
 							const toolPart = findToolPart(evt.toolCallId);
 							if (toolPart) {
 								toolPart.state = "output-available";
-								toolPart.output = evt.output;
+								toolPart.output = sanitizedOutput;
 							}
 
 							dispatchTool(
@@ -470,7 +517,7 @@ const usePipelineChat = (
 								evt.toolName,
 								"result",
 								undefined,
-								evt.output,
+								sanitizedOutput,
 							);
 							break;
 						}
@@ -499,15 +546,11 @@ const usePipelineChat = (
 								status: "completed",
 							});
 
-							if (
-								evt.step === "data" &&
-								"artifact" in evt.output &&
-								evt.output.artifact.kind === "dataset" &&
-								evt.output.artifact.preview
-							) {
+							if (evt.step === "data" && "artifact" in evt.output) {
 								const { artifact } = evt.output;
-								const preview = artifact.preview;
-								if (!preview) break;
+								if (!artifact.fileId || !artifact.filename) {
+									break;
+								}
 								assistantParts.push({
 									type: "artifact",
 									category: "data",
@@ -516,7 +559,6 @@ const usePipelineChat = (
 									extension: artifact.filename.split(".").pop() ?? "csv",
 									kind: artifact.kind,
 									downloadUrl: artifact.downloadUrl,
-									preview,
 								});
 							}
 

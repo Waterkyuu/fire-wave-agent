@@ -3,6 +3,7 @@ import {
 	formatCodeExecutionError,
 	formatSandboxOperationError,
 } from "@/lib/agent/utils/error-utils";
+import { getFileDownloadUrl } from "@/lib/file-store";
 import { tool, zodSchema } from "ai";
 import { z } from "zod";
 
@@ -100,7 +101,7 @@ const createPersistCodeFileTool = (sandboxSession: SandboxSession) =>
 			return {
 				// Keep URL construction centralized so callers only need fileId metadata.
 				contentType: record.contentType,
-				downloadUrl: `/api/file/${record.id}/download`,
+				downloadUrl: getFileDownloadUrl(record),
 				fileId: record.id,
 				filename: record.filename,
 				kind: record.kind,
@@ -141,7 +142,7 @@ const createPersistLatestChartTool = (sandboxSession: SandboxSession) =>
 
 			return {
 				contentType: record.contentType,
-				downloadUrl: `/api/file/${record.id}/download`,
+				downloadUrl: getFileDownloadUrl(record),
 				fileId: record.id,
 				filename: record.filename,
 				status: "success" as const,

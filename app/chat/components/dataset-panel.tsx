@@ -1,26 +1,76 @@
 "use client";
 
 import { workspaceDatasetAtom } from "@/atoms/chat";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import VirtualList from "@/components/share/virtual-list";
+import { Button } from "@/components/ui/button";
+import { zodGet } from "@/services/request";
+import { DatasetDataResponseSchema } from "@/types";
 import { useAtomValue } from "jotai";
 import { useTranslations } from "next-intl";
-import { memo, useRef } from "react";
+import { memo, useEffect, useState } from "react";
 
-const ROW_HEIGHT = 36;
+const DEFAULT_PREVIEW_ROWS = 200;
 
 const DatasetPanel = memo(() => {
 	const dataset = useAtomValue(workspaceDatasetAtom);
 	const t = useTranslations("chat");
-	const scrollRef = useRef<HTMLDivElement>(null);
+	const [preview, setPreview] = useState(dataset?.preview ?? null);
+	const [previewError, setPreviewError] = useState<string | null>(null);
+	const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+	const [resolvedDownloadUrl, setResolvedDownloadUrl] = useState(
+		dataset?.downloadUrl,
+	);
 
-	const virtualizer = useVirtualizer({
-		count: dataset?.preview.rows.length ?? 0,
-		getScrollElement: () => scrollRef.current,
-		estimateSize: () => ROW_HEIGHT,
-		overscan: 10,
-	});
+	useEffect(() => {
+		setPreview(dataset?.preview ?? null);
+		setResolvedDownloadUrl(dataset?.downloadUrl);
+		setPreviewError(null);
+	}, [dataset]);
 
-	if (!dataset?.preview) {
+	useEffect(() => {
+		if (!dataset || dataset.preview) {
+			return;
+		}
+
+		const controller = new AbortController();
+
+		const loadDatasetPreview = async () => {
+			setIsPreviewLoading(true);
+			try {
+				// Load dataset rows on demand to keep persisted chat payload small.
+				const payload = await zodGet(
+					`/file/${dataset.fileId}/dataset?rows=${DEFAULT_PREVIEW_ROWS}`,
+					DatasetDataResponseSchema,
+					{ signal: controller.signal },
+				);
+
+				setPreview(payload.preview);
+				setResolvedDownloadUrl(payload.download_url);
+				setPreviewError(null);
+			} catch (error) {
+				if (controller.signal.aborted) {
+					return;
+				}
+				setPreviewError(
+					error instanceof Error
+						? error.message
+						: "Failed to load dataset preview.",
+				);
+			} finally {
+				if (!controller.signal.aborted) {
+					setIsPreviewLoading(false);
+				}
+			}
+		};
+
+		void loadDatasetPreview();
+
+		return () => {
+			controller.abort();
+		};
+	}, [dataset]);
+
+	if (!dataset) {
 		return (
 			<div className="flex h-full w-full items-center justify-center text-muted-foreground text-sm">
 				{t("waitingDataset")}
@@ -28,64 +78,46 @@ const DatasetPanel = memo(() => {
 		);
 	}
 
-	const { preview } = dataset;
+	const downloadUrl =
+		resolvedDownloadUrl ?? `/api/file/${dataset.fileId}/download`;
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">
 			<div className="border-b px-4 py-3">
-				<p className="font-medium text-sm">{dataset.filename}</p>
-				<p className="text-muted-foreground text-xs">
-					{t("datasetSummary", {
-						rows: preview.totalRows,
-						columns: preview.totalColumns,
-						sheet: preview.activeSheet || "-",
-					})}
-				</p>
-			</div>
-			<div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
-				<div className="min-w-full text-left text-xs sm:text-sm">
-					<div className="sticky top-0 z-10 flex w-full border-b bg-background">
-						{preview.columns.map((column) => (
-							<div
-								key={column}
-								className="min-w-0 flex-1 whitespace-nowrap px-3 py-2 font-medium"
-							>
-								{column}
-							</div>
-						))}
+				<div className="flex items-start justify-between gap-3">
+					<div>
+						<p className="font-medium text-sm">{dataset.filename}</p>
+						{preview ? (
+							<p className="text-muted-foreground text-xs">
+								{t("datasetSummary", {
+									rows: preview.totalRows,
+									columns: preview.totalColumns,
+									sheet: preview.activeSheet || "-",
+								})}
+							</p>
+						) : (
+							<p className="text-muted-foreground text-xs">
+								{isPreviewLoading ? t("waitingDataset") : (previewError ?? "-")}
+							</p>
+						)}
 					</div>
-					<div
-						style={{
-							height: `${virtualizer.getTotalSize()}px`,
-							position: "relative",
-						}}
-					>
-						{virtualizer.getVirtualItems().map((virtualRow) => {
-							const row = preview.rows[virtualRow.index];
-							return (
-								<div
-									key={`${dataset.fileId}-${virtualRow.index}`}
-									className="absolute flex w-full border-b"
-									style={{
-										height: `${virtualRow.size}px`,
-										top: `${virtualRow.start}px`,
-									}}
-								>
-									{row.map((cell, cellIndex) => (
-										<div
-											key={`${dataset.fileId}-${virtualRow.index}-${cellIndex}`}
-											className="min-w-0 flex-1 truncate px-3 py-2 text-muted-foreground"
-											title={cell}
-										>
-											{cell}
-										</div>
-									))}
-								</div>
-							);
-						})}
-					</div>
+					<Button asChild size="sm" variant="outline">
+						<a href={downloadUrl}>{t("downloadArtifact")}</a>
+					</Button>
 				</div>
 			</div>
+
+			{!preview ? (
+				<div className="flex h-full w-full items-center justify-center text-muted-foreground text-sm">
+					{isPreviewLoading ? t("waitingDataset") : (previewError ?? "-")}
+				</div>
+			) : (
+				<VirtualList
+					columns={preview.columns}
+					datasetId={dataset.fileId}
+					rows={preview.rows}
+				/>
+			)}
 		</div>
 	);
 });

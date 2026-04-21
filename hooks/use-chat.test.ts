@@ -144,7 +144,6 @@ describe("extractToolEventsFromMessages", () => {
 	it("updates workspace chart download info when chart persistence completes", () => {
 		jotaiStore.set(workspaceChartAtom, {
 			generatedAt: Date.now(),
-			png: "ZmFrZS1wbmc=",
 			title: "Revenue",
 			toolCallId: "chart-call",
 		});

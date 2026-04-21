@@ -37,6 +37,7 @@ import {
 	getFileDownloadUrl,
 	getFileExtension,
 } from "@/lib/chat/workspace-hydration";
+import { isDatasetExtension } from "@/lib/file";
 import {
 	useChatHistory,
 	useCreateSession,
@@ -165,9 +166,12 @@ const ChatPage = ({ params }: ChatPageProps) => {
 				createSession({ id: sessionId, title });
 			}
 
-			const firstDataset = pendingHomeUploads.find((file) => file.preview);
-			if (firstDataset?.preview) {
+			const firstDataset = pendingHomeUploads.find(
+				(file) => file.kind === "dataset" || isDatasetExtension(file.extension),
+			);
+			if (firstDataset) {
 				jotaiStore.set(showDatasetWorkspaceAtom, {
+					downloadUrl: firstDataset.downloadUrl,
 					fileId: firstDataset.fileId,
 					filename: firstDataset.filename,
 					preview: firstDataset.preview,
@@ -211,15 +215,23 @@ const ChatPage = ({ params }: ChatPageProps) => {
 
 	const handleSelectAttachment = useCallback(
 		(attachment: ChatAttachment) => {
-			if (attachment.preview) {
+			const isDatasetAttachment =
+				attachment.kind === "dataset" ||
+				isDatasetExtension(attachment.extension);
+
+			if (isDatasetAttachment) {
 				jotaiStore.set(showDatasetWorkspaceAtom, {
+					downloadUrl: attachment.downloadUrl,
 					fileId: attachment.fileId,
 					filename: attachment.filename,
 					preview: attachment.preview,
 				});
 			} else {
 				jotaiStore.set(showFileWorkspaceAtom, {
-					downloadUrl: `/api/file/${attachment.fileId}/download`,
+					downloadUrl: getFileDownloadUrl(
+						attachment.fileId,
+						attachment.downloadUrl,
+					),
 					extension: attachment.extension,
 					fileId: attachment.fileId,
 					filename: attachment.filename,
@@ -243,27 +255,19 @@ const ChatPage = ({ params }: ChatPageProps) => {
 					fileId: artifact.fileId,
 					filename: artifact.filename,
 					generatedAt: artifact.createdAt || Date.now(),
-					png: artifact.png,
 					title: artifact.title ?? artifact.label,
 					toolCallId: artifact.toolCallId ?? artifact.id,
 				});
 			} else if (artifact.category === "data") {
-				if (artifact.preview && artifact.fileId && artifact.filename) {
+				if (artifact.fileId && artifact.filename) {
 					jotaiStore.set(showDatasetWorkspaceAtom, {
-						fileId: artifact.fileId,
-						filename: artifact.filename,
-						preview: artifact.preview,
-					});
-				} else if (artifact.fileId && artifact.filename) {
-					jotaiStore.set(showFileWorkspaceAtom, {
 						downloadUrl: getFileDownloadUrl(
 							artifact.fileId,
 							artifact.downloadUrl,
 						),
-						extension:
-							artifact.extension ?? getFileExtension(artifact.filename),
 						fileId: artifact.fileId,
 						filename: artifact.filename,
+						preview: artifact.preview,
 					});
 				}
 			} else if (artifact.fileId && artifact.filename) {

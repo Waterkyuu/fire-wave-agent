@@ -23,12 +23,14 @@ const assistantRoundMessage: UIMessage = {
 			type: "tool-createSandbox",
 			toolCallId: "sandbox-call",
 			state: "output-available",
+			input: {},
 			output: { vncUrl: "https://sandbox.example/vnc" },
 		},
 		{
 			type: "tool-codeInterpreter",
 			toolCallId: "chart-tool-call",
 			state: "output-available",
+			input: {},
 			output: {
 				results: [
 					{
@@ -42,6 +44,7 @@ const assistantRoundMessage: UIMessage = {
 			type: "tool-persistLatestChart",
 			toolCallId: "chart-file-call",
 			state: "output-available",
+			input: {},
 			output: {
 				fileId: "chart-1",
 				filename: "revenue.png",
@@ -52,6 +55,7 @@ const assistantRoundMessage: UIMessage = {
 			type: "tool-persistCodeFile",
 			toolCallId: "dataset-call",
 			state: "output-available",
+			input: {},
 			output: {
 				kind: "dataset",
 				fileId: "dataset-1",
@@ -63,6 +67,7 @@ const assistantRoundMessage: UIMessage = {
 			type: "tool-persistCodeFile",
 			toolCallId: "report-call",
 			state: "output-available",
+			input: {},
 			output: {
 				kind: "document",
 				fileId: "report-1",
@@ -202,7 +207,7 @@ describe("workspace hydration", () => {
 					extension: "csv",
 					kind: "dataset",
 					downloadUrl: "https://public.example/cleaned_data.csv",
-				},
+				} as unknown as UIMessage["parts"][number],
 			],
 		};
 
