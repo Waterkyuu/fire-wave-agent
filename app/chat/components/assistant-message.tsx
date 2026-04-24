@@ -4,6 +4,11 @@ import { TextBlockMarkdown } from "@/app/chat/components/text-block-markdown";
 import FileCard from "@/components/share/file-card";
 import { Badge } from "@/components/ui/badge";
 import {
+	getReasoningDurationSeconds,
+	getRenderableMessageParts,
+	isReasoningMessagePart,
+} from "@/lib/chat/reasoning-timing";
+import {
 	type WorkspaceRoundArtifact,
 	type WorkspaceRoundArtifacts,
 	deriveRoundArtifactsFromMessage,
@@ -30,6 +35,7 @@ import { memo, useEffect, useMemo, useState } from "react";
 type AssistantMessageProps = {
 	message: UIMessage;
 	thinkingTime: number | null;
+	reasoningThinkingTimesByPartIndex?: Record<number, number>;
 	onSelectAttachment?: (attachment: ChatAttachment) => void;
 	onSelectRoundArtifact?: (artifact: WorkspaceRoundArtifact) => void;
 	onShowVnc?: () => void;
@@ -249,10 +255,6 @@ const isTextPart = (
 	p: Record<string, unknown>,
 ): p is { type: "text"; text: string } => p.type === "text";
 
-const isReasoningPart = (
-	p: Record<string, unknown>,
-): p is { type: "reasoning"; text: string } => p.type === "reasoning";
-
 const isToolPart = (p: Record<string, unknown>): boolean =>
 	typeof p.type === "string" && p.type.startsWith("tool-");
 
@@ -269,6 +271,7 @@ const AssistantMessage = memo(
 	({
 		message,
 		thinkingTime,
+		reasoningThinkingTimesByPartIndex,
 		onSelectAttachment,
 		onSelectRoundArtifact,
 		onShowVnc,
@@ -279,17 +282,17 @@ const AssistantMessage = memo(
 		>(null);
 
 		const renderableParts = useMemo(
-			() =>
-				message.parts.filter(
-					(p) => p.type !== "step-start",
-				) as unknown as Record<string, unknown>[],
-			[message.parts],
+			() => getRenderableMessageParts(message),
+			[message],
 		);
 
 		const hasText = renderableParts.some(
 			(p) => p.type === "text" && (p as { text: string }).text,
 		);
-		const hasReasoning = renderableParts.some(isReasoningPart);
+		const hasReasoning = renderableParts.some(isReasoningMessagePart);
+		const reasoningPartCount = renderableParts.filter(
+			isReasoningMessagePart,
+		).length;
 
 		const roundArtifacts = useMemo<WorkspaceRoundArtifacts>(
 			() => deriveRoundArtifactsFromMessage(message),
@@ -338,12 +341,17 @@ const AssistantMessage = memo(
 
 				<div className="min-w-0 max-w-[min(80%,42rem)] space-y-1">
 					{renderableParts.map((part, i) => {
-						if (isReasoningPart(part)) {
+						if (isReasoningMessagePart(part)) {
+							const resolvedThinkingTime =
+								reasoningThinkingTimesByPartIndex?.[i] ??
+								getReasoningDurationSeconds(part) ??
+								(reasoningPartCount === 1 ? thinkingTime : null);
+
 							return (
 								<ReasoningBlock
 									key={`${message.id}-reasoning-${i}`}
 									text={part.text}
-									thinkingTime={thinkingTime}
+									thinkingTime={resolvedThinkingTime}
 								/>
 							);
 						}

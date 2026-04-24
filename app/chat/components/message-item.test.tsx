@@ -38,6 +38,29 @@ const reasoningMessage: UIMessage = {
 	],
 };
 
+const multiReasoningMessage: UIMessage = {
+	id: "assistant-multi-reasoning-message",
+	role: "assistant",
+	parts: [
+		{
+			type: "reasoning",
+			text: "I am checking the first issue.",
+		},
+		{
+			type: "text",
+			text: "First issue complete.",
+		},
+		{
+			type: "reasoning",
+			text: "I am checking the second issue.",
+		},
+		{
+			type: "text",
+			text: "Second issue complete.",
+		},
+	],
+};
+
 describe("MessageItem tool details", () => {
 	it("keeps tool details collapsed by default and toggles them with chevrons", () => {
 		render(
@@ -68,5 +91,19 @@ describe("MessageItem tool details", () => {
 		expect(screen.getByText("Thought for 1.2s")).toBeInTheDocument();
 		expect(screen.getAllByText("Thought for 1.2s")).toHaveLength(1);
 		expect(screen.queryByText("Thinking...")).not.toBeInTheDocument();
+	});
+
+	it("renders independent thinking times for each reasoning block", () => {
+		render(
+			<MessageItem
+				message={multiReasoningMessage}
+				thinkingTime={2.4}
+				reasoningThinkingTimesByPartIndex={{ 0: 1.2, 2: 2.4 }}
+				hasToolCalls={false}
+			/>,
+		);
+
+		expect(screen.getByText("Thought for 1.2s")).toBeInTheDocument();
+		expect(screen.getByText("Thought for 2.4s")).toBeInTheDocument();
 	});
 });

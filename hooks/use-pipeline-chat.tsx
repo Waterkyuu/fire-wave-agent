@@ -313,11 +313,21 @@ const usePipelineChat = (
 		toolCallId?: string;
 	};
 
+	type ReasoningPipelinePart = {
+		type: "reasoning";
+		text: string;
+		durationSeconds?: number;
+	};
+
 	type PipelinePart =
 		| { type: "text"; text: string }
-		| { type: "reasoning"; text: string }
+		| ReasoningPipelinePart
 		| ToolPipelinePart
 		| ArtifactPart;
+
+	const isReasoningPipelinePart = (
+		part: PipelinePart | undefined,
+	): part is ReasoningPipelinePart => part?.type === "reasoning";
 
 	const processPipelineStream = async (
 		response: Response,
@@ -330,6 +340,7 @@ const usePipelineChat = (
 		const decoder = new TextDecoder();
 		let buffer = "";
 		const assistantParts: PipelinePart[] = [];
+		const assistantMessageId = crypto.randomUUID();
 
 		setPipelineStatus("streaming");
 		jotaiStore.set(agentStatusAtom, "thinking");
@@ -339,6 +350,32 @@ const usePipelineChat = (
 				(p): p is ToolPipelinePart =>
 					"toolCallId" in p && p.toolCallId === toolCallId,
 			);
+
+		const findLatestReasoningPart = (): ReasoningPipelinePart | undefined => {
+			for (let index = assistantParts.length - 1; index >= 0; index -= 1) {
+				const part = assistantParts[index];
+				if (isReasoningPipelinePart(part)) {
+					return part;
+				}
+			}
+
+			return undefined;
+		};
+
+		const completeCurrentReasoning = () => {
+			if (reasoningStartTimeRef.current === null) {
+				return;
+			}
+
+			const elapsed = (Date.now() - reasoningStartTimeRef.current) / 1000;
+			const latestReasoningPart = findLatestReasoningPart();
+			if (latestReasoningPart) {
+				latestReasoningPart.durationSeconds = elapsed;
+			}
+
+			setThinkingTime(elapsed);
+			reasoningStartTimeRef.current = null;
+		};
 
 		// Avoid persisting large binary/tool payloads (e.g. chart base64 and dataset preview)
 		// in message history, while keeping enough structured output for debugging.
@@ -442,6 +479,7 @@ const usePipelineChat = (
 							break;
 						}
 						case "step-start": {
+							completeCurrentReasoning();
 							jotaiStore.set(updatePipelineStepAtom, {
 								step: evt.step,
 								status: "running",
@@ -454,6 +492,8 @@ const usePipelineChat = (
 							break;
 						}
 						case "step-delta": {
+							completeCurrentReasoning();
+							jotaiStore.set(agentStatusAtom, "acting");
 							const lastPart = assistantParts[assistantParts.length - 1];
 							if (lastPart && "text" in lastPart && lastPart.type === "text") {
 								lastPart.text += evt.content;
@@ -482,12 +522,7 @@ const usePipelineChat = (
 							break;
 						}
 						case "tool-call": {
-							if (reasoningStartTimeRef.current !== null) {
-								const elapsed =
-									(Date.now() - reasoningStartTimeRef.current) / 1000;
-								setThinkingTime(elapsed);
-								reasoningStartTimeRef.current = null;
-							}
+							completeCurrentReasoning();
 							jotaiStore.set(agentStatusAtom, "acting");
 
 							assistantParts.push({
@@ -541,6 +576,7 @@ const usePipelineChat = (
 							break;
 						}
 						case "step-complete": {
+							completeCurrentReasoning();
 							jotaiStore.set(updatePipelineStepAtom, {
 								step: evt.step,
 								status: "completed",
@@ -607,6 +643,7 @@ const usePipelineChat = (
 							break;
 						}
 						case "step-error": {
+							completeCurrentReasoning();
 							jotaiStore.set(updatePipelineStepAtom, {
 								step: evt.step,
 								status: "error",
@@ -618,12 +655,13 @@ const usePipelineChat = (
 							break;
 						}
 						case "pipeline-complete": {
+							completeCurrentReasoning();
 							break;
 						}
 					}
 
 					const assistantMessage: UIMessage = {
-						id: `pipeline-${Date.now()}`,
+						id: assistantMessageId,
 						role: "assistant",
 						parts: assistantParts as UIMessage["parts"],
 					};
@@ -636,13 +674,14 @@ const usePipelineChat = (
 				}
 			}
 		} finally {
+			completeCurrentReasoning();
 			reader.releaseLock();
 			setPipelineStatus("ready");
 			jotaiStore.set(agentStatusAtom, "completed");
 
 			if (assistantParts.length > 0) {
 				const finalMessage: UIMessage = {
-					id: `pipeline-${Date.now()}`,
+					id: assistantMessageId,
 					role: "assistant",
 					parts: assistantParts as UIMessage["parts"],
 				};
