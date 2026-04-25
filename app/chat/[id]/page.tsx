@@ -271,11 +271,32 @@ const ChatPage = ({ params }: ChatPageProps) => {
 				attachment.kind === "dataset" ||
 				isDatasetExtension(attachment.extension);
 
+			const normalizedExt = attachment.extension?.toLowerCase() ?? "";
+			const isChartImage = ["png", "jpg", "jpeg", "svg", "webp"].includes(
+				normalizedExt,
+			);
+
 			if (isDatasetAttachment) {
 				jotaiStore.set(showDatasetWorkspaceAtom, {
 					downloadUrl: attachment.downloadUrl,
 					fileId: attachment.fileId,
 					filename: attachment.filename,
+				});
+			} else if (isChartImage) {
+				jotaiStore.set(showChartWorkspaceAtom, {
+					generatedAt: Date.now(),
+					images: [
+						{
+							downloadUrl: getFileDownloadUrl(
+								attachment.fileId,
+								attachment.downloadUrl,
+							),
+							fileId: attachment.fileId,
+							filename: attachment.filename,
+						},
+					],
+					title: attachment.filename,
+					toolCallId: attachment.fileId,
 				});
 			} else {
 				jotaiStore.set(showFileWorkspaceAtom, {

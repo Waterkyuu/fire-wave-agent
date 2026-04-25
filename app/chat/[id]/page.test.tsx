@@ -2,6 +2,8 @@ import jotaiStore from "@/atoms";
 import {
 	pendingHomePromptAtom,
 	pendingHomeUploadsAtom,
+	showChartWorkspaceAtom,
+	showFileWorkspaceAtom,
 	vncUrlAtom,
 	workspaceChartAtom,
 	workspaceDatasetAtom,
@@ -144,10 +146,10 @@ describe("ChatPage workspace reset", () => {
 	});
 
 	it("preserves the user-selected workspace tab while streaming updates continue", async () => {
-		const initialStreamingMessages: UIMessage[] = [
+		const initialStreamingMessages = [
 			{
 				id: "assistant-stream-1",
-				role: "assistant",
+				role: "assistant" as const,
 				parts: [
 					{ type: "text", text: "Working on the analysis" },
 					{
@@ -169,7 +171,7 @@ describe("ChatPage workspace reset", () => {
 					},
 				],
 			},
-		];
+		] as unknown as UIMessage[];
 
 		mockPipelineState.messages = initialStreamingMessages;
 
@@ -216,7 +218,7 @@ describe("ChatPage workspace reset", () => {
 						},
 					],
 				},
-			];
+			] as unknown as UIMessage[];
 
 			rerender(<ChatPage params={Promise.resolve({ id: "session-stream" })} />);
 		});
@@ -228,5 +230,142 @@ describe("ChatPage workspace reset", () => {
 		});
 
 		expect(jotaiStore.get(workspaceViewAtom)).toBe("dataset");
+	});
+
+	it("shows the clicked chart image, not the latest one from snapshot derivation", async () => {
+		const messagesWithCharts = [
+			{
+				id: "assistant-charts",
+				role: "assistant" as const,
+				parts: [
+					{ type: "text", text: "Here are three charts" },
+					{
+						type: "artifact",
+						category: "chart",
+						fileId: "chart-1",
+						filename: "chart_1.png",
+						extension: "png",
+						downloadUrl: "https://example.com/chart_1.png",
+					},
+					{
+						type: "artifact",
+						category: "chart",
+						fileId: "chart-2",
+						filename: "chart_2.png",
+						extension: "png",
+						downloadUrl: "https://example.com/chart_2.png",
+					},
+					{
+						type: "artifact",
+						category: "chart",
+						fileId: "chart-3",
+						filename: "chart_3.png",
+						extension: "png",
+						downloadUrl: "https://example.com/chart_3.png",
+					},
+				],
+			},
+		] as unknown as UIMessage[];
+
+		mockPipelineState.messages = messagesWithCharts;
+
+		render(<ChatPage params={Promise.resolve({ id: "session-charts" })} />);
+
+		await waitFor(() => {
+			expect(jotaiStore.get(workspaceChartAtom)?.images[0]?.fileId).toBe(
+				"chart-3",
+			);
+			expect(jotaiStore.get(workspaceViewAtom)).toBe("chart");
+		});
+
+		act(() => {
+			jotaiStore.set(showChartWorkspaceAtom, {
+				generatedAt: Date.now(),
+				images: [
+					{
+						downloadUrl: "https://example.com/chart_1.png",
+						fileId: "chart-1",
+						filename: "chart_1.png",
+					},
+				],
+				title: "chart_1.png",
+				toolCallId: "chart-1",
+			});
+		});
+
+		expect(jotaiStore.get(workspaceChartAtom)?.images[0]?.fileId).toBe(
+			"chart-1",
+		);
+		expect(jotaiStore.get(workspaceViewAtom)).toBe("chart");
+	});
+
+	it("preserves user chart selection when switching views", async () => {
+		const messagesWithCharts = [
+			{
+				id: "assistant-charts",
+				role: "assistant" as const,
+				parts: [
+					{ type: "text", text: "Charts" },
+					{
+						type: "artifact",
+						category: "chart",
+						fileId: "chart-1",
+						filename: "chart_1.png",
+						extension: "png",
+						downloadUrl: "https://example.com/chart_1.png",
+					},
+					{
+						type: "artifact",
+						category: "chart",
+						fileId: "chart-3",
+						filename: "chart_3.png",
+						extension: "png",
+						downloadUrl: "https://example.com/chart_3.png",
+					},
+				],
+			},
+		] as unknown as UIMessage[];
+
+		mockPipelineState.messages = messagesWithCharts;
+
+		render(<ChatPage params={Promise.resolve({ id: "session-charts" })} />);
+
+		await waitFor(() => {
+			expect(jotaiStore.get(workspaceChartAtom)?.images[0]?.fileId).toBe(
+				"chart-3",
+			);
+			expect(jotaiStore.get(workspaceViewAtom)).toBe("chart");
+		});
+
+		act(() => {
+			jotaiStore.set(showFileWorkspaceAtom, {
+				downloadUrl: "/api/file/doc/download",
+				extension: "pdf",
+				fileId: "doc-1",
+				filename: "report.pdf",
+			});
+		});
+
+		act(() => {
+			jotaiStore.set(showChartWorkspaceAtom, {
+				generatedAt: Date.now(),
+				images: [
+					{
+						downloadUrl: "https://example.com/chart_1.png",
+						fileId: "chart-1",
+						filename: "chart_1.png",
+					},
+				],
+				title: "chart_1.png",
+				toolCallId: "chart-1",
+			});
+		});
+
+		await waitFor(() => {
+			expect(jotaiStore.get(workspaceViewAtom)).toBe("chart");
+			expect(jotaiStore.get(workspaceChartAtom)?.images[0]?.fileId).toBe(
+				"chart-1",
+			);
+		});
 	});
 });
