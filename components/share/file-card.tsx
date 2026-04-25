@@ -1,9 +1,21 @@
-"use client";
-
 import { formatFileSize } from "@/lib/file";
 import { cn } from "@/lib/utils";
-import { FileText } from "lucide-react";
-import { type ReactNode, memo } from "react";
+import { Database, FileText, Image } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
+
+const IMAGE_EXTS = new Set([
+	"png",
+	"jpg",
+	"jpeg",
+	"gif",
+	"webp",
+	"svg",
+	"bmp",
+	"ico",
+	"avif",
+]);
+const DATA_EXTS = new Set(["csv", "xlsx", "xls", "tsv", "json", "xml"]);
 
 type FileCardProps = {
 	action?: ReactNode;
@@ -32,6 +44,13 @@ const FileCard = ({
 	const detailText =
 		subtitle ?? [extensionLabel, sizeLabel].filter(Boolean).join(" ");
 
+	const ext = extension.trim().toLowerCase();
+	const Icon: LucideIcon = IMAGE_EXTS.has(ext)
+		? Image
+		: DATA_EXTS.has(ext)
+			? Database
+			: FileText;
+
 	return (
 		<div
 			className={cn(
@@ -42,7 +61,7 @@ const FileCard = ({
 			)}
 		>
 			<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white">
-				<FileText className="h-5 w-5 text-gray-500" />
+				<Icon className="h-5 w-5 text-gray-500" />
 			</div>
 
 			<div className="flex min-w-0 flex-1 flex-col overflow-hidden text-left">
@@ -70,4 +89,4 @@ const FileCard = ({
 	);
 };
 
-export default memo(FileCard);
+export default FileCard;
