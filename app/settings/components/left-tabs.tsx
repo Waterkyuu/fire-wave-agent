@@ -30,7 +30,7 @@ const LeftTabs = ({
 					className={cn(
 						"justify-start font-medium text-sm transition-colors duration-200",
 						activeTab === key
-							? "bg-accent text-accent-foreground"
+							? "bg-accent font-bold text-accent-foreground"
 							: "text-muted-foreground hover:text-foreground",
 					)}
 					onClick={() => onChange(key)}

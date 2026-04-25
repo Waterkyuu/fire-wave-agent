@@ -134,7 +134,7 @@ const SkillSettings = () => {
 						{t("description")}
 					</p>
 				</div>
-				<Button onClick={openCreate} size="sm" className="gap-1.5">
+				<Button onClick={openCreate} size="sm" className="gap-1.5 rounded-full">
 					<Plus className="size-4" />
 					{t("createSkill")}
 				</Button>
@@ -150,7 +150,7 @@ const SkillSettings = () => {
 						variant="outline"
 						size="sm"
 						onClick={openCreate}
-						className="mt-4 gap-1.5"
+						className="mt-4 gap-1.5 rounded-full"
 					>
 						<Plus className="size-4" />
 						{t("createSkill")}
@@ -175,6 +175,7 @@ const SkillSettings = () => {
 								<Button
 									variant="ghost"
 									size="icon-sm"
+									className="rounded-full"
 									onClick={() => openEdit(skill)}
 									aria-label={t("edit")}
 								>
@@ -243,10 +244,18 @@ const SkillSettings = () => {
 					</div>
 
 					<DialogFooter>
-						<Button variant="outline" onClick={() => setDialogOpen(false)}>
+						<Button
+							className="rounded-full"
+							variant="outline"
+							onClick={() => setDialogOpen(false)}
+						>
 							{t("cancel")}
 						</Button>
-						<Button onClick={handleSave} disabled={saving}>
+						<Button
+							className="rounded-full"
+							onClick={handleSave}
+							disabled={saving}
+						>
 							{saving ? t("saving") : t("save")}
 						</Button>
 					</DialogFooter>

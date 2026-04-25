@@ -48,7 +48,7 @@ const SystemSettings = () => {
 				<p className="text-muted-foreground text-xs">{t("helperText")}</p>
 			</div>
 
-			<Button onClick={handleSave} disabled={saving}>
+			<Button className="rounded-full" onClick={handleSave} disabled={saving}>
 				{saving ? t("saving") : t("save")}
 			</Button>
 		</div>

@@ -1,5 +1,6 @@
 "use client";
 
+import Header from "@/components/share/header";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { SettingTab } from "@/types";
 import { useCallback, useState } from "react";
@@ -16,9 +17,10 @@ const SettingsPage = () => {
 	}, []);
 
 	return (
-		<div className="flex h-dvh flex-col">
-			<div className="mx-auto flex w-full max-w-5xl flex-1 overflow-hidden px-4 py-6 md:px-6">
-				<div className="grid w-full grid-cols-1 gap-6 md:grid-cols-[220px_1fr]">
+		<div className="flex h-full flex-col">
+			<Header />
+			<div className="flex w-full flex-1 overflow-hidden px-6 py-6 md:px-8">
+				<div className="grid w-full grid-cols-1 gap-8 md:grid-cols-[220px_1fr]">
 					<LeftTabs activeTab={activeTab} onChange={handleTabChange} />
 
 					<ScrollArea className="h-full">

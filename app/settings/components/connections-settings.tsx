@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import type { ConnectionService, ConnectionStatus } from "@/types";
+import { Cable } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -147,6 +148,7 @@ const ConnectionsSettings = () => {
 								{isConnected ? (
 									<Button
 										variant="outline"
+										className="rounded-full"
 										size="sm"
 										onClick={() => setDisconnectConfirm(service)}
 										disabled={isLoading}
@@ -156,9 +158,11 @@ const ConnectionsSettings = () => {
 								) : (
 									<Button
 										size="sm"
+										className="rounded-full"
 										onClick={() => handleConnect(service)}
 										disabled={isLoading}
 									>
+										<Cable className="size-3 md:size-4" />
 										{isLoading ? t("connecting") : t("connect")}
 									</Button>
 								)}
@@ -185,12 +189,14 @@ const ConnectionsSettings = () => {
 					</DialogHeader>
 					<DialogFooter>
 						<Button
+							className="rounded-full"
 							variant="outline"
 							onClick={() => setDisconnectConfirm(null)}
 						>
 							{tGlobal("skills.cancel")}
 						</Button>
 						<Button
+							className="rounded-full"
 							variant="destructive"
 							onClick={() =>
 								disconnectConfirm && handleDisconnect(disconnectConfirm)
