@@ -18,6 +18,7 @@ import { handleError } from "@/lib/error-handler";
 import { cn } from "@/lib/utils";
 import { signOut } from "@/services/user";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 
 type AvatarProps = {
 	mode?: "default" | "online" | "offline";
@@ -90,7 +91,9 @@ const Avatar = ({ mode = "default", className = "" }: AvatarProps) => {
 						<DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
 					</DropdownMenuItem>
 					<DropdownMenuItem>
-						{t("settings")}
+						<Link href={"/settings"} className="h-full w-full">
+							{t("settings")}
+						</Link>
 						<DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
 					</DropdownMenuItem>
 					<DropdownMenuItem>
