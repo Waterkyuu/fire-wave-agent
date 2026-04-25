@@ -142,5 +142,72 @@
 		"streaming": "传输中",
 		"called": "已调用",
 		"done": "完成"
+	},
+	"settings": {
+		"title": "设置",
+		"description": "管理你的偏好和集成服务",
+		"tabs": {
+			"system": "系统设置",
+			"skills": "Skill 设置",
+			"connections": "连接"
+		},
+		"system": {
+			"title": "系统设置",
+			"description": "定义自定义规则，指导助手如何响应你的请求。",
+			"customRules": "自定义规则",
+			"customRulesPlaceholder": "例如：始终使用中文回复。使用简洁的语言。避免不必要的解释...",
+			"save": "保存规则",
+			"saving": "保存中...",
+			"saved": "规则保存成功",
+			"saveFailed": "保存规则失败",
+			"helperText": "这些规则将作为系统级指令应用于每次对话。"
+		},
+		"skills": {
+			"title": "Skills",
+			"description": "创建和管理自定义 Skill，扩展助手的能力。",
+			"createSkill": "创建 Skill",
+			"emptyTitle": "暂无 Skill",
+			"emptyDescription": "创建你的第一个 Skill 来增强助手能力。",
+			"skillName": "Skill 名称",
+			"skillNamePlaceholder": "输入 Skill 名称",
+			"skillDescription": "描述",
+			"skillDescriptionPlaceholder": "描述此 Skill 的功能",
+			"skillInstructions": "指令",
+			"skillInstructionsPlaceholder": "为此 Skill 编写详细指令...",
+			"save": "保存",
+			"saving": "保存中...",
+			"cancel": "取消",
+			"edit": "编辑",
+			"delete": "删除",
+			"deleteConfirm": "确定要删除此 Skill 吗？",
+			"created": "Skill 创建成功",
+			"updated": "Skill 更新成功",
+			"deleted": "Skill 删除成功",
+			"operationFailed": "操作失败",
+			"nameRequired": "Skill 名称不能为空",
+			"instructionsRequired": "指令不能为空"
+		},
+		"connections": {
+			"title": "连接",
+			"description": "连接外部服务以增强你的工作流程。",
+			"connected": "已连接",
+			"notConnected": "未连接",
+			"connect": "连接",
+			"disconnect": "断开连接",
+			"disconnectConfirm": "确定要断开 {service} 的连接吗？",
+			"connecting": "连接中...",
+			"disconnecting": "断开中...",
+			"connectSuccess": "{service} 连接成功",
+			"disconnectSuccess": "{service} 已断开连接",
+			"operationFailed": "操作失败",
+			"github": {
+				"name": "GitHub",
+				"description": "访问你的代码仓库、Issue 和 Pull Request。"
+			},
+			"notion": {
+				"name": "Notion",
+				"description": "同步你的笔记、数据库和工作区内容。"
+			}
+		}
 	}
 }
