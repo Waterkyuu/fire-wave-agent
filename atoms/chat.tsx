@@ -3,12 +3,7 @@ import {
 	type WorkspaceSnapshot,
 	cloneWorkspaceSnapshot,
 } from "@/lib/chat/workspace-hydration";
-import type {
-	WorkspaceChart,
-	WorkspaceDataset,
-	WorkspaceFile,
-	WorkspaceView,
-} from "@/types";
+import type { WorkspaceChart, WorkspaceDataset, WorkspaceFile } from "@/types";
 import type { AgentStatus, ChatAttachment, ToolCallEvent } from "@/types/chat";
 import { atom } from "jotai";
 import type { Getter, Setter } from "jotai/vanilla";
@@ -21,12 +16,10 @@ const pendingHomeUploadsAtom = atom<ChatAttachment[]>([]);
 
 type WorkspaceBySessionState = Record<string, WorkspaceSnapshot>;
 type WorkspaceHydratingBySessionState = Record<string, boolean>;
+
 const DEFAULT_WORKSPACE_SESSION_ID = "__global__";
-
 const activeWorkspaceSessionIdAtom = atom<string>(DEFAULT_WORKSPACE_SESSION_ID);
-
 const workspaceBySessionAtom = atom<WorkspaceBySessionState>({});
-
 const workspaceHydratingBySessionAtom = atom<WorkspaceHydratingBySessionState>(
 	{},
 );
@@ -133,50 +126,23 @@ const setWorkspaceHydratingAtom = atom(
 	},
 );
 
-const vncUrlAtom = atom(
-	(get) => get(currentWorkspaceSnapshotAtom).vncUrl,
-	(get, set, vncUrl: string) => {
-		updateActiveWorkspace(get, set, (current) => ({ ...current, vncUrl }));
-	},
-);
+const createWorkspaceFieldAtom = <K extends keyof WorkspaceSnapshot>(key: K) =>
+	atom(
+		(get) => get(currentWorkspaceSnapshotAtom)[key],
+		(get, set, value: WorkspaceSnapshot[K]) => {
+			updateActiveWorkspace(get, set, (current) => ({
+				...current,
+				[key]: value,
+			}));
+		},
+	);
 
-const workspaceViewAtom = atom(
-	(get) => get(currentWorkspaceSnapshotAtom).view,
-	(get, set, view: WorkspaceView) => {
-		updateActiveWorkspace(get, set, (current) => ({ ...current, view }));
-	},
-);
-
-const workspaceChartAtom = atom(
-	(get) => get(currentWorkspaceSnapshotAtom).chart,
-	(get, set, chart: WorkspaceChart | null) => {
-		updateActiveWorkspace(get, set, (current) => ({ ...current, chart }));
-	},
-);
-
-const workspaceDatasetAtom = atom(
-	(get) => get(currentWorkspaceSnapshotAtom).dataset,
-	(get, set, dataset: WorkspaceDataset | null) => {
-		updateActiveWorkspace(get, set, (current) => ({ ...current, dataset }));
-	},
-);
-
-const workspaceFileAtom = atom(
-	(get) => get(currentWorkspaceSnapshotAtom).file,
-	(get, set, file: WorkspaceFile | null) => {
-		updateActiveWorkspace(get, set, (current) => ({ ...current, file }));
-	},
-);
-
-const workspaceTypstContentAtom = atom(
-	(get) => get(currentWorkspaceSnapshotAtom).typstContent,
-	(get, set, typstContent: string) => {
-		updateActiveWorkspace(get, set, (current) => ({
-			...current,
-			typstContent,
-		}));
-	},
-);
+const vncUrlAtom = createWorkspaceFieldAtom("vncUrl");
+const workspaceViewAtom = createWorkspaceFieldAtom("view");
+const workspaceChartAtom = createWorkspaceFieldAtom("chart");
+const workspaceDatasetAtom = createWorkspaceFieldAtom("dataset");
+const workspaceFileAtom = createWorkspaceFieldAtom("file");
+const workspaceTypstContentAtom = createWorkspaceFieldAtom("typstContent");
 
 const agentStatusAtom = atom<AgentStatus>("idle");
 
