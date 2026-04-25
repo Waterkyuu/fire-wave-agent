@@ -20,7 +20,8 @@
 			".husky",
 			".vscode",
 			"src/components/ui",
-			".github"
+			".github",
+			".agents/"
 		]
 	},
 	"formatter": {
