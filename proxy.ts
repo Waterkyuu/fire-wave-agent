@@ -1,12 +1,12 @@
-import authMiddleware from "@/middlewares/auth";
+import authProxy from "@/middlewares/auth";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const middlewares = [authMiddleware];
+const proxies = [authProxy];
 
-export async function middleware(request: NextRequest) {
-	for (const mw of middlewares) {
-		const response = await mw(request);
+export async function proxy(request: NextRequest) {
+	for (const p of proxies) {
+		const response = await p(request);
 		if (response && response !== NextResponse.next()) {
 			return response;
 		}
