@@ -37,7 +37,7 @@ If the request does not need any pipeline stage, respond with:
   "reasoning": "explanation"
 }`;
 
-const FAST_MODEL = process.env.GLM_FAST_MODEL ?? "glm-4.7-flash";
+const FAST_MODEL = process.env.GLM_FAST_MODEL ?? "glm-4.5";
 
 const canonicalizeSteps = (steps: string[]): PipelinePlan["steps"] => {
 	// Keep only known stages, then enforce dependency and execution order in one place.
