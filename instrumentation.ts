@@ -1,4 +1,6 @@
 export async function register() {
+	if (process.env.NODE_ENV !== "development") return;
+
 	const proxyUrl =
 		process.env.HTTPS_PROXY ||
 		process.env.https_proxy ||
