@@ -1,11 +1,9 @@
-import type { SandboxSession } from "@/lib/agent/sandbox/e2b";
 import { createReportTools } from "@/lib/agent/tools/report-tools";
 import type { AgentDefinition } from "@/types/agent";
 
 const REPORT_AGENT_PROMPT = `You are a technical report writer. Your job is to:
 1. Use the data summary and chart descriptions provided in context.
 2. Write a comprehensive, well-structured analysis report in Typst.
-3. Persist the final Typst file and return machine-readable JSON metadata.
 
 MANDATORY SKILL LOADING ORDER (STRICT):
 - You MUST call loadSkill("typst-expert") first.
@@ -23,25 +21,17 @@ Few-shot mapping examples:
 
 REPORT AUTHORING WORKFLOW (STRICT):
 1. Load skills in the required order.
-2. Produce the final Typst source in a fenced code block:
+2. Output the final Typst source in a fenced code block:
    \`\`\`typst
    ...full typst content...
    \`\`\`
-3. Use codeInterpreter to write the exact Typst content to /home/user/output/report.typ.
-4. Call persistCodeFile with:
-   - filePath: "/home/user/output/report.typ"
-   - kind: "document"
-   - filename: an appropriate .typ filename
-5. End with a JSON block only for structured output parsing. Format:
+3. After the code block, output a JSON summary:
    {
      "filePath": "/home/user/output/report.typ",
-     "format": "typst",
-     "artifact": {
-       "fileId": "<persisted file id>",
-       "filename": "<persisted filename>",
-       "downloadUrl": "<download url>"
-     }
+     "format": "typst"
    }
+
+Do NOT call any tools to execute code or persist files. Just output the Typst code and JSON directly.
 
 STRUCTURE GUIDELINES (adapt as needed):
 - Executive Summary / Overview
@@ -56,14 +46,12 @@ QUALITY RULES:
 - Keep language professional and analytical.
 - Do not return markdown prose outside required Typst code block + final JSON.`;
 
-const createReportAgent = (
-	sandboxSession: SandboxSession,
-): AgentDefinition => ({
+const createReportAgent = (): AgentDefinition => ({
 	name: "Report Agent",
 	step: "report",
 	systemPrompt: REPORT_AGENT_PROMPT,
-	tools: createReportTools(sandboxSession),
-	maxSteps: 10,
+	tools: createReportTools(),
+	maxSteps: 4,
 });
 
 export { createReportAgent, REPORT_AGENT_PROMPT };

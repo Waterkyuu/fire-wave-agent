@@ -433,11 +433,21 @@ const extractTypstContent = (text: string): string | undefined => {
 	return match?.[1]?.trim() || undefined;
 };
 
+const ReportBestEffortSchema = z.object({
+	filePath: z.string().optional(),
+	format: z.enum(["markdown", "typst"]).optional(),
+});
+
 const resolveReportOutput = (stepResult: StepExecutionResult): ReportOutput => {
 	const parsedOutput = parseStructuredOutput(
 		stepResult.text,
 		RelaxedReportOutputSchema,
 	);
+	const bestEffortOutput = parseStructuredOutput(
+		stepResult.text,
+		ReportBestEffortSchema,
+	);
+
 	const artifact =
 		parsedOutput?.artifact ??
 		extractArtifactsFromToolResults(
@@ -449,18 +459,20 @@ const resolveReportOutput = (stepResult: StepExecutionResult): ReportOutput => {
 			"persistCodeFile",
 		).at(-1);
 
-	if (!parsedOutput) {
-		throw new Error("Report step did not produce a valid JSON summary.");
-	}
-
-	if (!artifact) {
-		throw new Error("Report step did not persist the generated document.");
-	}
-
 	const typstContent = extractTypstContent(stepResult.text);
 
+	const filePath =
+		parsedOutput?.filePath ??
+		bestEffortOutput?.filePath ??
+		"/home/user/output/report.typ";
+	const format =
+		parsedOutput?.format ??
+		bestEffortOutput?.format ??
+		(typstContent ? "typst" : "markdown");
+
 	return ReportOutputSchema.parse({
-		...parsedOutput,
+		filePath,
+		format,
 		artifact,
 		typstContent,
 	});

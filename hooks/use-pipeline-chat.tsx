@@ -624,7 +624,7 @@ const usePipelineChat = (
 
 							if (evt.step === "data" && "artifact" in evt.output) {
 								const { artifact } = evt.output;
-								if (!artifact.fileId || !artifact.filename) {
+								if (!artifact?.fileId || !artifact?.filename) {
 									break;
 								}
 								assistantParts.push({
@@ -662,23 +662,24 @@ const usePipelineChat = (
 								}
 							}
 
-							if (
-								evt.step === "report" &&
-								"artifact" in evt.output &&
-								evt.output.artifact.fileId &&
-								evt.output.artifact.filename
-							) {
-								const { artifact } = evt.output;
-								assistantParts.push({
-									type: "artifact",
-									category: "report",
-									fileId: artifact.fileId,
-									fileSize: artifact.fileSize ?? undefined,
-									filename: artifact.filename,
-									extension: artifact.filename.split(".").pop() ?? "md",
-									kind: artifact.kind,
-									downloadUrl: artifact.downloadUrl,
-								});
+							if (evt.step === "report") {
+								if (
+									"artifact" in evt.output &&
+									evt.output.artifact?.fileId &&
+									evt.output.artifact?.filename
+								) {
+									const artifact = evt.output.artifact;
+									assistantParts.push({
+										type: "artifact",
+										category: "report",
+										fileId: artifact.fileId,
+										fileSize: artifact.fileSize ?? undefined,
+										filename: artifact.filename,
+										extension: artifact.filename.split(".").pop() ?? "typ",
+										kind: artifact.kind,
+										downloadUrl: artifact.downloadUrl,
+									});
+								}
 
 								if ("typstContent" in evt.output && evt.output.typstContent) {
 									jotaiStore.set(

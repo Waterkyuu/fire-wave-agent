@@ -21,10 +21,12 @@ describe("REPORT_AGENT_PROMPT", () => {
 		expect(resumeRuleIndex).toBeGreaterThan(typstRuleIndex);
 	});
 
-	it("requires typst code block output and persisted .typ file metadata", () => {
+	it("requires typst code block output and JSON metadata", () => {
 		expect(REPORT_AGENT_PROMPT).toContain("```typst");
 		expect(REPORT_AGENT_PROMPT).toContain("/home/user/output/report.typ");
 		expect(REPORT_AGENT_PROMPT).toContain('"format": "typst"');
-		expect(REPORT_AGENT_PROMPT).toContain("persistCodeFile");
+		expect(REPORT_AGENT_PROMPT).toContain(
+			"Do NOT call any tools to execute code",
+		);
 	});
 });

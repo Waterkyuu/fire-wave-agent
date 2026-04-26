@@ -38,7 +38,7 @@ const ChartOutputSchema = z.object({
 const ReportOutputSchema = z.object({
 	filePath: z.string(),
 	format: z.enum(["markdown", "typst"]),
-	artifact: PersistedArtifactSchema,
+	artifact: PersistedArtifactSchema.optional(),
 	typstContent: z.string().optional(),
 });
 

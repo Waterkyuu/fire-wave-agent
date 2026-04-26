@@ -210,7 +210,7 @@ const executePipeline = async (
 	const agentMap: Record<PipelineStep, AgentDefinition> = {
 		data: createDataAgent({ fileIds, sandboxSession }),
 		chart: createChartAgent({ fileIds, sandboxSession }),
-		report: createReportAgent(sandboxSession),
+		report: createReportAgent(),
 	};
 
 	const ctx = createInitialContext(userRequest, attachedFiles, pipelinePlan);
