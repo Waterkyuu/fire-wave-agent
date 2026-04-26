@@ -34,7 +34,7 @@ describe("StepPanel", () => {
 
 		render(<StepPanel />);
 
-		fireEvent.click(screen.getByRole("button", { name: /Pipeline Steps/i }));
+		fireEvent.click(screen.getByRole("button", { name: /Plans /i }));
 
 		expect(screen.getByText("0/0 completed")).toBeInTheDocument();
 		expect(screen.queryByText("Data")).not.toBeInTheDocument();
@@ -54,7 +54,7 @@ describe("StepPanel", () => {
 
 		render(<StepPanel />);
 
-		fireEvent.click(screen.getByRole("button", { name: /Pipeline Steps/i }));
+		fireEvent.click(screen.getByRole("button", { name: /Plans /i }));
 
 		expect(screen.getByText("0/1 completed")).toBeInTheDocument();
 		expect(screen.getByText("Data")).toBeInTheDocument();
