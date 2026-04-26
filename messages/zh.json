@@ -30,6 +30,7 @@
 		"uploading": "上传中...",
 		"stop": "停止",
 		"send": "发送",
+		"compactContext": "精简上下文",
 		"maxFilesReached": "已达到文件数量上限",
 		"maxFilesDescription": "一次最多只能上传 2 个文件。",
 		"unsupportedFile": "不支持的文件类型",

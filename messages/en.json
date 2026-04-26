@@ -30,6 +30,7 @@
 		"uploading": "Uploading...",
 		"stop": "Stop",
 		"send": "Send",
+		"compactContext": "Compact context",
 		"maxFilesReached": "Maximum files reached",
 		"maxFilesDescription": "You can only upload up to 2 files at a time.",
 		"unsupportedFile": "Unsupported file",

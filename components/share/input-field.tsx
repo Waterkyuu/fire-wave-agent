@@ -27,7 +27,7 @@ import { type UploadResult, cancelUpload, uploadFile } from "@/lib/upload-file";
 import { cn, generateId } from "@/lib/utils";
 import type { ChatAttachment } from "@/types/chat";
 import { useAtom, useSetAtom } from "jotai";
-import { ArrowUp, Plus, Square, X } from "lucide-react";
+import { ArrowUp, ChevronsDownUp, Plus, Square, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "next/navigation";
 import { memo, startTransition, useRef, useState } from "react";
@@ -469,7 +469,23 @@ const InputField = ({
 						)}
 					</TooltipContent>
 				</Tooltip>
-				<InputGroupText className="ml-auto">52% used</InputGroupText>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<InputGroupButton
+							variant="ghost"
+							className="ml-auto rounded-full text-muted-foreground transition-colors duration-200 hover:text-foreground"
+							size="icon-xs"
+							aria-label={t("compactContext")}
+						>
+							<ChevronsDownUp className="size-3.5" />
+							<span className="sr-only">{t("compactContext")}</span>
+						</InputGroupButton>
+					</TooltipTrigger>
+					<TooltipContent>
+						<p>{t("compactContext")}</p>
+					</TooltipContent>
+				</Tooltip>
+				<InputGroupText>52% used</InputGroupText>
 				<Separator orientation="vertical" className="h-4!" />
 				{isLoading ? (
 					<InputGroupButton
