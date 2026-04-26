@@ -1,6 +1,7 @@
 import {
 	buildLearnMemoryPrompt,
 	formatLearnMemoryPrompt,
+	upsertLearnMemory,
 } from "./learn-memories";
 
 describe("learn memories", () => {
@@ -38,5 +39,24 @@ describe("learn memories", () => {
 
 		expect(readMemories).toHaveBeenCalledWith("typst", 20);
 		expect(prompt).toContain("Inline math spacing");
+	});
+
+	it("upserts a trimmed learn memory through the provided writer", async () => {
+		const writeMemory = jest.fn(async () => undefined);
+
+		await upsertLearnMemory(
+			{
+				type: "typst",
+				title: " Inline math spacing ",
+				content: " Use `$x^2$` for inline math. ",
+			},
+			{ writeMemory },
+		);
+
+		expect(writeMemory).toHaveBeenCalledWith({
+			type: "typst",
+			title: "Inline math spacing",
+			content: "Use `$x^2$` for inline math.",
+		});
 	});
 });

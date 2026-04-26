@@ -41,6 +41,14 @@ describe("compileAndRepairTypst", () => {
 		});
 		if (result.ok) {
 			expect(result.typstContent).toBe("= Fixed");
+			expect(result.repairAttempts).toEqual([
+				{
+					attempt: 1,
+					diagnostics: "unclosed delimiter",
+					input: "= Broken",
+					output: "= Fixed",
+				},
+			]);
 		}
 	});
 

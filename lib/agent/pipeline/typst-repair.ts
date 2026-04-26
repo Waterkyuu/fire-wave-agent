@@ -11,6 +11,13 @@ type RepairTypstInput = {
 type RepairTypst = (input: RepairTypstInput) => Promise<string>;
 type CompileTypst = (content: string) => Promise<TypstCompileResult>;
 
+type TypstRepairAttempt = {
+	attempt: number;
+	input: string;
+	diagnostics: string;
+	output: string;
+};
+
 type CompileAndRepairTypstOptions = {
 	compileTypst: CompileTypst;
 	repairTypst: RepairTypst;
@@ -22,6 +29,7 @@ type CompileAndRepairTypstSuccess = {
 	typstContent: string;
 	svg: string;
 	repairCount: number;
+	repairAttempts: TypstRepairAttempt[];
 };
 
 type CompileAndRepairTypstFailure = {
@@ -30,6 +38,7 @@ type CompileAndRepairTypstFailure = {
 	error: string;
 	diagnostics: string;
 	repairCount: number;
+	repairAttempts: TypstRepairAttempt[];
 };
 
 type CompileAndRepairTypstResult =
@@ -43,6 +52,7 @@ const compileAndRepairTypst = async (
 	const maxRepairAttempts =
 		options.maxRepairAttempts ?? DEFAULT_MAX_TYPST_REPAIR_ATTEMPTS;
 	let currentContent = initialContent;
+	const repairAttempts: TypstRepairAttempt[] = [];
 
 	for (
 		let repairCount = 0;
@@ -57,6 +67,7 @@ const compileAndRepairTypst = async (
 				typstContent: currentContent,
 				svg: compileResult.svg,
 				repairCount,
+				repairAttempts,
 			};
 		}
 
@@ -67,14 +78,22 @@ const compileAndRepairTypst = async (
 				error: compileResult.error,
 				diagnostics: compileResult.diagnostics,
 				repairCount,
+				repairAttempts,
 			};
 		}
 
-		currentContent = await options.repairTypst({
+		const repairedContent = await options.repairTypst({
 			attempt: repairCount + 1,
 			content: currentContent,
 			diagnostics: compileResult.diagnostics,
 		});
+		repairAttempts.push({
+			attempt: repairCount + 1,
+			input: currentContent,
+			diagnostics: compileResult.diagnostics,
+			output: repairedContent,
+		});
+		currentContent = repairedContent;
 	}
 
 	return {
@@ -83,6 +102,7 @@ const compileAndRepairTypst = async (
 		error: "Typst repair loop ended unexpectedly.",
 		diagnostics: "Typst repair loop ended unexpectedly.",
 		repairCount: maxRepairAttempts,
+		repairAttempts,
 	};
 };
 
@@ -95,4 +115,5 @@ export type {
 	CompileTypst,
 	RepairTypst,
 	RepairTypstInput,
+	TypstRepairAttempt,
 };

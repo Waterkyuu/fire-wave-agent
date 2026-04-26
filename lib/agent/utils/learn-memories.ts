@@ -13,9 +13,21 @@ type LearnMemoryReader = (
 	limit: number,
 ) => Promise<LearnMemoryPromptItem[]>;
 
+type LearnMemoryInput = {
+	type: string;
+	title: string;
+	content: string;
+};
+
+type LearnMemoryWriter = (memory: LearnMemoryInput) => Promise<void>;
+
 type BuildLearnMemoryPromptOptions = {
 	limit?: number;
 	readMemories?: LearnMemoryReader;
+};
+
+type UpsertLearnMemoryOptions = {
+	writeMemory?: LearnMemoryWriter;
 };
 
 const readLearnMemoriesByType: LearnMemoryReader = async (type, limit) => {
@@ -31,6 +43,31 @@ const readLearnMemoriesByType: LearnMemoryReader = async (type, limit) => {
 		.limit(limit);
 
 	return rows;
+};
+
+const writeLearnMemory: LearnMemoryWriter = async ({
+	content,
+	title,
+	type,
+}) => {
+	const { db } = await import("@/infra/drizzle");
+	const now = new Date();
+
+	await db
+		.insert(learnMemories)
+		.values({
+			type,
+			title,
+			content,
+			updatedAt: now,
+		})
+		.onConflictDoUpdate({
+			target: [learnMemories.type, learnMemories.title],
+			set: {
+				content,
+				updatedAt: now,
+			},
+		});
 };
 
 const formatLearnMemoryPrompt = (
@@ -59,14 +96,37 @@ const buildLearnMemoryPrompt = async (
 	return formatLearnMemoryPrompt(type, memories);
 };
 
+const upsertLearnMemory = async (
+	input: LearnMemoryInput,
+	options: UpsertLearnMemoryOptions = {},
+): Promise<void> => {
+	const memory = {
+		type: input.type.trim(),
+		title: input.title.trim(),
+		content: input.content.trim(),
+	};
+
+	if (!memory.type || !memory.title || !memory.content) {
+		return;
+	}
+
+	const writeMemory = options.writeMemory ?? writeLearnMemory;
+	await writeMemory(memory);
+};
+
 export {
 	DEFAULT_LEARN_MEMORY_LIMIT,
 	buildLearnMemoryPrompt,
 	formatLearnMemoryPrompt,
 	readLearnMemoriesByType,
+	upsertLearnMemory,
+	writeLearnMemory,
 };
 export type {
 	BuildLearnMemoryPromptOptions,
+	LearnMemoryInput,
 	LearnMemoryPromptItem,
 	LearnMemoryReader,
+	LearnMemoryWriter,
+	UpsertLearnMemoryOptions,
 };

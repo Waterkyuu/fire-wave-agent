@@ -7,6 +7,11 @@ import {
 	createTypstRepairAgent,
 } from "@/lib/agent/multi-agents/typst-repair-agent";
 import {
+	TYPST_REVIEW_AGENT_PROMPT,
+	buildTypstReviewPrompt,
+	parseTypstReviewOutput,
+} from "@/lib/agent/multi-agents/typst-review-agent";
+import {
 	buildStepPrompt,
 	createInitialContext,
 } from "@/lib/agent/pipeline/context";
@@ -21,7 +26,10 @@ import {
 import { compileAndRepairTypst } from "@/lib/agent/pipeline/typst-repair";
 import type { SandboxSession } from "@/lib/agent/sandbox/e2b";
 import { formatUnknownError } from "@/lib/agent/utils/error-utils";
-import { buildLearnMemoryPrompt } from "@/lib/agent/utils/learn-memories";
+import {
+	buildLearnMemoryPrompt,
+	upsertLearnMemory,
+} from "@/lib/agent/utils/learn-memories";
 import { getFileDownloadUrl } from "@/lib/file-store";
 import { compileTypst } from "@/lib/typst/compiler";
 import type { FileRecord } from "@/types";
@@ -133,6 +141,61 @@ const loadLearnedTypstPrompt = async (): Promise<string> => {
 	} catch {
 		return "";
 	}
+};
+
+type LearnFromTypstRepairOptions = {
+	diagnostics: string;
+	originalTypst: string;
+	repairedTypst: string;
+};
+
+const learnFromTypstRepair = async ({
+	diagnostics,
+	originalTypst,
+	repairedTypst,
+}: LearnFromTypstRepairOptions): Promise<void> => {
+	const result = await streamText({
+		system: TYPST_REVIEW_AGENT_PROMPT,
+		model: zhipu(MAIN_MODEL),
+		messages: [
+			{
+				role: "user",
+				content: buildTypstReviewPrompt({
+					diagnostics,
+					originalTypst,
+					repairedTypst,
+				}),
+			},
+		],
+		stopWhen: stepCountIs(1),
+	});
+
+	let fullText = "";
+	for await (const part of result.fullStream) {
+		if (part.type === "text-delta") {
+			fullText += part.text;
+		}
+	}
+
+	const learning = parseTypstReviewOutput(fullText);
+	if (!learning) {
+		return;
+	}
+
+	await upsertLearnMemory({
+		type: "typst",
+		title: learning.title,
+		content: learning.content,
+	});
+};
+
+const scheduleTypstRepairLearning = (
+	options: LearnFromTypstRepairOptions,
+): void => {
+	const learningTask = learnFromTypstRepair(options);
+	learningTask.catch((error) => {
+		console.error("[Typst Learning Error]", error);
+	});
 };
 
 const executeStep = async (
@@ -294,6 +357,14 @@ const executePipeline = async (
 						typstContent: compileResult.typstContent,
 						compiledSvg: compileResult.svg,
 					});
+					const firstRepairAttempt = compileResult.repairAttempts.at(0);
+					if (firstRepairAttempt) {
+						scheduleTypstRepairLearning({
+							diagnostics: firstRepairAttempt.diagnostics,
+							originalTypst: firstRepairAttempt.input,
+							repairedTypst: compileResult.typstContent,
+						});
+					}
 					ctx.reportOutput = output;
 					onEvent({ type: "step-complete", step, output });
 					break;
