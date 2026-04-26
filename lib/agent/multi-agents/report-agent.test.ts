@@ -1,4 +1,4 @@
-import { REPORT_AGENT_PROMPT } from "./report-agent";
+import { REPORT_AGENT_PROMPT, buildReportAgentPrompt } from "./report-agent";
 
 describe("REPORT_AGENT_PROMPT", () => {
 	it("requires loadSkill calls for typst-expert and a category skill", () => {
@@ -14,5 +14,14 @@ describe("REPORT_AGENT_PROMPT", () => {
 		expect(REPORT_AGENT_PROMPT).toContain(
 			"Do NOT call codeInterpreter or persistCodeFile",
 		);
+	});
+
+	it("injects learned Typst corrections when provided", () => {
+		const prompt = buildReportAgentPrompt(
+			"## Learned typst corrections\n1. Inline math spacing",
+		);
+
+		expect(prompt).toContain("## Learned typst corrections");
+		expect(prompt).toContain("Inline math spacing");
 	});
 });

@@ -3,6 +3,10 @@ import { createDataAgent } from "@/lib/agent/multi-agents/data-agent";
 import { runOrchestrator } from "@/lib/agent/multi-agents/orchestrator";
 import { createReportAgent } from "@/lib/agent/multi-agents/report-agent";
 import {
+	buildTypstRepairPrompt,
+	createTypstRepairAgent,
+} from "@/lib/agent/multi-agents/typst-repair-agent";
+import {
 	buildStepPrompt,
 	createInitialContext,
 } from "@/lib/agent/pipeline/context";
@@ -14,10 +18,14 @@ import {
 	resolveDataOutput,
 	resolveReportOutput,
 } from "@/lib/agent/pipeline/output-resolver";
+import { compileAndRepairTypst } from "@/lib/agent/pipeline/typst-repair";
 import type { SandboxSession } from "@/lib/agent/sandbox/e2b";
 import { formatUnknownError } from "@/lib/agent/utils/error-utils";
+import { buildLearnMemoryPrompt } from "@/lib/agent/utils/learn-memories";
 import { getFileDownloadUrl } from "@/lib/file-store";
+import { compileTypst } from "@/lib/typst/compiler";
 import type { FileRecord } from "@/types";
+import { ReportOutputSchema } from "@/types/agent";
 import type {
 	AgentDefinition,
 	PipelineContext,
@@ -119,6 +127,14 @@ const ensurePersistedChartArtifacts = async (
 	};
 };
 
+const loadLearnedTypstPrompt = async (): Promise<string> => {
+	try {
+		return await buildLearnMemoryPrompt("typst");
+	} catch {
+		return "";
+	}
+};
+
 const executeStep = async (
 	agent: AgentDefinition,
 	stepPrompt: string,
@@ -207,10 +223,13 @@ const executePipeline = async (
 		return createInitialContext(userRequest, attachedFiles, pipelinePlan);
 	}
 
+	const learnedTypstPrompt = await loadLearnedTypstPrompt();
 	const agentMap: Record<PipelineStep, AgentDefinition> = {
 		data: createDataAgent({ fileIds, sandboxSession }),
 		chart: createChartAgent({ fileIds, sandboxSession }),
-		report: createReportAgent(),
+		report: createReportAgent({
+			learnedTypstPrompt,
+		}),
 	};
 
 	const ctx = createInitialContext(userRequest, attachedFiles, pipelinePlan);
@@ -242,7 +261,39 @@ const executePipeline = async (
 					break;
 				}
 				case "report": {
-					const output = resolveReportOutput(stepResult);
+					const initialOutput = resolveReportOutput(stepResult);
+					const repairAgent = createTypstRepairAgent();
+					const compileResult = await compileAndRepairTypst(
+						initialOutput.typstContent,
+						{
+							compileTypst,
+							repairTypst: async ({ attempt, content, diagnostics }) => {
+								const repairResult = await executeStep(
+									repairAgent,
+									buildTypstRepairPrompt({
+										attempt,
+										content,
+										diagnostics,
+										learnedTypstPrompt,
+									}),
+									step,
+									() => undefined,
+								);
+								return resolveReportOutput(repairResult).typstContent;
+							},
+						},
+					);
+
+					if (!compileResult.ok) {
+						throw new Error(
+							`Report Typst failed to compile after ${compileResult.repairCount} repair attempts.\n\n${compileResult.diagnostics}`,
+						);
+					}
+
+					const output = ReportOutputSchema.parse({
+						typstContent: compileResult.typstContent,
+						compiledSvg: compileResult.svg,
+					});
 					ctx.reportOutput = output;
 					onEvent({ type: "step-complete", step, output });
 					break;

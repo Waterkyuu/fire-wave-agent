@@ -33,12 +33,31 @@ QUALITY RULES:
 - Keep language professional and analytical.
 - The output must be ONLY the Typst code block. No extra markdown prose or JSON.`;
 
-const createReportAgent = (): AgentDefinition => ({
+type ReportAgentOptions = {
+	learnedTypstPrompt?: string;
+};
+
+const buildReportAgentPrompt = (learnedTypstPrompt?: string): string => {
+	if (!learnedTypstPrompt) {
+		return REPORT_AGENT_PROMPT;
+	}
+
+	return `${REPORT_AGENT_PROMPT}
+
+LEARNED TYPST CORRECTIONS:
+Use these previously learned Typst repair lessons when writing the document.
+
+${learnedTypstPrompt}`;
+};
+
+const createReportAgent = (
+	options: ReportAgentOptions = {},
+): AgentDefinition => ({
 	name: "Report Agent",
 	step: "report",
-	systemPrompt: REPORT_AGENT_PROMPT,
+	systemPrompt: buildReportAgentPrompt(options.learnedTypstPrompt),
 	tools: createReportTools(),
 	maxSteps: 10,
 });
 
-export { createReportAgent, REPORT_AGENT_PROMPT };
+export { createReportAgent, REPORT_AGENT_PROMPT, buildReportAgentPrompt };
