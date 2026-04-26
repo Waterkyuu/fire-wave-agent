@@ -38,7 +38,7 @@ const createReportAgent = (): AgentDefinition => ({
 	step: "report",
 	systemPrompt: REPORT_AGENT_PROMPT,
 	tools: createReportTools(),
-	maxSteps: 6,
+	maxSteps: 10,
 });
 
 export { createReportAgent, REPORT_AGENT_PROMPT };
