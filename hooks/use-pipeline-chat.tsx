@@ -3,6 +3,7 @@ import {
 	agentStatusAtom,
 	clearToolEventsAtom,
 	dispatchToolEventAtom,
+	showTypstWorkspaceAtom,
 } from "@/atoms/chat";
 import loginDialogAtom from "@/atoms/login-dialog";
 import {
@@ -678,6 +679,13 @@ const usePipelineChat = (
 									kind: artifact.kind,
 									downloadUrl: artifact.downloadUrl,
 								});
+
+								if ("typstContent" in evt.output && evt.output.typstContent) {
+									jotaiStore.set(
+										showTypstWorkspaceAtom,
+										evt.output.typstContent,
+									);
+								}
 							}
 							break;
 						}

@@ -39,6 +39,7 @@ const ReportOutputSchema = z.object({
 	filePath: z.string(),
 	format: z.enum(["markdown", "typst"]),
 	artifact: PersistedArtifactSchema,
+	typstContent: z.string().optional(),
 });
 
 type PipelineStep = z.infer<typeof PipelineStepSchema>;

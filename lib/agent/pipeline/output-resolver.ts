@@ -428,6 +428,11 @@ const resolveChartOutput = (stepResult: StepExecutionResult): ChartOutput => {
 	});
 };
 
+const extractTypstContent = (text: string): string | undefined => {
+	const match = text.match(/```typst\n([\s\S]*?)```/);
+	return match?.[1]?.trim() || undefined;
+};
+
 const resolveReportOutput = (stepResult: StepExecutionResult): ReportOutput => {
 	const parsedOutput = parseStructuredOutput(
 		stepResult.text,
@@ -452,9 +457,12 @@ const resolveReportOutput = (stepResult: StepExecutionResult): ReportOutput => {
 		throw new Error("Report step did not persist the generated document.");
 	}
 
+	const typstContent = extractTypstContent(stepResult.text);
+
 	return ReportOutputSchema.parse({
 		...parsedOutput,
 		artifact,
+		typstContent,
 	});
 };
 
