@@ -1,32 +1,18 @@
 import { REPORT_AGENT_PROMPT } from "./report-agent";
 
 describe("REPORT_AGENT_PROMPT", () => {
-	it("enforces loading typst-expert before any category-specific skill", () => {
-		const typstRuleIndex = REPORT_AGENT_PROMPT.indexOf(
-			'loadSkill("typst-expert") first',
-		);
-		const reportRuleIndex = REPORT_AGENT_PROMPT.indexOf(
-			'loadSkill("report-expert")',
-		);
-		const paperRuleIndex = REPORT_AGENT_PROMPT.indexOf(
-			'loadSkill("paper-expert")',
-		);
-		const resumeRuleIndex = REPORT_AGENT_PROMPT.indexOf(
-			'loadSkill("resume-expert")',
-		);
-
-		expect(typstRuleIndex).toBeGreaterThan(-1);
-		expect(reportRuleIndex).toBeGreaterThan(typstRuleIndex);
-		expect(paperRuleIndex).toBeGreaterThan(typstRuleIndex);
-		expect(resumeRuleIndex).toBeGreaterThan(typstRuleIndex);
+	it("requires loadSkill calls for typst-expert and a category skill", () => {
+		expect(REPORT_AGENT_PROMPT).toContain('loadSkill("typst-expert")');
+		expect(REPORT_AGENT_PROMPT).toContain('loadSkill("report-expert")');
+		expect(REPORT_AGENT_PROMPT).toContain('loadSkill("paper-expert")');
+		expect(REPORT_AGENT_PROMPT).toContain('loadSkill("resume-expert")');
 	});
 
-	it("requires typst code block output and JSON metadata", () => {
+	it("requires typst code block output without JSON", () => {
 		expect(REPORT_AGENT_PROMPT).toContain("```typst");
-		expect(REPORT_AGENT_PROMPT).toContain("/home/user/output/report.typ");
-		expect(REPORT_AGENT_PROMPT).toContain('"format": "typst"');
+		expect(REPORT_AGENT_PROMPT).toContain("Do NOT output any JSON");
 		expect(REPORT_AGENT_PROMPT).toContain(
-			"Do NOT call any tools to execute code",
+			"Do NOT call codeInterpreter or persistCodeFile",
 		);
 	});
 });

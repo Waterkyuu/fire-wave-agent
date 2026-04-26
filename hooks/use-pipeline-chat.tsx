@@ -662,31 +662,12 @@ const usePipelineChat = (
 								}
 							}
 
-							if (evt.step === "report") {
-								if (
-									"artifact" in evt.output &&
-									evt.output.artifact?.fileId &&
-									evt.output.artifact?.filename
-								) {
-									const artifact = evt.output.artifact;
-									assistantParts.push({
-										type: "artifact",
-										category: "report",
-										fileId: artifact.fileId,
-										fileSize: artifact.fileSize ?? undefined,
-										filename: artifact.filename,
-										extension: artifact.filename.split(".").pop() ?? "typ",
-										kind: artifact.kind,
-										downloadUrl: artifact.downloadUrl,
-									});
-								}
-
-								if ("typstContent" in evt.output && evt.output.typstContent) {
-									jotaiStore.set(
-										showTypstWorkspaceAtom,
-										evt.output.typstContent,
-									);
-								}
+							if (
+								evt.step === "report" &&
+								"typstContent" in evt.output &&
+								evt.output.typstContent
+							) {
+								jotaiStore.set(showTypstWorkspaceAtom, evt.output.typstContent);
 							}
 							break;
 						}

@@ -49,12 +49,6 @@ const BestEffortChartOutputSchema = z.object({
 	artifacts: z.array(PersistedArtifactSchema).optional(),
 });
 
-const RelaxedReportOutputSchema = ReportOutputSchema.omit({
-	artifact: true,
-}).extend({
-	artifact: PersistedArtifactSchema.optional(),
-});
-
 // --- JSON extraction & structured parsing ---
 const extractJsonCandidates = (text: string): string[] => {
 	const candidates: string[] = [];
@@ -433,49 +427,14 @@ const extractTypstContent = (text: string): string | undefined => {
 	return match?.[1]?.trim() || undefined;
 };
 
-const ReportBestEffortSchema = z.object({
-	filePath: z.string().optional(),
-	format: z.enum(["markdown", "typst"]).optional(),
-});
-
 const resolveReportOutput = (stepResult: StepExecutionResult): ReportOutput => {
-	const parsedOutput = parseStructuredOutput(
-		stepResult.text,
-		RelaxedReportOutputSchema,
-	);
-	const bestEffortOutput = parseStructuredOutput(
-		stepResult.text,
-		ReportBestEffortSchema,
-	);
-
-	const artifact =
-		parsedOutput?.artifact ??
-		extractArtifactsFromToolResults(
-			stepResult.toolResults,
-			"persistCodeFile",
-		).find((candidate) => candidate.kind === "document") ??
-		extractArtifactsFromToolResults(
-			stepResult.toolResults,
-			"persistCodeFile",
-		).at(-1);
-
 	const typstContent = extractTypstContent(stepResult.text);
 
-	const filePath =
-		parsedOutput?.filePath ??
-		bestEffortOutput?.filePath ??
-		"/home/user/output/report.typ";
-	const format =
-		parsedOutput?.format ??
-		bestEffortOutput?.format ??
-		(typstContent ? "typst" : "markdown");
+	if (!typstContent) {
+		throw new Error("Report step did not produce typst content.");
+	}
 
-	return ReportOutputSchema.parse({
-		filePath,
-		format,
-		artifact,
-		typstContent,
-	});
+	return ReportOutputSchema.parse({ typstContent });
 };
 
 export type { StepExecutionResult };
