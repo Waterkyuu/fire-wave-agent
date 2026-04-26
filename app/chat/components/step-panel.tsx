@@ -86,9 +86,7 @@ const DebugPanel = memo(() => {
 				onClick={handleToggle}
 			>
 				<ListTodo className="size-3.5 text-muted-foreground" />
-				<span className="font-medium text-[10px] sm:text-xs">
-					Pipeline Steps
-				</span>
+				<span className="font-medium text-[10px] sm:text-xs">Plans</span>
 				<Badge
 					variant="secondary"
 					className="ml-auto text-[9px] sm:text-[10px]"
