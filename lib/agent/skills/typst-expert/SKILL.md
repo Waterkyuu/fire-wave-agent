@@ -1,15 +1,15 @@
 ---
 name: typst-expert
-description: Use the typst-author skill to help users create professional and aesthetically pleasing typst documents.You should use this skill when users request the creation of paper, resumes, novels, short stories, or notes.Be sure to follow the principles and guidelines below when creating typst document.
+description: Use the typst-author skill to help users create professional and aesthetically pleasing typst documents. You should use this skill when users request the creation of papers, resumes, novels, short stories, or notes. Be sure to follow the principles and guidelines below when creating typst document.
 ---
 
-# Typst-Author skill
+# Typst-Author Skill
 
 ## When to Apply
 Reference these guidelines when:
-- When the content that needs modification is in Typst format
-- When users need to create papers, resumes, novels
-- When users insist on using the Typst format
+- The content that needs modification is in Typst format.
+- Users need to create papers, resumes, or novels.
+- Users insist on using the Typst format.
 
 ## Typst Syntax
 Typst is a markup language. This means that you can use simple syntax to
@@ -38,7 +38,7 @@ unless you switched back to markup or math mode in between.
 ### Markup
 Typst provides built-in markup for the most common document elements. Most of
 the syntax elements are just shortcuts for a corresponding function. The table
-below lists all markup that is available and links to the  best place to learn
+below lists all markup that is available and links to the best place to learn
 more about their syntax and usage.
 
 | Name               | Example                      | See                      |
@@ -145,6 +145,7 @@ a table listing all syntax that is available in code mode:
 Comments are ignored by Typst and will not be included in the output. This is
 useful to exclude old versions or to add annotations. To comment out a single
 line, start it with `//`:
+
 ```example
 // our data barely supports
 // this claim
@@ -156,6 +157,7 @@ significant.
 
 Comments can also be wrapped between `/*` and `*/`. In this case, the comment
 can span over multiple lines:
+
 ```example
 Our study design is as follows:
 /* Somebody write this up:
@@ -221,9 +223,10 @@ resources such as images, Typst files, or data files. Paths are represented as
   ```
 
 ## Mini Example
-```typ
+
+```typst
 #set page(paper: "a4", margin: 2.2cm)
-#set text(font: ("New Computer Modern", "Noto Serif CJK SC"), lang: "en", size: 11pt, fallback: true)
+#set text(font: ("New Computer Modern", "SimSun", "PingFang SC"), lang: "en", size: 11pt, fallback: true)
 #set par(justify: true)
 
 = Title of Your Reinforcement Learning Paper
@@ -258,17 +261,16 @@ We presented *Your Algorithm*, a principled approach that improves both learning
 - Mnih, V. et al. Human-level control through deep reinforcement learning. *Nature* *518*, 529–533, 2015.
 - Schulman, J. et al. Proximal policy optimization algorithms. arXiv:1707.06347, 2017.
 ```
-## Key principles
+
+## Key Principles
 Please note: Typst is **not** LaTeX, nor is it **standard Markdown**. They are incompatible on key syntax terms. Please strictly adhere to the following rules to avoid confusion.
 
 ### Core Mindset
 
 * **Abandon LaTeX Habits**: Do not use `\begin{}`, `\frac{}{}`, `\textbf{}`.
-
 * **Abandon Markdown Habits**: Do not use `**bold**` (double asterisks).
-
 * **Bracket Awareness**: Function calls always use parentheses `func()`, only content blocks use square brackets `[]`, and code blocks use curly braces `{}`.
-  
+
 ### Critical Constraints
 | Category | **Strictly Forbidden (LaTeX/MD)** | **Mandatory in Typst** | Reason / Explanation |
 | :--- | :--- | :--- | :--- |
@@ -281,7 +283,7 @@ Please note: Typst is **not** LaTeX, nor is it **standard Markdown**. They are i
 | **Escaping** | `\#`, `\$` | `\#`, `\$` | To display `#` or `$` in text, they must be escaped. |
 
 ### Math mode
-Mathematical expressions are wrapped by `$`. Please strictly distinguish between **inline** and **block** formulas (according to `syntax.md`):
+Mathematical expressions are wrapped by `$`. Please strictly distinguish between **inline** and **block** formulas:
 
 *   **Inline Formula**: Must be flush with content, **no spaces**.
     *   ❌ Wrong: `$ x^2 $` (This becomes block-level)
@@ -299,24 +301,108 @@ Mathematical expressions are wrapped by `$`. Please strictly distinguish between
     *   Infinity: `infinity` ($\infty$)
     *   Integral: `integral` ($\int$)
 
-## How to use this skill?
+## Font Safety Constraints
 
-### Step1. Check if the context provides a template?
+### 1. Mandatory System Default Fonts
+When generating any Typst code containing non-ASCII characters (especially Chinese, Japanese, or Korean), **you are strictly forbidden** from using fonts that require manual installation (e.g., `"Noto Serif CJK SC"`, `"Source Han Serif SC"`, `"LXGW WenKai"`, or any custom downloaded font).
+- You **must** use operating-system preinstalled default fonts only.
+- You **must** provide at least three layers of fallback covering Windows, macOS, and Linux.
+- You **must** explicitly set `fallback: true` in every `#set text(...)` rule that includes CJK content.
+
+### 2. Allowed CJK Font Whitelist
+CJK fonts **must** be chosen exclusively from the following system-default whitelist, arranged as a fallback chain:
+
+```typst
+#set text(
+  font: (
+    // Western font (optional but recommended)
+    "New Computer Modern",
+    // Chinese system font fallback chain
+    "SimSun",              // Windows default Songti; highest coverage
+    "Songti SC",           // macOS Songti
+    "PingFang SC",         // macOS/iOS modern sans-serif
+    "Microsoft YaHei",     // Windows default sans-serif
+    "WenQuanYi Micro Hei", // Common Linux font
+  ),
+  lang: "zh",
+  fallback: true,  // MUST be explicitly enabled; never omit
+)
+```
+
+### 3. Single-Platform Shortcuts
+If the target system is explicitly known, you may shorten the chain, but you **must** retain at least two fallback layers:
+
+**Windows**:
+```typst
+#set text(font: ("New Computer Modern", "SimSun", "Microsoft YaHei"), lang: "zh", fallback: true)
+```
+
+**macOS**:
+```typst
+#set text(font: ("New Computer Modern", "Songti SC", "PingFang SC"), lang: "zh", fallback: true)
+```
+
+**Linux / Docker / WASM**:
+```typst
+#set text(font: ("New Computer Modern", "WenQuanYi Micro Hei", "Noto Sans CJK SC"), lang: "zh", fallback: true)
+```
+> **Note**: On Linux containers where even WenQuanYi may be absent, you **must** embed font files via the compiler API, or downgrade to pure-English output. Never assume system fonts exist in sandboxed environments.
+
+### 4. Strictly Forbidden
+- ❌ **Never** use `"Noto Serif CJK SC"` as a CJK font.
+- ❌ **Never** use `"Source Han Serif SC"` as a CJK font.
+- ❌ **Never** use any font requiring `apt install`, `apk add`, manual download, or package-manager installation.
+- ❌ **Never** omit `fallback: true` when CJK text is present.
+- ❌ **Never** specify only a single CJK font layer.
+- ❌ **Never** output CJK text without a verified fallback chain.
+
+### 5. Default Safe Template
+If the target environment cannot be determined, you **must** use the following maximum-compatibility configuration:
+
+```typst
+#set text(
+  font: ("New Computer Modern", "SimSun", "PingFang SC", "Microsoft YaHei"),
+  lang: "zh",
+  fallback: true,
+)
+```
+> `SimSun` is present on virtually all Windows systems; `PingFang SC` is present on all macOS/iOS systems; `Microsoft YaHei` provides a sans-serif fallback. This combination prevents tofu (`[]`) when the preferred font is missing.
+
+## How to Use This Skill
+
+### Step 1. Check if the context provides a template
 Check if the context provides a template. If so, strictly follow the template in your output. You can create other content with a more professional and aesthetically pleasing approach without violating the template, but the overall content must strictly adhere to the template.
 
-### Step2. Fully consider the needs of users
-Before you start outputting the typst content, consider what the user's requirements are
+### Step 2. Fully consider the needs of users
+Before you start outputting the typst content, consider what the user's requirements are.
 
-#### For Academic Paper / Articles
+#### For Academic Papers / Articles
 - **Setup**: `#set page(paper: "a4", margin: (x: 2cm, y: 2.5cm))`
-- **Fonts**: Use professional serif fonts (e.g., "Libertinus Serif", "New Computer Modern").
+- **Fonts**: Use professional serif fonts (e.g., `"Libertinus Serif"`, `"New Computer Modern"`) for Latin text. For CJK text, **strictly follow the Font Safety Constraints above**.
 - **Columns**: Use `#show: rest => columns(2, rest)` for main body text if requested.
 - **Bibliography**: Ensure usage of `#bibliography("refs.bib")`.
 
 #### For Resumes / CVs
 - **Setup**: Minimize margins (e.g., `margin: 1cm`).
-- **Layout**: heavily utilize `grid()` or `stack()` for alignment (e.g., Left: Skills, Right: Experience).
-- **Style**: Use `#set text(font: "Roboto" or "Source Sans Pro")` for a modern look.
+- **Layout**: Heavily utilize `grid()` or `stack()` for alignment (e.g., Left: Skills, Right: Experience).
+- **Style**: Use `#set text(font: "Roboto" or "Source Sans Pro")` for a modern look. For CJK resumes, replace with system defaults per the Font Safety Constraints.
 - **Visuals**: Use `#line(length: 100%)` for separators.
 
-### Step3. Start creating Typst content
+#### For CJK Content (Chinese, Japanese, Korean)
+- **Mandatory Font Rule**: You **must** apply the Font Safety Constraints. Use system-default fonts only (`SimSun`, `PingFang SC`, `Microsoft YaHei`, `WenQuanYi Micro Hei`) with `fallback: true`.
+- **Forbidden Fonts**: Never use `"Noto Serif CJK SC"` or `"Source Han Serif SC"` unless the user explicitly confirms the font is pre-installed in the rendering environment.
+
+### Step 3. Start creating Typst content
+Generate the complete Typst document according to the above rules, ensuring all syntax is valid Typst (not LaTeX or Markdown) and all font choices comply with the Font Safety Constraints.
+```
+
+---
+
+### Key changes made in this English version:
+
+1. **Added the `Font Safety Constraints` section** right after `Key Principles`, making it impossible to miss.
+2. **Hard-banned `"Noto Serif CJK SC"` and `"Source Han Serif SC"`** in the forbidden list.
+3. **Mandated `fallback: true`** as a non-negotiable requirement for all CJK text.
+4. **Replaced the Mini Example** font declaration with the safe system-default chain (`SimSun`, `PingFang SC`) instead of the old `"Noto Serif CJK SC"`.
+5. **Added a CJK-specific subsection** in Step 2 to remind the model to apply font safety rules when handling Chinese content.
+6. **Used strong negative constraints** (`Strictly Forbidden`, `Never`, `must not`) which are more effective for LLM behavior alignment than soft suggestions.
