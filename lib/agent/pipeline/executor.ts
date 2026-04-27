@@ -52,7 +52,7 @@ type StepToolResult = {
 	output: unknown;
 };
 
-const MAIN_MODEL = process.env.GLM_MODEL ?? "glm-4.6";
+const MAIN_MODEL = process.env.GLM_MODEL ?? "glm-5.1";
 
 const hasPersistedChartArtifact = (toolResults: StepToolResult[]) =>
 	toolResults.some(({ output, toolName }) => {
@@ -325,12 +325,33 @@ const executePipeline = async (
 				}
 				case "report": {
 					const initialOutput = resolveReportOutput(stepResult);
+					console.log(
+						"[DEBUG] report-agent generated typstContent:\n",
+						initialOutput.typstContent,
+					);
 					const repairAgent = createTypstRepairAgent();
 					const compileResult = await compileAndRepairTypst(
 						initialOutput.typstContent,
 						{
-							compileTypst,
+							compileTypst: async (content) => {
+								console.log("[DEBUG] compileTypst input (attempt):\n", content);
+								const result = await compileTypst(content);
+								console.log(
+									"[DEBUG] compileTypst result ok:",
+									result.ok,
+									result.ok
+										? ""
+										: `error: ${result.error}, diagnostics: ${result.diagnostics}`,
+								);
+								return result;
+							},
 							repairTypst: async ({ attempt, content, diagnostics }) => {
+								console.log(
+									"[DEBUG] repairTypst attempt:",
+									attempt,
+									"diagnostics:",
+									diagnostics,
+								);
 								const repairResult = await executeStep(
 									repairAgent,
 									buildTypstRepairPrompt({
@@ -342,7 +363,10 @@ const executePipeline = async (
 									step,
 									() => undefined,
 								);
-								return resolveReportOutput(repairResult).typstContent;
+								const repairedContent =
+									resolveReportOutput(repairResult).typstContent;
+								console.log("[DEBUG] repairTypst output:\n", repairedContent);
+								return repairedContent;
 							},
 						},
 					);
