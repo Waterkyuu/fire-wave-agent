@@ -1,21 +1,28 @@
-# Refract.ai
 
-Now I'm working on feat/general branch to build multi-agent
+# Refract - 24/7 Agent Helper
+<p align="center">
+<a href="./README.md">English</a> | <a href="./README-ZH.md">中文</a>
+</p>
 
-https://github.com/Waterkyuu/refract/tree/feat/general
+<p align="center">
+  <img src="public/logo.svg" alt="Fire Wave Agent Logo" width="120" />
+</p>
 
-[English](./README.md) | [中文](./README-ZH.md)
+<p align="center">
+<a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+<!-- <a href="https://twitter.com/Refract.ai"><img src="https://img.shields.io/twitter/follow/Refract.ai?style=social" alt="Twitter Follow"></a> -->
+</p>
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Waterkyuu/agent-dashboard&env=ZHIPU_API_KEY,E2B_API_KEY,PUBLIC_NEON_AUTH_URL,NEON_DATA_PUBLIC_API_URL,CLOUDFLARE_ACCOUNT_ID,R2_ACCESS_KEY_ID,R2_SECRET_ACCESS_KEY&envDescription=API%20keys%20and%20service%20credentials%20required%20by%20Fire%20Wave%20Agent&project-name=fire-wave-agent&repository-name=agent-dashboard)
+
+
+<p align="center">
+  <a href="https://vercel.com/new/clone?repository-url=https://github.com/Waterkyuu/refract&env=ZHIPU_API_KEY,E2B_API_KEY,PUBLIC_NEON_AUTH_URL,NEON_DATA_PUBLIC_API_URL,CLOUDFLARE_ACCOUNT_ID,R2_ACCESS_KEY_ID,R2_SECRET_ACCESS_KEY&envDescription=API%20keys%20and%20service%20credentials%20required%20by%20Fire%20Wave%20Agent&project-name=refract&repository-name=refract"><img src="https://vercel.com/button" alt="Deploy on Vercel" height="32" /></a>
+  <a href="https://railway.com/new/template?templateUrl=https://github.com/Waterkyuu/refract"><img src="https://railway.app/button.svg" alt="Deploy on Railway" height="32" /></a>
+  <a href="https://zeabur.com/templates/new?repoUrl=https://github.com/Waterkyuu/refract"><img src="https://zeabur.com/button.svg" alt="Deploy on Zeabur" height="32" /></a>
+</p>
 
 
 An autonomous AI agent web application that controls a computer — similar to OpenAI Operator. Powered by Zhipu AI models and E2B sandboxes, it provides a real-time Ubuntu desktop environment with browser automation, web search, shell command execution, and Python code interpretation.
-
-<div style="border-left: 4px solid red; background: #ffe6e6; padding: 10px;">
-⚠️ <strong style="color:red;">
-Note: that many features are still incomplete; this project is currently just a demo.
-</strong>
-</div>
 
 <p float="left">
   <img src="screenshots/image2.png" width="49%" />
@@ -137,26 +144,8 @@ You should also make sure the same production domain is allowed in any OAuth pro
 
 ## Architecture
 
-```
-User Input --> Home Page (/) --> /chat/[id]
-                                    |
-                     +--------------+---------------+
-                     |                              |
-                Chat Panel (30%)             VNC Panel (70%)
-                - MessageArea                - E2B VNC stream
-                - InputField                - Live status badge
-                - DebugPanel
-                     |
-                POST /api/chat
-                - Zhipu AI (GLM-4-flash)
-                - 5 Tools:
-                  * createSandbox
-                  * codeInterpreter
-                  * executeShell
-                  * navigateBrowser
-                  * searchWeb
-```
+![Refract agent orchestration architecture](screenshots/agent-orchestration-architecture.png)
 
 ## License
 
-Private
+MIT

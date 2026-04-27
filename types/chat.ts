@@ -16,6 +16,19 @@ type ToolCallEvent = {
 	durationMs?: number;
 };
 
+type ChatAttachment = {
+	downloadUrl?: string;
+	extension: string;
+	fileId: string;
+	filename: string;
+	fileSize?: number;
+	kind?: "dataset" | "document";
+};
+
+type ChatMessageMetadata = {
+	attachments?: ChatAttachment[];
+};
+
 // Chat session schema (used by sidebar / history management)
 const SessionItemSchema = z.object({
 	id: z.string().uuid(),
@@ -30,11 +43,12 @@ const SessionsSchema = z.array(SessionItemSchema);
 type SessionItem = z.infer<typeof SessionItemSchema>;
 type Sessions = SessionItem[];
 
-export {
-	SessionItemSchema,
-	SessionsSchema,
-	type AgentStatus,
-	type ToolCallEvent,
-	type SessionItem,
-	type Sessions,
+export { SessionItemSchema, SessionsSchema };
+export type {
+	AgentStatus,
+	ChatAttachment,
+	ChatMessageMetadata,
+	ToolCallEvent,
+	SessionItem,
+	Sessions,
 };

@@ -1,11 +1,11 @@
 {
 	"metadata": {
-		"title": "Fire Wave",
+		"title": "Refract",
 		"description": "Agent 助手"
 	},
 	"notFound": {
 		"title": "页面未找到",
-		"description": "您访问的页面不存在或已被移动。",
+		"description": "你访问的页面不存在，或者已经被移动。",
 		"backToHome": "返回首页"
 	},
 	"home": {
@@ -26,27 +26,28 @@
 	},
 	"inputField": {
 		"placeholder": "提问、搜索或聊天...",
-		"fileTooltip": "仅支持 pdf、docx、md、txt、typ，最多2个文件",
+		"fileTooltip": "仅支持 pdf、docx、md、txt、typ、csv、xlsx，最多 2 个文件",
 		"uploading": "上传中...",
 		"stop": "停止",
 		"send": "发送",
-		"maxFilesReached": "已达到最大文件数",
-		"maxFilesDescription": "一次最多只能上传2个文件。",
-		"unsupportedFile": "不支持的文件格式",
-		"unsupportedFileDescription": "仅支持 pdf、docx、md、txt、typ 文件",
+		"compactContext": "精简上下文",
+		"maxFilesReached": "已达到文件数量上限",
+		"maxFilesDescription": "一次最多只能上传 2 个文件。",
+		"unsupportedFile": "不支持的文件类型",
+		"unsupportedFileDescription": "仅支持 pdf、docx、md、txt、typ、csv、xlsx 文件",
 		"fileUploaded": "文件上传成功",
-		"fileUploadSuccess": "{fileName} 已被索引，可进行 RAG 检索",
+		"fileUploadSuccess": "{fileName} 已上传并可用于分析",
 		"uploadFailed": "上传失败",
 		"uploadFailedDescription": "上传 {fileName} 失败",
 		"cancel": "取消"
 	},
 	"login": {
-		"startBuilding": "开始构建",
-		"description": "登录以继续您的奇妙旅程",
+		"startBuilding": "开始使用",
+		"description": "登录后继续你的工作流程",
 		"orContinueWith": "或继续使用",
 		"signInWithEmail": "使用邮箱登录",
 		"emailLabel": "邮箱",
-		"emailPlaceholder": "请输入您的邮箱地址",
+		"emailPlaceholder": "请输入你的邮箱地址",
 		"emailEmpty": "邮箱不能为空",
 		"next": "下一步",
 		"goBack": "返回",
@@ -54,18 +55,18 @@
 		"loginSuccess": "登录成功"
 	},
 	"sidebar": {
-		"brand": "Fire Wave",
+		"brand": "Refract",
 		"newChat": "新对话",
 		"searchChats": "搜索对话...",
 		"searchChatsTitle": "搜索对话",
-		"searchChatsDescription": "搜索您的聊天记录",
+		"searchChatsDescription": "搜索你的聊天记录",
 		"noChatsFound": "未找到对话。",
 		"chatHistory": "聊天记录"
 	},
 	"deleteChat": {
 		"trigger": "删除",
-		"title": "确定要删除吗？",
-		"description": "此操作无法撤销。这将永久删除此聊天会话及其所有消息。",
+		"title": "确认删除这个对话吗？",
+		"description": "此操作不可撤销。这会永久删除该聊天会话及其本地消息记录。",
 		"cancel": "取消",
 		"continue": "继续",
 		"deleting": "删除中...",
@@ -75,7 +76,7 @@
 	"renameChat": {
 		"trigger": "重命名",
 		"title": "编辑对话名称",
-		"description": "为此对话起一个更具描述性的名称",
+		"description": "给这个对话起一个更清晰的名称",
 		"chatName": "对话名称",
 		"cancel": "取消",
 		"save": "保存",
@@ -96,16 +97,29 @@
 		"message": "消息",
 		"more": "更多...",
 		"newTeam": "新建团队",
-		"apiKey": "API 密钥",
+		"apiKey": "API Key",
 		"logout": "退出登录"
 	},
 	"chat": {
 		"loading": "加载中...",
-		"sendMessage": "发送消息开始聊天...",
+		"sendMessage": "发送消息开始对话...",
 		"viewSandbox": "查看沙盒",
+		"jumpToLatest": "回到底部",
+		"viewWorkspace": "查看工作区",
 		"sandboxViewer": "沙盒查看器",
-		"live": "直播中",
-		"waitingSandbox": "等待代理沙盒..."
+		"chartViewer": "图表查看器",
+		"datasetViewer": "数据表查看器",
+		"typstViewer": "Typst 预览",
+		"datasetSummary": "{rows} 行，{columns} 列，工作表 {sheet}",
+		"downloadArtifact": "下载",
+		"chartGeneratedAt": "生成时间 {time}",
+		"previousChart": "上一张",
+		"nextChart": "下一张",
+		"live": "实时",
+		"waitingSandbox": "等待 Agent 沙盒...",
+		"waitingChart": "等待图表输出...",
+		"waitingDataset": "请选择一个数据文件进行预览。",
+		"workspaceEmpty": "右侧工作区还没有内容。"
 	},
 	"message": {
 		"thinking": "思考中...",
@@ -114,7 +128,11 @@
 		"toolPreparing": "准备中...",
 		"toolCompleted": "已完成",
 		"toolFailed": "失败",
-		"toolUnknown": "未知"
+		"toolUnknown": "未知",
+		"showMore": "展开全部",
+		"showLess": "收起",
+		"showToolDetails": "显示工具详情",
+		"hideToolDetails": "隐藏工具详情"
 	},
 	"debug": {
 		"panelTitle": "调试面板",
@@ -125,5 +143,72 @@
 		"streaming": "传输中",
 		"called": "已调用",
 		"done": "完成"
+	},
+	"settings": {
+		"title": "设置",
+		"description": "管理你的偏好和集成服务",
+		"tabs": {
+			"system": "系统设置",
+			"skills": "Skill 设置",
+			"connections": "连接"
+		},
+		"system": {
+			"title": "系统设置",
+			"description": "定义自定义规则，指导助手如何响应你的请求。",
+			"customRules": "自定义规则",
+			"customRulesPlaceholder": "例如：始终使用中文回复。使用简洁的语言。避免不必要的解释...",
+			"save": "保存规则",
+			"saving": "保存中...",
+			"saved": "规则保存成功",
+			"saveFailed": "保存规则失败",
+			"helperText": "这些规则将作为系统级指令应用于每次对话。"
+		},
+		"skills": {
+			"title": "Skills",
+			"description": "创建和管理自定义 Skill，扩展助手的能力。",
+			"createSkill": "创建 Skill",
+			"emptyTitle": "暂无 Skill",
+			"emptyDescription": "创建你的第一个 Skill 来增强助手能力。",
+			"skillName": "Skill 名称",
+			"skillNamePlaceholder": "输入 Skill 名称，e.g. Superpowers",
+			"skillDescription": "描述",
+			"skillDescriptionPlaceholder": "描述此 Skill 的功能，e.g. 在实现新需求时使用该技能",
+			"skillInstructions": "指令",
+			"skillInstructionsPlaceholder": "为此 Skill 编写详细指令...",
+			"save": "保存",
+			"saving": "保存中...",
+			"cancel": "取消",
+			"edit": "编辑",
+			"delete": "删除",
+			"deleteConfirm": "确定要删除此 Skill 吗？",
+			"created": "Skill 创建成功",
+			"updated": "Skill 更新成功",
+			"deleted": "Skill 删除成功",
+			"operationFailed": "操作失败",
+			"nameRequired": "Skill 名称不能为空",
+			"instructionsRequired": "指令不能为空"
+		},
+		"connections": {
+			"title": "连接",
+			"description": "连接外部服务以增强你的工作流程。",
+			"connected": "已连接",
+			"notConnected": "未连接",
+			"connect": "连接",
+			"disconnect": "断开连接",
+			"disconnectConfirm": "确定要断开 {service} 的连接吗？",
+			"connecting": "连接中...",
+			"disconnecting": "断开中...",
+			"connectSuccess": "{service} 连接成功",
+			"disconnectSuccess": "{service} 已断开连接",
+			"operationFailed": "操作失败",
+			"github": {
+				"name": "GitHub",
+				"description": "访问你的代码仓库、Issue 和 Pull Request。"
+			},
+			"notion": {
+				"name": "Notion",
+				"description": "同步你的笔记、数据库和工作区内容。"
+			}
+		}
 	}
 }

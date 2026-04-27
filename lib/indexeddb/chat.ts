@@ -15,11 +15,12 @@ type MessageRow = {
 	sessionId: string;
 	role: string;
 	parts: UIMessage["parts"];
+	metadata?: UIMessage["metadata"];
 	createdAt: number;
 };
 
 const MESSAGE_BATCH_PRECISION = 1000;
-const CHAT_DB_NAME = "firewave-agent-v2";
+const CHAT_DB_NAME = "refract-v2";
 
 const db = new Dexie(CHAT_DB_NAME) as Dexie & {
 	sessions: EntityTable<SessionRow, "id">;
@@ -89,6 +90,7 @@ const buildMessageRows = (
 		sessionId,
 		role: msg.role,
 		parts: msg.parts,
+		metadata: msg.metadata,
 		createdAt: batchBase + index,
 	}));
 };
@@ -124,12 +126,11 @@ const getMessages = async (
 		id: row.id,
 		role: row.role as UIMessage["role"],
 		parts: row.parts,
+		metadata: row.metadata,
 	}));
 };
 
 export {
-	type SessionRow,
-	type MessageRow,
 	createSession,
 	getAllSessions,
 	getSession,
@@ -139,3 +140,4 @@ export {
 	saveMessages,
 	getMessages,
 };
+export type { SessionRow, MessageRow };

@@ -3,3 +3,6 @@ export * from "./chat";
 export * from "./user";
 export * from "./auth";
 export * from "./file";
+export * from "./workspace";
+export * from "./worker";
+export * from "./settings";

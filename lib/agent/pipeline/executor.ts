@@ -1,0 +1,387 @@
+import { createChartAgent } from "@/lib/agent/multi-agents/chart-agent";
+import { createDataAgent } from "@/lib/agent/multi-agents/data-agent";
+import { runOrchestrator } from "@/lib/agent/multi-agents/orchestrator";
+import { createReportAgent } from "@/lib/agent/multi-agents/report-agent";
+import {
+	buildTypstRepairPrompt,
+	createTypstRepairAgent,
+} from "@/lib/agent/multi-agents/typst-repair-agent";
+import {
+	TYPST_REVIEW_AGENT_PROMPT,
+	buildTypstReviewPrompt,
+	parseTypstReviewOutput,
+} from "@/lib/agent/multi-agents/typst-review-agent";
+import {
+	buildStepPrompt,
+	createInitialContext,
+} from "@/lib/agent/pipeline/context";
+import {
+	type StepExecutionResult,
+	formatStepFailure,
+	formatToolError,
+	resolveChartOutput,
+	resolveDataOutput,
+	resolveReportOutput,
+} from "@/lib/agent/pipeline/output-resolver";
+import { compileAndRepairTypst } from "@/lib/agent/pipeline/typst-repair";
+import type { SandboxSession } from "@/lib/agent/sandbox/e2b";
+import { formatUnknownError } from "@/lib/agent/utils/error-utils";
+import {
+	buildLearnMemoryPrompt,
+	upsertLearnMemory,
+} from "@/lib/agent/utils/learn-memories";
+import { getFileDownloadUrl } from "@/lib/file-store";
+import { compileTypst } from "@/lib/typst/compiler";
+import type { FileRecord } from "@/types";
+import { ReportOutputSchema } from "@/types/agent";
+import type {
+	AgentDefinition,
+	PipelineContext,
+	PipelineStep,
+	PipelineStreamEvent,
+} from "@/types/agent";
+import { stepCountIs, streamText } from "ai";
+import { zhipu } from "zhipu-ai-provider";
+
+type ExecutorCallbacks = {
+	onEvent: (event: PipelineStreamEvent) => void;
+};
+
+type StepToolResult = {
+	toolName: string;
+	output: unknown;
+};
+
+const MAIN_MODEL = process.env.GLM_MODEL ?? "glm-4.6";
+
+const hasPersistedChartArtifact = (toolResults: StepToolResult[]) =>
+	toolResults.some(({ output, toolName }) => {
+		if (
+			toolName !== "persistAllCharts" ||
+			!output ||
+			typeof output !== "object"
+		) {
+			return false;
+		}
+
+		const outputRecord = output as Record<string, unknown>;
+		return (
+			Array.isArray(outputRecord.artifacts) && outputRecord.artifacts.length > 0
+		);
+	});
+
+const hasGeneratedChartResult = (toolResults: StepToolResult[]) =>
+	toolResults.some(({ output, toolName }) => {
+		if (
+			toolName !== "codeInterpreter" ||
+			!output ||
+			typeof output !== "object"
+		) {
+			return false;
+		}
+
+		const outputRecord = output as Record<string, unknown>;
+		if (!Array.isArray(outputRecord.results)) {
+			return false;
+		}
+
+		return outputRecord.results.some((result) => {
+			if (!result || typeof result !== "object") {
+				return false;
+			}
+
+			const resultRecord = result as Record<string, unknown>;
+			return (
+				typeof resultRecord.png === "string" ||
+				(typeof resultRecord.chart === "object" && resultRecord.chart !== null)
+			);
+		});
+	});
+
+const ensurePersistedChartArtifacts = async (
+	stepResult: StepExecutionResult,
+	sandboxSession: SandboxSession,
+): Promise<StepExecutionResult> => {
+	if (
+		hasPersistedChartArtifact(stepResult.toolResults) ||
+		!hasGeneratedChartResult(stepResult.toolResults)
+	) {
+		return stepResult;
+	}
+
+	const records = await sandboxSession.persistAllCharts();
+
+	const artifacts = records.map((record) => ({
+		contentType: record.contentType,
+		downloadUrl: getFileDownloadUrl(record),
+		fileId: record.id,
+		fileSize: record.fileSize,
+		filename: record.filename,
+	}));
+
+	return {
+		...stepResult,
+		toolResults: [
+			...stepResult.toolResults,
+			{
+				toolName: "persistAllCharts",
+				output: {
+					status: "success" as const,
+					chartCount: artifacts.length,
+					artifacts,
+				},
+			},
+		],
+	};
+};
+
+const loadLearnedTypstPrompt = async (): Promise<string> => {
+	try {
+		return await buildLearnMemoryPrompt("typst");
+	} catch {
+		return "";
+	}
+};
+
+type LearnFromTypstRepairOptions = {
+	diagnostics: string;
+	originalTypst: string;
+	repairedTypst: string;
+};
+
+const learnFromTypstRepair = async ({
+	diagnostics,
+	originalTypst,
+	repairedTypst,
+}: LearnFromTypstRepairOptions): Promise<void> => {
+	const result = await streamText({
+		system: TYPST_REVIEW_AGENT_PROMPT,
+		model: zhipu(MAIN_MODEL),
+		messages: [
+			{
+				role: "user",
+				content: buildTypstReviewPrompt({
+					diagnostics,
+					originalTypst,
+					repairedTypst,
+				}),
+			},
+		],
+		stopWhen: stepCountIs(1),
+	});
+
+	let fullText = "";
+	for await (const part of result.fullStream) {
+		if (part.type === "text-delta") {
+			fullText += part.text;
+		}
+	}
+
+	const learning = parseTypstReviewOutput(fullText);
+	if (!learning) {
+		return;
+	}
+
+	await upsertLearnMemory({
+		type: "typst",
+		title: learning.title,
+		content: learning.content,
+	});
+};
+
+const scheduleTypstRepairLearning = (
+	options: LearnFromTypstRepairOptions,
+): void => {
+	const learningTask = learnFromTypstRepair(options);
+	learningTask.catch((error) => {
+		console.error("[Typst Learning Error]", error);
+	});
+};
+
+const executeStep = async (
+	agent: AgentDefinition,
+	stepPrompt: string,
+	step: PipelineStep,
+	onEvent: (event: PipelineStreamEvent) => void,
+): Promise<StepExecutionResult> => {
+	const result = await streamText({
+		system: agent.systemPrompt,
+		model: zhipu(MAIN_MODEL),
+		messages: [{ role: "user", content: stepPrompt }],
+		tools: agent.tools,
+		stopWhen: stepCountIs(agent.maxSteps),
+	});
+
+	let fullText = "";
+	const toolErrors: string[] = [];
+	const toolResults: StepToolResult[] = [];
+
+	for await (const part of result.fullStream) {
+		switch (part.type) {
+			case "text-delta":
+				fullText += part.text;
+				onEvent({ type: "step-delta", step, content: part.text });
+				break;
+			case "reasoning-delta":
+				onEvent({ type: "reasoning", step, text: part.text });
+				break;
+			case "tool-call":
+				onEvent({
+					type: "tool-call",
+					step,
+					toolCallId: part.toolCallId,
+					toolName: part.toolName,
+					args: part.input,
+				});
+				break;
+			case "tool-result":
+				toolResults.push({
+					toolName: part.toolName,
+					output: part.output,
+				});
+				onEvent({
+					type: "tool-result",
+					step,
+					toolCallId: part.toolCallId,
+					toolName: part.toolName,
+					output: part.output,
+				});
+				break;
+			case "tool-error": {
+				toolErrors.push(formatToolError(part.toolName, part.error));
+				const errorMessage = formatUnknownError(part.error);
+				onEvent({
+					type: "tool-error",
+					step,
+					toolCallId: part.toolCallId,
+					toolName: part.toolName,
+					error: errorMessage,
+				});
+				break;
+			}
+		}
+	}
+
+	return {
+		text: fullText,
+		toolErrors,
+		toolResults,
+	};
+};
+
+const executePipeline = async (
+	userRequest: string,
+	attachedFiles: FileRecord[],
+	fileIds: string[],
+	sandboxSession: SandboxSession,
+	callbacks: ExecutorCallbacks,
+): Promise<PipelineContext> => {
+	const { onEvent } = callbacks;
+
+	const pipelinePlan = await runOrchestrator(userRequest, attachedFiles);
+	onEvent({ type: "plan", plan: pipelinePlan });
+
+	if (pipelinePlan.steps.length === 0) {
+		onEvent({ type: "pipeline-complete" });
+		return createInitialContext(userRequest, attachedFiles, pipelinePlan);
+	}
+
+	const learnedTypstPrompt = await loadLearnedTypstPrompt();
+	const agentMap: Record<PipelineStep, AgentDefinition> = {
+		data: createDataAgent({ fileIds, sandboxSession }),
+		chart: createChartAgent({ fileIds, sandboxSession }),
+		report: createReportAgent({
+			learnedTypstPrompt,
+		}),
+	};
+
+	const ctx = createInitialContext(userRequest, attachedFiles, pipelinePlan);
+
+	for (const step of pipelinePlan.steps) {
+		const agent = agentMap[step];
+		let stepResult: StepExecutionResult | undefined;
+		onEvent({ type: "step-start", step });
+
+		try {
+			const stepPrompt = buildStepPrompt(step, ctx);
+			stepResult = await executeStep(agent, stepPrompt, step, onEvent);
+
+			switch (step) {
+				case "data": {
+					const output = resolveDataOutput(stepResult);
+					ctx.dataOutput = output;
+					onEvent({ type: "step-complete", step, output });
+					break;
+				}
+				case "chart": {
+					stepResult = await ensurePersistedChartArtifacts(
+						stepResult,
+						sandboxSession,
+					);
+					const output = resolveChartOutput(stepResult);
+					ctx.chartOutput = output;
+					onEvent({ type: "step-complete", step, output });
+					break;
+				}
+				case "report": {
+					const initialOutput = resolveReportOutput(stepResult);
+					const repairAgent = createTypstRepairAgent();
+					const compileResult = await compileAndRepairTypst(
+						initialOutput.typstContent,
+						{
+							compileTypst,
+							repairTypst: async ({ attempt, content, diagnostics }) => {
+								const repairResult = await executeStep(
+									repairAgent,
+									buildTypstRepairPrompt({
+										attempt,
+										content,
+										diagnostics,
+										learnedTypstPrompt,
+									}),
+									step,
+									() => undefined,
+								);
+								return resolveReportOutput(repairResult).typstContent;
+							},
+						},
+					);
+
+					if (!compileResult.ok) {
+						throw new Error(
+							`Report Typst failed to compile after ${compileResult.repairCount} repair attempts.\n\n${compileResult.diagnostics}`,
+						);
+					}
+
+					const output = ReportOutputSchema.parse({
+						typstContent: compileResult.typstContent,
+						compiledSvg: compileResult.svg,
+					});
+					const firstRepairAttempt = compileResult.repairAttempts.at(0);
+					if (firstRepairAttempt) {
+						scheduleTypstRepairLearning({
+							diagnostics: firstRepairAttempt.diagnostics,
+							originalTypst: firstRepairAttempt.input,
+							repairedTypst: compileResult.typstContent,
+						});
+					}
+					ctx.reportOutput = output;
+					onEvent({ type: "step-complete", step, output });
+					break;
+				}
+			}
+		} catch (error) {
+			const message =
+				error instanceof Error
+					? formatStepFailure(error, stepResult?.toolErrors ?? [])
+					: "Unknown error";
+			onEvent({ type: "step-error", step, error: message });
+			break;
+		}
+	}
+
+	onEvent({ type: "pipeline-complete" });
+	return ctx;
+};
+
+export { executePipeline, MAIN_MODEL, ensurePersistedChartArtifacts };

@@ -8,7 +8,24 @@ const authMiddleware = async (request: NextRequest) => {
 		return NextResponse.next();
 	}
 
-	const { data: session } = await auth.getSession();
+	type SessionData = Awaited<ReturnType<typeof auth.getSession>>["data"];
+	let session: SessionData = undefined;
+
+	try {
+		const result = await auth.getSession();
+		session = result.data;
+	} catch (error) {
+		console.error("[auth] Failed to fetch session:", error);
+		if (request.nextUrl.pathname.startsWith("/api")) {
+			const body: ApiResponse = {
+				code: 503,
+				success: false,
+				message: "Auth service unavailable",
+			};
+			return NextResponse.json(body, { status: 503 });
+		}
+		return NextResponse.next();
+	}
 
 	if (
 		!session?.user &&

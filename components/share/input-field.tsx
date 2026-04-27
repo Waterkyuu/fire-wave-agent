@@ -1,7 +1,13 @@
 "use client";
 
 import { firstUserInputAtom, userAtom } from "@/atoms";
+import {
+	pendingHomePromptAtom,
+	pendingHomeUploadsAtom,
+	showDatasetWorkspaceAtom,
+} from "@/atoms/chat";
 import loginDialogAtom from "@/atoms/login-dialog";
+import FileCard from "@/components/share/file-card";
 import {
 	InputGroup,
 	InputGroupAddon,
@@ -16,14 +22,15 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { handleError } from "@/lib/error-handler";
-import { formatFileSize } from "@/lib/file";
+import { isDatasetExtension } from "@/lib/file";
 import { type UploadResult, cancelUpload, uploadFile } from "@/lib/upload-file";
 import { cn, generateId } from "@/lib/utils";
-import { useAtom } from "jotai";
-import { ArrowUp, FileText, Plus, Square, X } from "lucide-react";
+import type { ChatAttachment } from "@/types/chat";
+import { useAtom, useSetAtom } from "jotai";
+import { ArrowUp, ChevronsDownUp, Plus, Square, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "next/navigation";
-import { memo, useRef, useState } from "react";
+import { memo, startTransition, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type AppendFn = (
@@ -31,14 +38,19 @@ type AppendFn = (
 		role: string;
 		content: string;
 	},
-	options?: Record<string, unknown>,
+	options?: {
+		metadata?: Record<string, unknown>;
+		requestBody?: Record<string, unknown>;
+	},
 ) => Promise<void>;
 
 type InputFieldProps = {
 	className?: string;
 	size?: "default" | "md" | "sm";
 	append?: AppendFn;
+	externalAttachments?: ChatAttachment[];
 	isLoading?: boolean;
+	onOpenWorkspace?: () => void;
 	stop?: () => void;
 	input?: string;
 	setInput?: (input: string) => void;
@@ -66,7 +78,9 @@ const InputField = ({
 	input = "",
 	setInput,
 	append,
+	externalAttachments = [],
 	isLoading = false,
+	onOpenWorkspace,
 	stop = () => {},
 	className,
 	size = "default",
@@ -81,12 +95,26 @@ const InputField = ({
 	const [firstUserInput, setFirstUserInput] = useAtom(firstUserInputAtom);
 	const [user] = useAtom(userAtom);
 	const [, setIsLoginDialogOpen] = useAtom(loginDialogAtom);
+	const setPendingHomePrompt = useSetAtom(pendingHomePromptAtom);
+	const setPendingHomeUploads = useSetAtom(pendingHomeUploadsAtom);
+	const showDatasetWorkspace = useSetAtom(showDatasetWorkspaceAtom);
 
 	const [attachments, setAttachments] = useState<File[]>([]);
 	const [uploadedFiles, setUploadedFiles] = useState<UploadResult[]>([]);
 	const [uploadingFiles, setUploadingFiles] = useState<Record<string, number>>(
 		{},
 	);
+	const [isHomeSubmitting, setIsHomeSubmitting] = useState(false);
+
+	const resetLocalAttachments = () => {
+		setAttachments([]);
+		setUploadedFiles([]);
+		setUploadingFiles({});
+
+		if (fileInputRef.current) {
+			fileInputRef.current.value = "";
+		}
+	};
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
 		const value = e.target.value;
@@ -107,7 +135,16 @@ const InputField = ({
 	};
 
 	const handelFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		const supportedExtensions = ["pdf", "docx", "md", "txt", "typ"];
+		const supportedExtensions = [
+			"pdf",
+			"docx",
+			"md",
+			"txt",
+			"typ",
+			"csv",
+			"xlsx",
+			"xls",
+		];
 
 		if (!e.target.files || e.target.files.length === 0) {
 			return;
@@ -152,16 +189,19 @@ const InputField = ({
 					});
 
 					setUploadedFiles((prev) => [...prev, result]);
+					if (result.kind === "dataset") {
+						showDatasetWorkspace({
+							downloadUrl: result.downloadUrl,
+							fileId: result.fileId,
+							filename: result.filename,
+						});
+						onOpenWorkspace?.();
+					}
 					toast.success(t("fileUploaded"), {
 						description: t("fileUploadSuccess", { fileName: currentFile.name }),
 					});
 				} catch (error) {
 					handleError(error);
-					toast.error(t("uploadFailed"), {
-						description: t("uploadFailedDescription", {
-							fileName: currentFile.name,
-						}),
-					});
 					// Remove from attachments on error
 					setAttachments((prev) => prev.filter((f) => f !== currentFile));
 				} finally {
@@ -173,7 +213,6 @@ const InputField = ({
 				}
 			} catch (error) {
 				handleError(error);
-				console.error("Failed to upload file", error);
 			}
 		}
 
@@ -208,18 +247,130 @@ const InputField = ({
 		});
 	};
 
+	const handlePreviewDataset = (filename: string) => {
+		const uploadedFile = uploadedFiles.find(
+			(file) => file.filename === filename,
+		);
+		if (!uploadedFile || uploadedFile.kind !== "dataset") {
+			return;
+		}
+
+		showDatasetWorkspace({
+			downloadUrl: uploadedFile.downloadUrl,
+			fileId: uploadedFile.fileId,
+			filename: uploadedFile.filename,
+		});
+		onOpenWorkspace?.();
+	};
+
+	const getAttachmentMetadata = (): ChatAttachment[] =>
+		uploadedFiles.map((uploadedFile) => {
+			const localFile = attachments.find(
+				(file) => file.name === uploadedFile.filename,
+			);
+			const extension =
+				uploadedFile.filename.split(".").pop()?.toUpperCase() || "FILE";
+
+			return {
+				downloadUrl: uploadedFile.downloadUrl,
+				extension,
+				fileId: uploadedFile.fileId,
+				filename: uploadedFile.filename,
+				fileSize: localFile?.size,
+				kind: uploadedFile.kind,
+			};
+		});
+
+	const displayAttachments =
+		attachments.length > 0
+			? attachments.map((file) => {
+					const ext = file.name.split(".").pop()?.toUpperCase() || "FILE";
+					const progress = uploadingFiles[file.name];
+					const isFileUploading = progress !== undefined;
+					const uploadedFile = uploadedFiles.find(
+						(item) => item.filename === file.name,
+					);
+					const isPreviewable =
+						uploadedFile?.kind === "dataset" || isDatasetExtension(ext);
+
+					return {
+						filename: file.name,
+						fileSize: file.size,
+						extension: ext,
+						isPreviewable,
+						progress: isFileUploading ? progress : undefined,
+						onClick: () => handlePreviewDataset(file.name),
+						action: (
+							<button
+								type="button"
+								onClick={(event) => {
+									event.stopPropagation();
+									handleRemoveAttachment(
+										attachments.findIndex((item) => item === file),
+									);
+								}}
+								className="-right-2 -top-2 absolute hidden h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:text-red-500 group-hover:flex"
+							>
+								<X className="h-3 w-3" />
+							</button>
+						),
+					};
+				})
+			: externalAttachments.map((attachment) => ({
+					filename: attachment.filename,
+					fileSize: attachment.fileSize,
+					extension: attachment.extension,
+					isPreviewable:
+						attachment.kind === "dataset" ||
+						isDatasetExtension(attachment.extension),
+					progress: undefined,
+					onClick: () => {
+						const isDatasetAttachment =
+							attachment.kind === "dataset" ||
+							isDatasetExtension(attachment.extension);
+						if (!isDatasetAttachment) {
+							return;
+						}
+
+						showDatasetWorkspace({
+							downloadUrl: attachment.downloadUrl,
+							fileId: attachment.fileId,
+							filename: attachment.filename,
+						});
+						onOpenWorkspace?.();
+					},
+					action: undefined,
+				}));
+
 	const handleSumit = async () => {
 		try {
 			let newInput = "";
 
 			if (firstUserInput && isHome) {
+				if (isHomeSubmitting) {
+					return;
+				}
+
 				if (!user?.id) {
 					setIsLoginDialogOpen(true);
 					return;
 				}
 
+				const trimmedInput = firstUserInput.trim();
+				if (!trimmedInput) {
+					return;
+				}
+
+				setPendingHomePrompt(trimmedInput);
+				setPendingHomeUploads(getAttachmentMetadata());
+				setIsHomeSubmitting(true);
+
 				const sessionID = generateId();
-				router.push(`/chat/${sessionID}`);
+				startTransition(() => {
+					router.push(`/chat/${sessionID}`);
+				});
+
+				resetLocalAttachments();
 				return;
 			}
 			newInput = input;
@@ -238,8 +389,12 @@ const InputField = ({
 						requestBody: {
 							fileIds,
 						},
+						metadata: {
+							attachments: getAttachmentMetadata(),
+						},
 					},
 				);
+				resetLocalAttachments();
 			}
 		} catch (error) {
 			handleError(error);
@@ -255,50 +410,20 @@ const InputField = ({
 			)}
 		>
 			{/* Uploaded Files Display Area */}
-			{attachments.length > 0 && (
+			{displayAttachments.length > 0 && (
 				// Modification Points : Added w-full and justify-start to force filling and left-align, eliminating the possible centering phenomenon
 				<div className="flex w-full flex-wrap justify-start gap-3 px-4 pt-4 pb-1">
-					{attachments.map((file, index) => {
-						const ext = file.name.split(".").pop()?.toUpperCase() || "FILE";
-						const progress = uploadingFiles[file.name];
-						const isFileUploading = progress !== undefined;
+					{displayAttachments.map((attachment) => {
 						return (
-							<div
-								key={index}
-								className="group relative flex w-[16rem] items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-2.5 pr-4"
-							>
-								{/* File Icon */}
-								<div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white">
-									<FileText className="h-5 w-5 text-gray-500" />
-								</div>
-
-								{/* File Info */}
-								<div className="flex flex-col overflow-hidden text-left">
-									<span className="truncate font-medium text-gray-700 text-xs sm:text-sm">
-										{file.name}
-									</span>
-									<span className="mt-0.5 truncate text-[10px] text-gray-400 sm:text-[11px]">
-										{ext} {formatFileSize(file.size)}
-										{isFileUploading && ` - ${Math.round(progress * 100)}%`}
-									</span>
-								</div>
-
-								{/* Upload Progress Indicator */}
-								{isFileUploading && (
-									<div
-										className="absolute bottom-0 left-0 h-0.5 bg-blue-500 transition-all duration-300"
-										style={{ width: `${progress * 100}%` }}
-									/>
-								)}
-
-								{/* Remove Button */}
-								<button
-									type="button"
-									onClick={() => handleRemoveAttachment(index)}
-									className="-right-2 -top-2 absolute hidden h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:text-red-500 group-hover:flex"
-								>
-									<X className="h-3 w-3" />
-								</button>
+							<div key={attachment.filename} onClick={attachment.onClick}>
+								<FileCard
+									action={attachment.action}
+									extension={attachment.extension}
+									fileName={attachment.filename}
+									fileSize={attachment.fileSize}
+									isClickable={attachment.isPreviewable}
+									progress={attachment.progress}
+								/>
 							</div>
 						);
 					})}
@@ -330,7 +455,7 @@ const InputField = ({
 								type="file"
 								ref={fileInputRef}
 								className="hidden"
-								accept=".pdf,.docx,.md,.txt,.typ,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,text/plain"
+								accept=".pdf,.docx,.md,.txt,.typ,.csv,.xlsx,.xls,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/markdown,text/plain,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 								onChange={handelFileUpload}
 								multiple
 							/>
@@ -344,7 +469,23 @@ const InputField = ({
 						)}
 					</TooltipContent>
 				</Tooltip>
-				<InputGroupText className="ml-auto">52% used</InputGroupText>
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<InputGroupButton
+							variant="ghost"
+							className="ml-auto rounded-full text-muted-foreground transition-colors duration-200 hover:text-foreground"
+							size="icon-xs"
+							aria-label={t("compactContext")}
+						>
+							<ChevronsDownUp className="size-3.5" />
+							<span className="sr-only">{t("compactContext")}</span>
+						</InputGroupButton>
+					</TooltipTrigger>
+					<TooltipContent>
+						<p>{t("compactContext")}</p>
+					</TooltipContent>
+				</Tooltip>
+				<InputGroupText>52% used</InputGroupText>
 				<Separator orientation="vertical" className="h-4!" />
 				{isLoading ? (
 					<InputGroupButton
@@ -362,6 +503,8 @@ const InputField = ({
 						className="rounded-full"
 						size="icon-xs"
 						disabled={
+							isHomeSubmitting ||
+							isLoading ||
 							Object.keys(uploadingFiles).length > 0 ||
 							!(isHome ? firstUserInput : input).trim()
 						}

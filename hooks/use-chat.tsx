@@ -1,17 +1,25 @@
-"use client";
-
 import jotaiStore from "@/atoms";
 import {
 	agentStatusAtom,
 	clearToolEventsAtom,
 	dispatchToolEventAtom,
+	showChartWorkspaceAtom,
+	showDatasetWorkspaceAtom,
+	showVncWorkspaceAtom,
 	vncUrlAtom,
+	workspaceChartAtom,
 } from "@/atoms/chat";
 import loginDialogAtom from "@/atoms/login-dialog";
-import type { ToolCallEvent } from "@/types/chat";
+import type { ChatMessageMetadata, ToolCallEvent } from "@/types/chat";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+	startTransition,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 
 type ChatStatus = "submitted" | "streaming" | "ready" | "error";
 
@@ -34,11 +42,16 @@ type UseChatReturn = {
 	thinkingTime: number | null;
 	append: (
 		text: string,
-		options?: { body?: Record<string, unknown> },
+		options?: {
+			body?: Record<string, unknown>;
+			metadata?: ChatMessageMetadata;
+		},
 	) => Promise<void>;
 	reload: () => Promise<void>;
 	stop: () => void;
 };
+
+const STREAM_RENDER_THROTTLE_MS = 80;
 
 const createAuthAwareChatFetch = (
 	fetchImpl: typeof fetch = fetch,
@@ -118,6 +131,83 @@ const extractToolEventsFromMessages = (
 				const output = partOutput as { vncUrl?: string };
 				if (output.vncUrl) {
 					jotaiStore.set(vncUrlAtom, output.vncUrl);
+					jotaiStore.set(showVncWorkspaceAtom);
+				}
+			}
+
+			if (
+				toolName === "codeInterpreter" &&
+				partState === "output-available" &&
+				partOutput
+			) {
+				const output = partOutput as {
+					results?: Array<{
+						chart?: Record<string, unknown>;
+						png?: string;
+						text?: string;
+					}>;
+				};
+				const chartResult = output.results?.find(
+					(result) => result.chart || result.png,
+				);
+
+				if (chartResult) {
+					jotaiStore.set(showChartWorkspaceAtom, {
+						generatedAt: Date.now(),
+						images: [],
+						title:
+							typeof chartResult.chart?.title === "string"
+								? chartResult.chart.title
+								: chartResult.text,
+						toolCallId,
+					});
+				}
+			}
+
+			if (
+				toolName === "persistCodeFile" &&
+				partState === "output-available" &&
+				partOutput
+			) {
+				const output = partOutput as {
+					downloadUrl?: string;
+					fileId?: string;
+					filename?: string;
+					kind?: string;
+				};
+
+				if (output.kind === "dataset" && output.fileId && output.filename) {
+					jotaiStore.set(showDatasetWorkspaceAtom, {
+						downloadUrl: output.downloadUrl,
+						fileId: output.fileId,
+						filename: output.filename,
+					});
+				}
+			}
+
+			if (
+				toolName === "persistLatestChart" &&
+				partState === "output-available" &&
+				partOutput
+			) {
+				const output = partOutput as {
+					downloadUrl?: string;
+					fileId?: string;
+					filename?: string;
+				};
+				const currentChart = jotaiStore.get(workspaceChartAtom);
+
+				if (currentChart && output.downloadUrl) {
+					jotaiStore.set(showChartWorkspaceAtom, {
+						...currentChart,
+						images: [
+							{
+								downloadUrl: output.downloadUrl,
+								fileId: output.fileId,
+								filename: output.filename,
+							},
+						],
+					});
 				}
 			}
 		}
@@ -140,10 +230,15 @@ const useAgentChat = (options: UseChatOptions = {}): UseChatReturn => {
 
 	const [input, setInput] = useState("");
 	const [thinkingTime, setThinkingTime] = useState<number | null>(null);
+	const [renderedMessages, setRenderedMessages] =
+		useState<UIMessage[]>(initialMessages);
 	const reasoningStartTimeRef = useRef<number | null>(null);
 	const processedToolCallsRef = useRef(new Map<string, ToolCallEvent>());
 	const transportApiRef = useRef(api);
 	const transportRef = useRef<DefaultChatTransport<UIMessage> | null>(null);
+	const renderFlushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+		null,
+	);
 
 	if (!transportRef.current || transportApiRef.current !== api) {
 		transportRef.current = new DefaultChatTransport({
@@ -159,21 +254,56 @@ const useAgentChat = (options: UseChatOptions = {}): UseChatReturn => {
 		transport: transportRef.current,
 	});
 
-	const messages = chat.messages;
+	const rawMessages = chat.messages;
 	const status = chat.status;
 
 	useEffect(() => {
-		if (!sessionId || initialMessages.length === 0 || messages.length > 0) {
+		if (!sessionId || initialMessages.length === 0 || rawMessages.length > 0) {
 			return;
 		}
 
 		// Restore persisted history after the session is created before IndexedDB
 		// finishes loading, without overwriting an active in-memory conversation.
 		chat.setMessages(initialMessages);
-	}, [chat, initialMessages, messages.length, sessionId]);
+	}, [chat, initialMessages, rawMessages.length, sessionId]);
 
 	useEffect(() => {
-		for (const msg of messages) {
+		const flushRenderedMessages = (nextMessages: UIMessage[]) => {
+			startTransition(() => {
+				setRenderedMessages(nextMessages);
+			});
+		};
+
+		const clearPendingFlush = () => {
+			if (renderFlushTimeoutRef.current) {
+				clearTimeout(renderFlushTimeoutRef.current);
+				renderFlushTimeoutRef.current = null;
+			}
+		};
+
+		const lastMessage = rawMessages.at(-1);
+		const shouldFlushImmediately =
+			status !== "streaming" ||
+			lastMessage?.role !== "assistant" ||
+			rawMessages.length <= 1;
+
+		if (shouldFlushImmediately) {
+			clearPendingFlush();
+			flushRenderedMessages(rawMessages);
+			return;
+		}
+
+		clearPendingFlush();
+		renderFlushTimeoutRef.current = setTimeout(() => {
+			flushRenderedMessages(rawMessages);
+			renderFlushTimeoutRef.current = null;
+		}, STREAM_RENDER_THROTTLE_MS);
+
+		return clearPendingFlush;
+	}, [rawMessages, status]);
+
+	useEffect(() => {
+		for (const msg of rawMessages) {
 			if (msg.role !== "assistant") continue;
 			for (const part of msg.parts) {
 				if (
@@ -191,25 +321,25 @@ const useAgentChat = (options: UseChatOptions = {}): UseChatReturn => {
 				}
 			}
 		}
-	}, [messages]);
+	}, [rawMessages]);
 
 	useEffect(() => {
 		const events = extractToolEventsFromMessages(
-			messages,
+			rawMessages,
 			processedToolCallsRef.current,
 		);
 		for (const event of events) {
 			processedToolCallsRef.current.set(event.toolCallId, event);
 			jotaiStore.set(dispatchToolEventAtom, event);
 		}
-	}, [messages]);
+	}, [rawMessages]);
 
 	useEffect(() => {
-		if (status === "ready" && messages.length > 0) {
+		if (status === "ready" && rawMessages.length > 0) {
 			reasoningStartTimeRef.current = null;
-			onFinish?.(messages);
+			onFinish?.(rawMessages);
 		}
-	}, [status, messages.length, onFinish]);
+	}, [status, rawMessages, onFinish]);
 
 	useEffect(() => {
 		if (status === "error" && chat.error) {
@@ -218,14 +348,23 @@ const useAgentChat = (options: UseChatOptions = {}): UseChatReturn => {
 	}, [status, chat.error, onError]);
 
 	const append = useCallback(
-		async (text: string, opts?: { body?: Record<string, unknown> }) => {
+		async (
+			text: string,
+			opts?: {
+				body?: Record<string, unknown>;
+				metadata?: ChatMessageMetadata;
+			},
+		) => {
 			setThinkingTime(null);
 			reasoningStartTimeRef.current = null;
 			processedToolCallsRef.current.clear();
 			jotaiStore.set(clearToolEventsAtom);
 			jotaiStore.set(agentStatusAtom, "thinking");
 
-			await chat.sendMessage({ text }, { body: opts?.body });
+			await chat.sendMessage(
+				{ metadata: opts?.metadata, text },
+				{ body: opts?.body },
+			);
 		},
 		[chat],
 	);
@@ -245,7 +384,7 @@ const useAgentChat = (options: UseChatOptions = {}): UseChatReturn => {
 	return {
 		input,
 		setInput,
-		messages,
+		messages: renderedMessages,
 		setMessages: (msgs: UIMessage[]) => chat.setMessages(msgs),
 		status: status as ChatStatus,
 		isLoading: status === "submitted" || status === "streaming",

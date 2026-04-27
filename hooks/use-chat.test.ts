@@ -1,4 +1,5 @@
 import jotaiStore from "@/atoms";
+import { workspaceChartAtom, workspaceDatasetAtom } from "@/atoms/chat";
 import loginDialogAtom from "@/atoms/login-dialog";
 import {
 	createAuthAwareChatFetch,
@@ -35,6 +36,11 @@ const makeMessage = (
 	}) as UIMessage;
 
 describe("extractToolEventsFromMessages", () => {
+	beforeEach(() => {
+		jotaiStore.set(workspaceChartAtom, null);
+		jotaiStore.set(workspaceDatasetAtom, null);
+	});
+
 	it("returns empty for user-only messages", () => {
 		const messages = [makeMessage("user", [{ type: "text", text: "hello" }])];
 		const result = extractToolEventsFromMessages(messages, new Map());
@@ -134,6 +140,78 @@ describe("extractToolEventsFromMessages", () => {
 		const messages = [makeMessage("assistant", [{ type: "tool-searchWeb" }])];
 		const events = extractToolEventsFromMessages(messages, new Map());
 		expect(events).toEqual([]);
+	});
+
+	it("updates workspace chart download info when chart persistence completes", () => {
+		jotaiStore.set(workspaceChartAtom, {
+			generatedAt: Date.now(),
+			images: [],
+			title: "Revenue",
+			toolCallId: "chart-call",
+		});
+
+		const messages = [
+			makeMessage("assistant", [
+				makeToolPart("persistLatestChart", "output-available", "call-1", {
+					output: {
+						downloadUrl: "/api/file/chart-1/download",
+						fileId: "chart-1",
+						filename: "revenue.png",
+						status: "success",
+					},
+				}),
+			]),
+		];
+
+		extractToolEventsFromMessages(messages, new Map());
+
+		expect(jotaiStore.get(workspaceChartAtom)).toEqual(
+			expect.objectContaining({
+				images: [
+					{
+						downloadUrl: "/api/file/chart-1/download",
+						fileId: "chart-1",
+						filename: "revenue.png",
+					},
+				],
+				title: "Revenue",
+			}),
+		);
+	});
+
+	it("does not persist dataset preview into workspace state", () => {
+		const messages = [
+			makeMessage("assistant", [
+				makeToolPart("persistCodeFile", "output-available", "dataset-call", {
+					output: {
+						downloadUrl: "https://r2.example/cleaned.csv",
+						fileId: "dataset-1",
+						filename: "cleaned.csv",
+						kind: "dataset",
+						preview: {
+							activeSheet: "Sheet1",
+							columns: ["a"],
+							rows: [["1"]],
+							sheetNames: ["Sheet1"],
+							totalColumns: 1,
+							totalRows: 1,
+						},
+					},
+				}),
+			]),
+		];
+
+		extractToolEventsFromMessages(messages, new Map());
+
+		const dataset = jotaiStore.get(workspaceDatasetAtom);
+		expect(dataset).toEqual(
+			expect.objectContaining({
+				downloadUrl: "https://r2.example/cleaned.csv",
+				fileId: "dataset-1",
+				filename: "cleaned.csv",
+			}),
+		);
+		expect(dataset).not.toHaveProperty("preview");
 	});
 });
 

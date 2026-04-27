@@ -8,13 +8,8 @@ import axios, {
 } from "axios";
 import { toast } from "sonner";
 
-const baseURL =
-	process.env.NODE_ENV === "development"
-		? "http://localhost:3000/api/v1"
-		: "https://fire-wave/api/";
-
 const apiClient = axios.create({
-	baseURL: baseURL,
+	baseURL: "/api",
 	withCredentials: true,
 });
 
@@ -22,6 +17,10 @@ const resultEnum: Record<string, number> = {
 	success: 0,
 	unauthorized: 401,
 	sensitive: 105,
+};
+
+const isCanceledRequest = (error: AxiosError<ApiResponse>): boolean => {
+	return error.code === "ERR_CANCELED" || axios.isCancel(error);
 };
 
 apiClient.interceptors.request.use(
@@ -45,6 +44,11 @@ apiClient.interceptors.response.use(
 	},
 
 	(error: AxiosError<ApiResponse>) => {
+		if (isCanceledRequest(error)) {
+			// Request aborts are expected in effect cleanups and should stay silent.
+			return Promise.reject(error);
+		}
+
 		const data = error.response?.data;
 
 		const code = data?.code;
@@ -66,4 +70,5 @@ apiClient.interceptors.response.use(
 	},
 );
 
+export { isCanceledRequest };
 export default apiClient;

@@ -13,8 +13,10 @@ const DEFAULT_STATUS_TIMEOUT = 60_000;
 type UploadProgressHandler = (progress: number) => void;
 
 type UploadResult = {
+	downloadUrl: string;
 	fileId: string;
 	filename: string;
+	kind?: "dataset" | "document";
 };
 
 type CreateChunksOptions = {
@@ -57,6 +59,7 @@ type UploadFilesOptions = {
 };
 
 type MergeFileOptions = {
+	contentType?: string;
 	filename: string;
 	totalChunks: number;
 };
@@ -158,12 +161,14 @@ const uploadChunks = async ({
 };
 
 const mergeFile = async ({
+	contentType,
 	filename,
 	totalChunks,
 }: MergeFileOptions): Promise<UploadResult> => {
 	const result = await zodPost(
 		"/file/merge",
 		{
+			contentType,
 			filename,
 			total: totalChunks,
 		},
@@ -171,8 +176,10 @@ const mergeFile = async ({
 	);
 
 	return {
+		downloadUrl: result.download_url,
 		fileId: result.file_id,
 		filename,
+		kind: result.kind,
 	};
 };
 
@@ -236,6 +243,7 @@ const uploadFile = async ({
 	});
 
 	const result = await mergeFile({
+		contentType: file.type,
 		filename: file.name,
 		totalChunks: chunks.length,
 	});
@@ -302,4 +310,5 @@ const cancelUpload = async (filename: string): Promise<void> => {
 	}
 };
 
-export { cancelUpload, uploadFiles, uploadFile, type UploadResult };
+export { cancelUpload, uploadFiles, uploadFile };
+export type { UploadResult };

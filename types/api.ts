@@ -16,4 +16,5 @@ type ApiResponse<T = unknown> = {
 	error?: string;
 };
 
-export { ApiResponseSchema, type ApiResponse };
+export { ApiResponseSchema };
+export type { ApiResponse };
