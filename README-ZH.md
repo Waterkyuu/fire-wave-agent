@@ -1,27 +1,24 @@
-# Refract.ai
+# Refract - 24/7 Agent Helper
 
-[English](./README.md) | [中文](./README-ZH.md)
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Waterkyuu/agent-dashboard&env=ZHIPU_API_KEY,E2B_API_KEY,PUBLIC_NEON_AUTH_URL,NEON_DATA_PUBLIC_API_URL,CLOUDFLARE_ACCOUNT_ID,R2_ACCESS_KEY_ID,R2_SECRET_ACCESS_KEY&envDescription=Fire%20Wave%20Agent%20所需的%20API%20密钥和服务凭证&project-name=fire-wave-agent&repository-name=agent-dashboard)
-
-一个自主控制电脑的 AI Agent Web 应用 — 类似于 OpenAI Operator。基于智谱 AI 模型和 E2B 沙盒，提供实时 Ubuntu 桌面环境，支持浏览器自动化、网页搜索、Shell 命令执行和 Python 代码解释。
-
-<p float="left">
-  <img src="screenshots/image2.png" width="49%" />
-  <img src="screenshots/image1.png" width="49%" />
+<p align="center">
+<a href="./README.md">English</a> | <a href="./README-ZH.md">中文</a>
 </p>
 
-## 功能特性
+<p align="center">
+  <img src="public/logo.svg" alt="Refract Logo" width="120" />
+</p>
 
-- **桌面沙盒** — 创建运行 Ubuntu 的 E2B 桌面沙盒，带浏览器，通过 VNC 实时推流
-- **浏览器自动化** — Agent 可自主导航网页、通过 Google 搜索、与网页交互
-- **代码解释器** — 在隔离的 Jupyter Notebook 沙盒中执行 Python 代码，变量持久化
-- **实时 VNC 查看器** — 在可调整大小的面板中实时观看 Agent 操作浏览器/桌面
-- **对话界面** — 完整的对话功能，包含推理过程展示、工具调用状态指示和多步 Agent 执行
-- **文件上传** — 支持分块上传 PDF、DOCX、MD、TXT 等文件，带进度追踪
-- **用户认证** — 支持邮箱 OTP 验证码登录，以及 Google、GitHub、Vercel OAuth 登录
-- **会话管理** — 侧边栏按日期分组聊天记录，支持搜索（Ctrl+K）、重命名和删除
-- **响应式设计** — 桌面端分栏布局，移动端底部弹出面板
+<p align="center">
+<a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+</p>
+
+<p align="center">
+  <a href="https://vercel.com/new/clone?repository-url=https://github.com/Waterkyuu/refract&env=ZHIPU_API_KEY,E2B_API_KEY,PUBLIC_NEON_AUTH_URL,NEON_DATA_PUBLIC_API_URL,CLOUDFLARE_ACCOUNT_ID,R2_ACCESS_KEY_ID,R2_SECRET_ACCESS_KEY&envDescription=API%20keys%20and%20service%20credentials%20required%20by%20Fire%20Wave%20Agent&project-name=refract&repository-name=refract"><img src="https://vercel.com/button" alt="Deploy on Vercel" height="32" /></a>
+  <a href="https://railway.com/new/template?templateUrl=https://github.com/Waterkyuu/refract"><img src="https://railway.app/button.svg" alt="Deploy on Railway" height="32" /></a>
+  <a href="https://zeabur.com/templates/new?repoUrl=https://github.com/Waterkyuu/refract"><img src="https://zeabur.com/button.svg" alt="Deploy on Zeabur" height="32" /></a>
+</p>
+
+多智能体编排支持数据分析和简历生成，其他功能正在开发中。目标是创建 24/7 全天候工作的智能 Agent。
 
 ## 快速开始
 
@@ -33,8 +30,8 @@
 ### 安装
 
 ```bash
-git clone https://github.com/Waterkyuu/agent-dashboard.git
-cd agent-dashboard
+git clone https://github.com/Waterkyuu/refract.git
+cd refract
 pnpm install
 ```
 
@@ -79,6 +76,40 @@ pnpm build
 pnpm start
 ```
 
+### Docker
+
+使用 Docker Compose 构建并运行：
+
+```bash
+docker compose up -d --build
+```
+
+如果环境变量保存在本地文件中，可以在启动 Compose 时传入：
+
+```bash
+docker compose --env-file .env.local up -d --build
+```
+
+或直接构建并运行镜像：
+
+```bash
+docker build -t fire-wave-agent .
+docker run -d -p 3000:3000 --env-file .env.local --name fire-wave-agent fire-wave-agent
+```
+
+### Vercel 上的认证
+
+如果认证在本地正常工作，但在部署的 Vercel 域名上失败并出现类似 `{"code":"INVALID_ORIGIN","message":"Invalid origin"}` 的错误，说明你的 Neon Auth 项目拒绝了该站点来源。
+
+将所有已部署的应用来源添加到 Neon Auth / Better Auth 的受信任来源配置中，例如：
+
+```txt
+http://localhost:3000
+https://fire-wave-agent.vercel.app
+```
+
+还应确保在使用的任何 OAuth 提供商的回调或重定向设置中，允许相同的生产域名。
+
 ## 常用命令
 
 | 命令 | 说明 |
@@ -92,26 +123,8 @@ pnpm start
 
 ## 架构
 
-```
-用户输入 --> 首页 (/) --> /chat/[id]
-                            |
-             +--------------+---------------+
-             |                              |
-        对话面板 (30%)                 VNC 面板 (70%)
-        - 消息区域                      - E2B VNC 实时流
-        - 输入框                        - 实时状态标识
-        - 调试面板
-             |
-        POST /api/chat
-        - 智谱 AI (GLM-4-flash)
-        - 5 个工具:
-          * createSandbox（创建沙盒）
-          * codeInterpreter（代码解释器）
-          * executeShell（执行命令）
-          * navigateBrowser（浏览器导航）
-          * searchWeb（网页搜索）
-```
+![Refract agent 编排架构](screenshots/agent-orchestration-architecture.png)
 
 ## 许可证
 
-Private
+MIT
