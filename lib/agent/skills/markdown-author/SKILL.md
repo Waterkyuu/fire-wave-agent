@@ -25,11 +25,11 @@ Must add text-underline-offset: 3px;
 
 ## Wavy lines
 1. Basic Wave lines
-<span style="text-decoration: wavy underline;">波浪线下划线</span>
+<span style="text-decoration: wavy underline; text-underline-offset: 3px;">波浪线下划线</span>
 
 2. Custom Wave lines
-<span style="text-decoration: wavy underline red; text-underline-offset: 2px;">红色波浪线</span>
-<span style="text-decoration: underline wavy #ff6b6b; text-underline-offset: 3px; text-decoration-thickness: 2px;">粉色粗波浪线</span>
+<span style="text-decoration: wavy underline red; text-underline-offset: 3px;">红色波浪线</span>
+<span style="text-decoration: underline wavy #ff6b6b; text-underline-offset: 3px; text-decoration-thickness: 3px;">粉色粗波浪线</span>
 
 ## Callout
 
@@ -47,3 +47,4 @@ Must add text-underline-offset: 3px;
 
 > [!CAUTION]
 > 这是一个危险提示。
+
