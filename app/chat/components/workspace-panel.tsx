@@ -84,7 +84,7 @@ const WorkspacePanel = () => {
 		if (markdownContent) {
 			views.push({
 				key: "markdown",
-				label: t("markdownViewer"),
+				label: t("textViewer"),
 				icon: FileText,
 				onClick: () => showMarkdown(markdownContent),
 			});

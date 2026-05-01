@@ -1,12 +1,17 @@
 "use client";
 
 import "@/styles/markdown-preview.css";
+import "katex/dist/katex.min.css";
 import { workspaceMarkdownContentAtom } from "@/atoms";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAtomValue } from "jotai";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { memo } from "react";
 import Markdown from "react-markdown";
+import rehypeKatex from "rehype-katex";
+import rehypeRaw from "rehype-raw";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 import Mermaid from "./mermaid-chart";
 
 const MarkdownCodeBlock = ({
@@ -48,8 +53,10 @@ const MarkdownPreview = () => {
 
 	return (
 		<ScrollArea className="h-full w-full p-6">
-			<article className="prose prose-sm dark:prose-invert max-w-none">
+			<article className="prose prose-sm dark:prose-invert markdown-body max-w-none">
 				<Markdown
+					remarkPlugins={[remarkGfm, remarkMath]}
+					rehypePlugins={[rehypeRaw, rehypeKatex]}
 					components={{
 						code: MarkdownCodeBlock,
 						pre: MarkdownPreBlock,
