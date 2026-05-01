@@ -38,7 +38,7 @@ type WorkspaceSnapshot = {
 	chart: WorkspaceChart | null;
 	dataset: WorkspaceDataset | null;
 	file: WorkspaceFile | null;
-	typstContent: string;
+	markdownContent: string;
 };
 
 const EMPTY_WORKSPACE_SNAPSHOT: WorkspaceSnapshot = {
@@ -47,7 +47,7 @@ const EMPTY_WORKSPACE_SNAPSHOT: WorkspaceSnapshot = {
 	chart: null,
 	dataset: null,
 	file: null,
-	typstContent: "",
+	markdownContent: "",
 };
 
 const EMPTY_WORKSPACE_ROUND_ARTIFACTS: WorkspaceRoundArtifacts = {
@@ -486,12 +486,12 @@ const deriveWorkspaceSnapshotFromMessages = (
 		for (const part of message.parts) {
 			const partRecord = part as Record<string, unknown>;
 			if (
-				partRecord.type === "typst-content" &&
+				partRecord.type === "markdown-content" &&
 				typeof partRecord.content === "string" &&
 				partRecord.content.length > 0
 			) {
-				snapshot.typstContent = partRecord.content;
-				markViewUpdated("typst");
+				snapshot.markdownContent = partRecord.content;
+				markViewUpdated("markdown");
 			}
 		}
 

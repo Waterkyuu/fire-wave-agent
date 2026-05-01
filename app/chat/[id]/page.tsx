@@ -70,8 +70,8 @@ const canKeepWorkspaceView = (
 			return Boolean(snapshot.dataset);
 		case "file":
 			return Boolean(snapshot.file);
-		case "typst":
-			return snapshot.typstContent.length > 0;
+		case "markdown":
+			return snapshot.markdownContent.length > 0;
 		case "vnc":
 			return snapshot.vncUrl.length > 0;
 		default:
