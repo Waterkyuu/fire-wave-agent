@@ -1,5 +1,6 @@
 "use client";
 
+import "@/styles/markdown-preview.css";
 import { workspaceMarkdownContentAtom } from "@/atoms";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAtomValue } from "jotai";
