@@ -20,8 +20,6 @@ This skill provides a professional analysis report template with rich Markdown f
 ```md
 # {Report Title}
 
-> **Author:** {Agent Name} | **Date:** {YYYY-MM-DD} | **Status:** <span style="display: inline-block; background-color: #22c55e; color: white; font-size: 0.75em; font-weight: 600; padding: 2px 8px; border-radius: 9999px; vertical-align: middle;">Final</span>
-
 ---
 
 ## Executive Summary
@@ -155,17 +153,28 @@ graph LR
 
 When referencing chart images in the report:
 
-1. Use the persisted chart artifact URL format:
+1. The pipeline prompt provides chart image URLs in the format:
    ```
-   ![Description](/api/file/{fileId}/download)
+   ### Chart N
+   - Description: <chart description>
+   - Image URL: ![<description>](<downloadUrl>)
+   - fileId: <fileId>
    ```
 
-2. Replace `{fileId}` with the actual file ID from `persistAllCharts` or `persistCodeFile` tool output.
+2. You MUST use the exact Image URL provided in the prompt. Copy the full downloadUrl as-is into the report markdown:
+   ```
+   ![Chart Description](<downloadUrl>)
+   ```
 
-3. Always include a figure caption below the image using italics:
+3. If the prompt provides downloadUrl values, use them directly (they are already full URLs).
+   If only fileId is available, construct: `/api/file/{fileId}/download`
+
+4. Always include a figure caption below the image using italics:
    ```
    *Figure N: Description of what the chart shows.*
    ```
+
+5. Every chart provided in the prompt MUST appear in the report's Data Visualizations section. Do NOT skip any chart.
 
 ## Mermaid Diagram Rules
 
