@@ -1,0 +1,36 @@
+.markdown-body table {
+	width: 100%;
+	border-collapse: collapse;
+	border: 1px solid #d0d7de;
+	overflow: hidden;
+}
+
+.markdown-body th {
+	background-color: #dbeafe;
+	color: #1e3a5f;
+	font-weight: 600;
+	text-align: center;
+	padding: 10px 14px;
+	border: 1px solid #93c5fd;
+}
+
+.markdown-body td {
+	padding: 8px 14px;
+	border: 1px solid #d0d7de;
+	text-align: center;
+}
+
+.markdown-body tbody tr:nth-child(odd) {
+	background-color: #f3f4f6;
+}
+
+.markdown-body tbody tr:nth-child(even) {
+	background-color: #ffffff;
+}
+
+.note {
+	background: #e7f3ff;
+	border-left: 4px solid #2196f3;
+	padding: 12px;
+	border-radius: 6px;
+}
