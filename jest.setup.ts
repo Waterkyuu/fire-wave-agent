@@ -1,4 +1,11 @@
 import "@testing-library/jest-dom";
+import {
+	ReadableStream,
+	TransformStream,
+	WritableStream,
+} from "node:stream/web";
+import { TextDecoder, TextEncoder } from "node:util";
+import { MessageChannel, MessagePort } from "node:worker_threads";
 import type { ReactNode } from "react";
 import enMessages from "./messages/en.json";
 
@@ -43,36 +50,21 @@ jest.mock("next-intl", () => ({
 
 if (typeof globalThis.TransformStream === "undefined") {
 	Object.defineProperty(globalThis, "TransformStream", {
-		value: class TransformStream {
-			readable: unknown;
-			writable: unknown;
-			constructor() {
-				this.readable = {};
-				this.writable = {};
-			}
-		},
+		value: TransformStream,
 		writable: true,
 	});
 }
 
 if (typeof globalThis.ReadableStream === "undefined") {
 	Object.defineProperty(globalThis, "ReadableStream", {
-		value: class ReadableStream {
-			getReader() {
-				return this;
-			}
-		},
+		value: ReadableStream,
 		writable: true,
 	});
 }
 
 if (typeof globalThis.WritableStream === "undefined") {
 	Object.defineProperty(globalThis, "WritableStream", {
-		value: class WritableStream {
-			getWriter() {
-				return this;
-			}
-		},
+		value: WritableStream,
 		writable: true,
 	});
 }
@@ -86,6 +78,57 @@ if (typeof globalThis.fetch === "undefined") {
 			json: async () => ({}),
 			text: async () => "",
 		})),
+		writable: true,
+	});
+}
+
+if (typeof globalThis.TextDecoder === "undefined") {
+	Object.defineProperty(globalThis, "TextDecoder", {
+		value: TextDecoder,
+		writable: true,
+	});
+}
+
+if (typeof globalThis.TextEncoder === "undefined") {
+	Object.defineProperty(globalThis, "TextEncoder", {
+		value: TextEncoder,
+		writable: true,
+	});
+}
+
+if (typeof globalThis.MessageChannel === "undefined") {
+	Object.defineProperty(globalThis, "MessageChannel", {
+		value: MessageChannel,
+		writable: true,
+	});
+}
+
+if (typeof globalThis.MessagePort === "undefined") {
+	Object.defineProperty(globalThis, "MessagePort", {
+		value: MessagePort,
+		writable: true,
+	});
+}
+
+const { Headers, Request, Response } = require("undici");
+
+if (typeof globalThis.Headers === "undefined") {
+	Object.defineProperty(globalThis, "Headers", {
+		value: Headers,
+		writable: true,
+	});
+}
+
+if (typeof globalThis.Request === "undefined") {
+	Object.defineProperty(globalThis, "Request", {
+		value: Request,
+		writable: true,
+	});
+}
+
+if (typeof globalThis.Response === "undefined") {
+	Object.defineProperty(globalThis, "Response", {
+		value: Response,
 		writable: true,
 	});
 }
