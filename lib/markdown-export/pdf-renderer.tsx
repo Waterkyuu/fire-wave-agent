@@ -1,6 +1,5 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { renderToStaticMarkup } from "react-dom/server";
 import Markdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
@@ -56,8 +55,10 @@ const loadRenderAssets = async (): Promise<RenderAssets> => {
 	return cachedAssetsPromise;
 };
 
-const createMarkdownMarkup = (markdownContent: string) =>
-	renderToStaticMarkup(
+const createMarkdownMarkup = async (markdownContent: string) => {
+	const { renderToStaticMarkup } = await import("react-dom/server");
+
+	return renderToStaticMarkup(
 		<Markdown
 			remarkPlugins={[remarkGfm, remarkMath]}
 			rehypePlugins={[rehypeRaw, rehypeKatex]}
@@ -65,6 +66,7 @@ const createMarkdownMarkup = (markdownContent: string) =>
 			{markdownContent}
 		</Markdown>,
 	);
+};
 
 const createMermaidBootScript = () => `
 window.__MERMAID_READY__ = (async () => {
@@ -111,7 +113,7 @@ const createMarkdownPrintHtml = async ({
 	markdownContent,
 }: CreateMarkdownPrintHtmlOptions): Promise<string> => {
 	const { katexCss, markdownCss, mermaidScript } = await loadRenderAssets();
-	const markdownMarkup = createMarkdownMarkup(markdownContent);
+	const markdownMarkup = await createMarkdownMarkup(markdownContent);
 
 	return `<!doctype html>
 <html lang="en">
