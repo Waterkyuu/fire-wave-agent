@@ -1,11 +1,17 @@
 import jotaiStore, { workspaceMarkdownContentAtom } from "@/atoms";
 import { exportMarkdownFile, exportMarkdownPdf } from "@/lib/markdown-export";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+	act,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react";
 import MarkdownPreview from "./markdown-preview-panel";
 
 jest.mock("@/lib/markdown-export", () => ({
 	exportMarkdownFile: jest.fn(),
-	exportMarkdownPdf: jest.fn(() => true),
+	exportMarkdownPdf: jest.fn(async () => "refract-markdown.pdf"),
 }));
 
 jest.mock("react-markdown", () => ({
@@ -57,7 +63,7 @@ describe("MarkdownPreview", () => {
 		);
 	});
 
-	it("exports the rendered markdown preview as a printable pdf", async () => {
+	it("downloads the rendered markdown preview as a pdf", async () => {
 		render(<MarkdownPreview />);
 
 		fireEvent.keyDown(screen.getByRole("button", { name: /export/i }), {
@@ -65,8 +71,10 @@ describe("MarkdownPreview", () => {
 		});
 		fireEvent.click(await screen.findByRole("menuitem", { name: /pdf/i }));
 
-		expect(exportMarkdownPdfMock).toHaveBeenCalledWith({
-			sourceElement: expect.any(HTMLElement),
-		});
+		await waitFor(() =>
+			expect(exportMarkdownPdfMock).toHaveBeenCalledWith({
+				sourceElement: expect.any(HTMLElement),
+			}),
+		);
 	});
 });

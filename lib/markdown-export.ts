@@ -1,6 +1,10 @@
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
+
 const MARKDOWN_EXPORT_BASENAME = "refract-markdown";
-const MARKDOWN_PRINT_TITLE = "Refract Markdown Export";
 const MARKDOWN_MIME_TYPE = "text/markdown;charset=utf-8";
+const PDF_PAGE_MARGIN = 0;
+const PDF_RENDER_SCALE = 2;
 
 type FileExtension = "md" | "pdf";
 
@@ -13,26 +17,44 @@ type MarkdownFileExportOptions = DownloadBlobOptions & {
 	filename?: string;
 };
 
+type CanvasRenderOptions = {
+	backgroundColor: string;
+	scale: number;
+	useCORS: boolean;
+	windowHeight: number;
+	windowWidth: number;
+};
+
+type CanvasRenderer = (
+	sourceElement: HTMLElement,
+	options: CanvasRenderOptions,
+) => Promise<HTMLCanvasElement>;
+
+type PdfDocument = {
+	addImage: (
+		imageData: string,
+		format: "PNG",
+		x: number,
+		y: number,
+		width: number,
+		height: number,
+	) => void;
+	addPage: () => void;
+	internal: {
+		pageSize: {
+			getHeight: () => number;
+			getWidth: () => number;
+		};
+	};
+	save: (filename: string) => void;
+};
+
 type MarkdownPdfExportOptions = {
-	document?: Document;
+	canvasRenderer?: CanvasRenderer;
+	filename?: string;
+	pdfFactory?: () => PdfDocument;
 	sourceElement: HTMLElement;
-	title?: string;
-	window?: Window;
 };
-
-type MarkdownPrintHtmlOptions = {
-	bodyHtml: string;
-	headMarkup?: string;
-	title?: string;
-};
-
-const escapeHtml = (value: string) =>
-	value
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;")
-		.replace(/'/g, "&#39;");
 
 const withFileExtension = (filename: string, extension: FileExtension) => {
 	const cleanFilename = filename.trim() || MARKDOWN_EXPORT_BASENAME;
@@ -80,98 +102,138 @@ const exportMarkdownFile = (
 	return filename;
 };
 
-const collectPrintableHeadMarkup = (sourceDocument: Document) => {
-	const nodes = sourceDocument.querySelectorAll<
-		HTMLLinkElement | HTMLStyleElement
-	>('link[rel="stylesheet"], style');
+const createPdfDocument = (): PdfDocument =>
+	new jsPDF({
+		format: "a4",
+		orientation: "portrait",
+		unit: "pt",
+	}) as PdfDocument;
 
-	return Array.from(nodes)
-		.map((node) => node.outerHTML)
-		.join("\n");
+const renderElementToCanvas: CanvasRenderer = (sourceElement, options) =>
+	html2canvas(sourceElement, options);
+
+const hasExportableContent = (sourceElement: HTMLElement) => {
+	const visibleText =
+		"innerText" in sourceElement && typeof sourceElement.innerText === "string"
+			? sourceElement.innerText
+			: (sourceElement.textContent ?? "");
+
+	return Boolean(visibleText.trim() || sourceElement.innerHTML.trim());
 };
 
-const buildMarkdownPrintHtml = ({
-	bodyHtml,
-	headMarkup = "",
-	title = MARKDOWN_PRINT_TITLE,
-}: MarkdownPrintHtmlOptions) => `<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escapeHtml(title)}</title>
-${headMarkup}
-<style>
-	@page {
-		margin: 18mm;
+const getCanvasWindowSize = (sourceElement: HTMLElement) => {
+	const windowWidth =
+		sourceElement.scrollWidth ||
+		sourceElement.clientWidth ||
+		sourceElement.offsetWidth;
+	const windowHeight =
+		sourceElement.scrollHeight ||
+		sourceElement.clientHeight ||
+		sourceElement.offsetHeight;
+
+	return {
+		windowHeight,
+		windowWidth,
+	};
+};
+
+const createCanvasSlice = (
+	sourceCanvas: HTMLCanvasElement,
+	offsetY: number,
+	sliceHeight: number,
+) => {
+	const ownerDocument = sourceCanvas.ownerDocument ?? document;
+	const sliceCanvas = ownerDocument.createElement("canvas");
+	const context = sliceCanvas.getContext("2d");
+
+	sliceCanvas.width = sourceCanvas.width;
+	sliceCanvas.height = sliceHeight;
+
+	if (!context) {
+		throw new Error("Unable to create PDF canvas context");
 	}
 
-	body {
-		background: #ffffff;
-		color: #18181b;
-		font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-		margin: 0;
-	}
+	context.drawImage(
+		sourceCanvas,
+		0,
+		offsetY,
+		sourceCanvas.width,
+		sliceHeight,
+		0,
+		0,
+		sourceCanvas.width,
+		sliceHeight,
+	);
 
-	.markdown-print-body {
-		margin: 0 auto;
-		max-width: 820px;
-	}
+	return sliceCanvas;
+};
 
-	.markdown-print-body img,
-	.markdown-print-body svg,
-	.markdown-print-body canvas {
-		max-width: 100%;
-	}
-</style>
-</head>
-<body>
-<main class="markdown-print-body">
-${bodyHtml}
-</main>
-</body>
-</html>`;
+const addCanvasToPdf = (canvas: HTMLCanvasElement, pdf: PdfDocument) => {
+	const pageWidth = pdf.internal.pageSize.getWidth();
+	const pageHeight = pdf.internal.pageSize.getHeight();
+	const printableWidth = pageWidth - PDF_PAGE_MARGIN * 2;
+	const printableHeight = pageHeight - PDF_PAGE_MARGIN * 2;
+	const pageCanvasHeight = Math.floor(
+		(printableHeight * canvas.width) / printableWidth,
+	);
 
-const exportMarkdownPdf = ({
-	document: sourceDocument = document,
+	for (let offsetY = 0; offsetY < canvas.height; offsetY += pageCanvasHeight) {
+		if (offsetY > 0) {
+			pdf.addPage();
+		}
+
+		const sliceHeight = Math.min(pageCanvasHeight, canvas.height - offsetY);
+		const pageCanvas = createCanvasSlice(canvas, offsetY, sliceHeight);
+		const pageImageHeight = (sliceHeight * printableWidth) / canvas.width;
+
+		pdf.addImage(
+			pageCanvas.toDataURL("image/png"),
+			"PNG",
+			PDF_PAGE_MARGIN,
+			PDF_PAGE_MARGIN,
+			printableWidth,
+			pageImageHeight,
+		);
+	}
+};
+
+const exportMarkdownPdf = async ({
+	canvasRenderer = renderElementToCanvas,
+	filename = MARKDOWN_EXPORT_BASENAME,
+	pdfFactory = createPdfDocument,
 	sourceElement,
-	title = MARKDOWN_PRINT_TITLE,
-	window: targetWindow = window,
 }: MarkdownPdfExportOptions) => {
-	const bodyHtml = sourceElement.innerHTML;
-
-	if (!bodyHtml.trim()) {
+	if (!hasExportableContent(sourceElement)) {
 		return false;
 	}
 
-	const printWindow = targetWindow.open("", "_blank");
-
-	if (!printWindow) {
-		return false;
-	}
-
-	const html = buildMarkdownPrintHtml({
-		bodyHtml,
-		headMarkup: collectPrintableHeadMarkup(sourceDocument),
-		title,
+	const normalizedFilename = withFileExtension(filename, "pdf");
+	const { windowHeight, windowWidth } = getCanvasWindowSize(sourceElement);
+	const canvas = await canvasRenderer(sourceElement, {
+		backgroundColor: "#ffffff",
+		scale: PDF_RENDER_SCALE,
+		useCORS: true,
+		windowHeight,
+		windowWidth,
 	});
+	const pdf = pdfFactory();
 
-	printWindow.document.open();
-	printWindow.document.write(html);
-	printWindow.document.close();
-	printWindow.setTimeout(() => {
-		printWindow.focus();
-		printWindow.print();
-	}, 250);
+	addCanvasToPdf(canvas, pdf);
+	pdf.save(normalizedFilename);
 
-	return true;
+	return normalizedFilename;
 };
 
 export {
-	buildMarkdownPrintHtml,
+	addCanvasToPdf,
 	createMarkdownBlob,
 	exportMarkdownFile,
 	exportMarkdownPdf,
 	withFileExtension,
 };
-export type { MarkdownFileExportOptions, MarkdownPdfExportOptions };
+export type {
+	CanvasRenderer,
+	MarkdownFileExportOptions,
+	MarkdownPdfExportOptions,
+	PdfDocument,
+};

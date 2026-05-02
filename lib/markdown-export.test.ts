@@ -1,6 +1,23 @@
+jest.mock("html2canvas", () => jest.fn());
+jest.mock("jspdf", () => ({
+	jsPDF: jest.fn(() => ({
+		addImage: jest.fn(),
+		addPage: jest.fn(),
+		internal: {
+			pageSize: {
+				getHeight: () => 842,
+				getWidth: () => 595,
+			},
+		},
+		save: jest.fn(),
+	})),
+}));
+
 import {
-	buildMarkdownPrintHtml,
+	type PdfDocument,
+	addCanvasToPdf,
 	createMarkdownBlob,
+	exportMarkdownPdf,
 	withFileExtension,
 } from "./markdown-export";
 
@@ -37,18 +54,112 @@ describe("markdown export helpers", () => {
 		await expect(readBlobText(blob)).resolves.toBe("# Report\n\nHello");
 	});
 
-	it("builds a print html document with escaped title and rendered body", () => {
-		const html = buildMarkdownPrintHtml({
-			bodyHtml: "<h1>Report</h1><p>Ready</p>",
-			headMarkup: '<link rel="stylesheet" href="/styles.css">',
-			title: 'Report <script>alert("x")</script>',
+	it("adds a rendered markdown canvas to a pdf page", () => {
+		const canvas = document.createElement("canvas");
+		const drawImage = jest.fn();
+		const pdf: PdfDocument = {
+			addImage: jest.fn(),
+			addPage: jest.fn(),
+			internal: {
+				pageSize: {
+					getHeight: () => 200,
+					getWidth: () => 100,
+				},
+			},
+			save: jest.fn(),
+		};
+		const getContextSpy = jest
+			.spyOn(HTMLCanvasElement.prototype, "getContext")
+			.mockReturnValue({ drawImage } as unknown as CanvasRenderingContext2D);
+		const toDataURLSpy = jest
+			.spyOn(HTMLCanvasElement.prototype, "toDataURL")
+			.mockReturnValue("data:image/png;base64,page");
+
+		canvas.width = 100;
+		canvas.height = 300;
+
+		addCanvasToPdf(canvas, pdf);
+
+		expect(pdf.addImage).toHaveBeenCalledTimes(2);
+		expect(pdf.addPage).toHaveBeenCalledTimes(1);
+		expect(pdf.addImage).toHaveBeenNthCalledWith(
+			1,
+			"data:image/png;base64,page",
+			"PNG",
+			0,
+			0,
+			100,
+			200,
+		);
+
+		getContextSpy.mockRestore();
+		toDataURLSpy.mockRestore();
+	});
+
+	it("renders the styled markdown element to canvas and saves the pdf directly", async () => {
+		const sourceElement = document.createElement("article");
+		const canvas = document.createElement("canvas");
+		const drawImage = jest.fn();
+		const canvasRenderer = jest.fn(async () => canvas);
+		const pdf: PdfDocument = {
+			addImage: jest.fn(),
+			addPage: jest.fn(),
+			internal: {
+				pageSize: {
+					getHeight: () => 842,
+					getWidth: () => 595,
+				},
+			},
+			save: jest.fn(),
+		};
+		const openSpy = jest.spyOn(window, "open").mockReturnValue(null);
+		const getContextSpy = jest
+			.spyOn(HTMLCanvasElement.prototype, "getContext")
+			.mockReturnValue({ drawImage } as unknown as CanvasRenderingContext2D);
+		const toDataURLSpy = jest
+			.spyOn(HTMLCanvasElement.prototype, "toDataURL")
+			.mockReturnValue("data:image/png;base64,markdown");
+
+		sourceElement.innerHTML = "<h1>Report</h1><p>Ready</p>";
+		Object.defineProperty(sourceElement, "scrollHeight", {
+			configurable: true,
+			value: 720,
+		});
+		Object.defineProperty(sourceElement, "scrollWidth", {
+			configurable: true,
+			value: 560,
+		});
+		canvas.width = 560;
+		canvas.height = 720;
+
+		const filename = await exportMarkdownPdf({
+			canvasRenderer,
+			filename: "analysis-report",
+			pdfFactory: () => pdf,
+			sourceElement,
 		});
 
-		expect(html).toContain(
-			"<title>Report &lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;</title>",
+		expect(filename).toBe("analysis-report.pdf");
+		expect(canvasRenderer).toHaveBeenCalledWith(sourceElement, {
+			backgroundColor: "#ffffff",
+			scale: 2,
+			useCORS: true,
+			windowHeight: 720,
+			windowWidth: 560,
+		});
+		expect(openSpy).not.toHaveBeenCalled();
+		expect(pdf.addImage).toHaveBeenCalledWith(
+			"data:image/png;base64,markdown",
+			"PNG",
+			0,
+			0,
+			595,
+			expect.any(Number),
 		);
-		expect(html).toContain('<link rel="stylesheet" href="/styles.css">');
-		expect(html).toContain('<main class="markdown-print-body">');
-		expect(html).toContain("<h1>Report</h1><p>Ready</p>");
+		expect(pdf.save).toHaveBeenCalledWith("analysis-report.pdf");
+
+		openSpy.mockRestore();
+		getContextSpy.mockRestore();
+		toDataURLSpy.mockRestore();
 	});
 });

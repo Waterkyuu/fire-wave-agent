@@ -15,7 +15,7 @@ import { exportMarkdownFile, exportMarkdownPdf } from "@/lib/markdown-export";
 import { useAtomValue } from "jotai";
 import { ChevronDown, Download, FileText } from "lucide-react";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
-import { memo, useCallback, useRef } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import Markdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
@@ -60,21 +60,28 @@ const MarkdownPreBlock = ({
 const MarkdownPreview = () => {
 	const markdownContent = useAtomValue(workspaceMarkdownContentAtom);
 	const previewRef = useRef<HTMLElement>(null);
+	const [isExportingPdf, setIsExportingPdf] = useState(false);
 	const hasMarkdownContent = markdownContent.trim().length > 0;
 
 	const handleExportMarkdown = useCallback(() => {
 		exportMarkdownFile(markdownContent);
 	}, [markdownContent]);
 
-	const handleExportPdf = useCallback(() => {
-		if (!previewRef.current) {
+	const handleExportPdf = useCallback(async () => {
+		if (!previewRef.current || isExportingPdf) {
 			return;
 		}
 
-		exportMarkdownPdf({
-			sourceElement: previewRef.current,
-		});
-	}, []);
+		setIsExportingPdf(true);
+
+		try {
+			await exportMarkdownPdf({
+				sourceElement: previewRef.current,
+			});
+		} finally {
+			setIsExportingPdf(false);
+		}
+	}, [isExportingPdf]);
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">
@@ -94,7 +101,10 @@ const MarkdownPreview = () => {
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end" className="min-w-40">
-						<DropdownMenuItem onClick={handleExportPdf}>
+						<DropdownMenuItem
+							onClick={handleExportPdf}
+							disabled={isExportingPdf}
+						>
 							<FileText className="size-4" />
 							PDF
 						</DropdownMenuItem>
