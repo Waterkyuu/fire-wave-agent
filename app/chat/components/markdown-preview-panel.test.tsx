@@ -68,7 +68,7 @@ describe("MarkdownPreview", () => {
 
 		await waitFor(() =>
 			expect(exportMarkdownPdfMock).toHaveBeenCalledWith({
-				sourceElement: expect.any(HTMLElement),
+				markdownContent: "# Report\n\nHello export",
 			}),
 		);
 	});

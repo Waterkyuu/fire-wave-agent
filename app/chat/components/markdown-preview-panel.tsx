@@ -15,7 +15,7 @@ import { exportMarkdownFile, exportMarkdownPdf } from "@/lib/markdown-export";
 import { useAtomValue } from "jotai";
 import { ChevronDown, Download, FileText } from "lucide-react";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
-import { memo, useCallback, useRef, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import Markdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
@@ -59,7 +59,6 @@ const MarkdownPreBlock = ({
 
 const MarkdownPreview = () => {
 	const markdownContent = useAtomValue(workspaceMarkdownContentAtom);
-	const previewRef = useRef<HTMLElement>(null);
 	const [isExportingPdf, setIsExportingPdf] = useState(false);
 	const hasMarkdownContent = markdownContent.trim().length > 0;
 
@@ -68,7 +67,7 @@ const MarkdownPreview = () => {
 	}, [markdownContent]);
 
 	const handleExportPdf = useCallback(async () => {
-		if (!previewRef.current || isExportingPdf) {
+		if (isExportingPdf || !hasMarkdownContent) {
 			return;
 		}
 
@@ -76,12 +75,12 @@ const MarkdownPreview = () => {
 
 		try {
 			await exportMarkdownPdf({
-				sourceElement: previewRef.current,
+				markdownContent,
 			});
 		} finally {
 			setIsExportingPdf(false);
 		}
-	}, [isExportingPdf]);
+	}, [hasMarkdownContent, isExportingPdf, markdownContent]);
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">
@@ -116,10 +115,7 @@ const MarkdownPreview = () => {
 				</DropdownMenu>
 			</div>
 			<ScrollArea className="min-h-0 flex-1 p-6">
-				<article
-					ref={previewRef}
-					className="prose prose-sm dark:prose-invert markdown-body max-w-none"
-				>
+				<article className="prose prose-sm dark:prose-invert markdown-body max-w-none">
 					<Markdown
 						remarkPlugins={[remarkGfm, remarkMath]}
 						rehypePlugins={[rehypeRaw, rehypeKatex]}

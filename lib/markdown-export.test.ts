@@ -1,22 +1,6 @@
-jest.mock("html2canvas", () => jest.fn());
-jest.mock("jspdf", () => ({
-	jsPDF: jest.fn(() => ({
-		addImage: jest.fn(),
-		addPage: jest.fn(),
-		internal: {
-			pageSize: {
-				getHeight: () => 842,
-				getWidth: () => 595,
-			},
-		},
-		save: jest.fn(),
-	})),
-}));
-
 import {
-	type PdfDocument,
-	addCanvasToPdf,
 	createMarkdownBlob,
+	exportMarkdownFile,
 	exportMarkdownPdf,
 	withFileExtension,
 } from "./markdown-export";
@@ -54,237 +38,101 @@ describe("markdown export helpers", () => {
 		await expect(readBlobText(blob)).resolves.toBe("# Report\n\nHello");
 	});
 
-	it("adds a rendered markdown canvas to a pdf page", () => {
-		const canvas = document.createElement("canvas");
-		const drawImage = jest.fn();
-		const pdf: PdfDocument = {
-			addImage: jest.fn(),
-			addPage: jest.fn(),
-			internal: {
-				pageSize: {
-					getHeight: () => 172,
-					getWidth: () => 172,
-				},
+	it("downloads the raw markdown file", () => {
+		const createObjectURL = jest.fn(() => "blob:markdown");
+		const revokeObjectURL = jest.fn();
+		const originalCreateElement = document.createElement.bind(document);
+		const anchor = document.createElement("a");
+		const clickSpy = jest.spyOn(anchor, "click").mockImplementation(() => {});
+		const createElementSpy = jest
+			.spyOn(document, "createElement")
+			.mockImplementation(((tagName: string) =>
+				tagName === "a"
+					? anchor
+					: originalCreateElement(tagName)) as typeof document.createElement);
+
+		const filename = exportMarkdownFile("# Report", {
+			document,
+			filename: "analysis-report",
+			url: {
+				createObjectURL,
+				revokeObjectURL,
 			},
-			save: jest.fn(),
-		};
-		const getContextSpy = jest
-			.spyOn(HTMLCanvasElement.prototype, "getContext")
-			.mockReturnValue({ drawImage } as unknown as CanvasRenderingContext2D);
-		const toDataURLSpy = jest
-			.spyOn(HTMLCanvasElement.prototype, "toDataURL")
-			.mockReturnValue("data:image/png;base64,page");
+		});
 
-		canvas.width = 100;
-		canvas.height = 300;
+		expect(filename).toBe("analysis-report.md");
+		expect(createObjectURL).toHaveBeenCalled();
+		expect(anchor.download).toBe("analysis-report.md");
+		expect(clickSpy).toHaveBeenCalled();
+		expect(revokeObjectURL).toHaveBeenCalledWith("blob:markdown");
 
-		addCanvasToPdf(canvas, pdf);
-
-		expect(pdf.addImage).toHaveBeenCalledTimes(3);
-		expect(pdf.addPage).toHaveBeenCalledTimes(2);
-		expect(pdf.addImage).toHaveBeenNthCalledWith(
-			1,
-			"data:image/png;base64,page",
-			"PNG",
-			36,
-			36,
-			100,
-			100,
-		);
-
-		getContextSpy.mockRestore();
-		toDataURLSpy.mockRestore();
+		createElementSpy.mockRestore();
+		clickSpy.mockRestore();
 	});
 
-	it("renders the styled markdown element to canvas and saves the pdf directly", async () => {
-		const sourceElement = document.createElement("article");
-		const canvas = document.createElement("canvas");
-		const drawImage = jest.fn();
-		const canvasRenderer = jest.fn(async () => canvas);
-		const pdf: PdfDocument = {
-			addImage: jest.fn(),
-			addPage: jest.fn(),
-			internal: {
-				pageSize: {
-					getHeight: () => 842,
-					getWidth: () => 595,
-				},
+	it("posts markdown to the export route and downloads the returned pdf", async () => {
+		const createObjectURL = jest.fn(() => "blob:pdf");
+		const revokeObjectURL = jest.fn();
+		const originalCreateElement = document.createElement.bind(document);
+		const anchor = document.createElement("a");
+		const clickSpy = jest.spyOn(anchor, "click").mockImplementation(() => {});
+		const createElementSpy = jest
+			.spyOn(document, "createElement")
+			.mockImplementation(((tagName: string) =>
+				tagName === "a"
+					? anchor
+					: originalCreateElement(tagName)) as typeof document.createElement);
+		const fetcher = jest.fn(async () => ({
+			blob: async () => new Blob(["pdf"], { type: "application/pdf" }),
+			headers: {
+				get: () => null,
 			},
-			save: jest.fn(),
-		};
-		const openSpy = jest.spyOn(window, "open").mockReturnValue(null);
-		const getContextSpy = jest
-			.spyOn(HTMLCanvasElement.prototype, "getContext")
-			.mockReturnValue({ drawImage } as unknown as CanvasRenderingContext2D);
-		const toDataURLSpy = jest
-			.spyOn(HTMLCanvasElement.prototype, "toDataURL")
-			.mockReturnValue("data:image/png;base64,markdown");
-
-		sourceElement.innerHTML = "<h1>Report</h1><p>Ready</p>";
-		Object.defineProperty(sourceElement, "scrollHeight", {
-			configurable: true,
-			value: 720,
-		});
-		Object.defineProperty(sourceElement, "scrollWidth", {
-			configurable: true,
-			value: 560,
-		});
-		canvas.width = 560;
-		canvas.height = 720;
+			ok: true,
+		}));
 
 		const filename = await exportMarkdownPdf({
-			canvasRenderer,
+			document,
+			fetcher,
 			filename: "analysis-report",
-			pdfFactory: () => pdf,
-			sourceElement,
+			markdownContent: "# Report",
+			url: {
+				createObjectURL,
+				revokeObjectURL,
+			},
 		});
 
+		expect(fetcher).toHaveBeenCalledWith(
+			"/api/export/markdown/pdf",
+			expect.objectContaining({
+				body: JSON.stringify({
+					filename: "analysis-report",
+					markdownContent: "# Report",
+				}),
+				headers: {
+					"Content-Type": "application/json",
+				},
+				method: "POST",
+			}),
+		);
 		expect(filename).toBe("analysis-report.pdf");
-		expect(canvasRenderer).toHaveBeenCalledWith(expect.any(HTMLElement), {
-			backgroundColor: "#ffffff",
-			onclone: expect.any(Function),
-			scale: 2,
-			useCORS: true,
-			windowHeight: expect.any(Number),
-			windowWidth: 698,
-		});
-		expect(canvasRenderer.mock.calls[0]?.[0]).not.toBe(sourceElement);
-		expect(canvasRenderer.mock.calls[0]?.[0].style.width).toBe(
-			"697.3333333333333px",
-		);
-		expect(openSpy).not.toHaveBeenCalled();
-		expect(pdf.addImage).toHaveBeenCalledWith(
-			"data:image/png;base64,markdown",
-			"PNG",
-			36,
-			36,
-			523,
-			expect.any(Number),
-		);
-		expect(pdf.save).toHaveBeenCalledWith("analysis-report.pdf");
+		expect(anchor.download).toBe("analysis-report.pdf");
+		expect(clickSpy).toHaveBeenCalled();
+		expect(revokeObjectURL).toHaveBeenCalledWith("blob:pdf");
 
-		openSpy.mockRestore();
-		getContextSpy.mockRestore();
-		toDataURLSpy.mockRestore();
+		createElementSpy.mockRestore();
+		clickSpy.mockRestore();
 	});
 
-	it("prepares a pdf-only A4 clone with embedded URL images and safe colors", async () => {
-		const sourceElement = document.createElement("article");
-		const canvas = document.createElement("canvas");
-		const drawImage = jest.fn();
-		const canvasRenderer = jest.fn(async () => canvas);
-		const pdf: PdfDocument = {
-			addImage: jest.fn(),
-			addPage: jest.fn(),
-			internal: {
-				pageSize: {
-					getHeight: () => 842,
-					getWidth: () => 595,
-				},
-			},
-			save: jest.fn(),
-		};
-		const fetchSpy = jest.spyOn(globalThis, "fetch").mockResolvedValue({
-			blob: async () => new Blob(["image"], { type: "image/png" }),
-			ok: true,
-		} as Response);
-		const getContextSpy = jest
-			.spyOn(HTMLCanvasElement.prototype, "getContext")
-			.mockReturnValue({ drawImage } as unknown as CanvasRenderingContext2D);
-		const toDataURLSpy = jest
-			.spyOn(HTMLCanvasElement.prototype, "toDataURL")
-			.mockReturnValue("data:image/png;base64,markdown");
+	it("throws when the pdf export route fails", async () => {
+		const fetcher = jest.fn(async () => ({
+			ok: false,
+		}));
 
-		sourceElement.className = "prose prose-sm dark:prose-invert markdown-body";
-		sourceElement.innerHTML = `
-			<h1 style="color: lab(29.2345% 39.3825 20.0664)">Report</h1>
-			<img src="https://assets.example.test/chart.png" alt="Chart" />
-		`;
-		canvas.width = 1394;
-		canvas.height = 1000;
-
-		await exportMarkdownPdf({
-			canvasRenderer,
-			pdfFactory: () => pdf,
-			sourceElement,
-		});
-
-		const exportElement = canvasRenderer.mock.calls[0]?.[0];
-		const exportImage = exportElement?.querySelector("img");
-		const exportHeading = exportElement?.querySelector("h1");
-
-		expect(fetchSpy).toHaveBeenCalledWith(
-			"https://assets.example.test/chart.png",
-			{ credentials: "omit", mode: "cors" },
-		);
-		expect(exportElement?.className).toBe("markdown-body");
-		expect(exportImage?.getAttribute("src")).toMatch(
-			/^data:image\/png;base64,/,
-		);
-		expect(exportImage?.getAttribute("srcset")).toBeNull();
-		expect(exportHeading?.getAttribute("style") ?? "").not.toContain("lab(");
-
-		fetchSpy.mockRestore();
-		getContextSpy.mockRestore();
-		toDataURLSpy.mockRestore();
-	});
-
-	it("sanitizes the cloned html2canvas document background before rendering", async () => {
-		const sourceElement = document.createElement("article");
-		const canvas = document.createElement("canvas");
-		const drawImage = jest.fn();
-		const clonedDocument = document.implementation.createHTMLDocument("export");
-		const canvasRenderer = jest.fn(async (_element, options) => {
-			const clonedElement = clonedDocument.createElement("article");
-			const heading = clonedDocument.createElement("h1");
-
-			heading.setAttribute("style", "color: lab(29% 39 20)");
-			heading.textContent = "Report";
-			clonedElement.append(heading);
-			clonedDocument.body.append(clonedElement);
-			clonedDocument.documentElement.style.backgroundColor = "lab(100% 0 0)";
-			clonedDocument.body.style.backgroundColor = "lab(100% 0 0)";
-			options.onclone?.(clonedDocument, clonedElement);
-
-			expect(clonedDocument.documentElement.style.backgroundColor).toBe(
-				"rgb(255, 255, 255)",
-			);
-			expect(clonedDocument.body.style.backgroundColor).toBe(
-				"rgb(255, 255, 255)",
-			);
-			expect(heading.getAttribute("style") ?? "").not.toContain("lab(");
-
-			return canvas;
-		});
-		const pdf: PdfDocument = {
-			addImage: jest.fn(),
-			addPage: jest.fn(),
-			internal: {
-				pageSize: {
-					getHeight: () => 842,
-					getWidth: () => 595,
-				},
-			},
-			save: jest.fn(),
-		};
-		const getContextSpy = jest
-			.spyOn(HTMLCanvasElement.prototype, "getContext")
-			.mockReturnValue({ drawImage } as unknown as CanvasRenderingContext2D);
-		const toDataURLSpy = jest
-			.spyOn(HTMLCanvasElement.prototype, "toDataURL")
-			.mockReturnValue("data:image/png;base64,markdown");
-
-		sourceElement.innerHTML = "<h1>Report</h1>";
-		canvas.width = 1394;
-		canvas.height = 1000;
-
-		await exportMarkdownPdf({
-			canvasRenderer,
-			pdfFactory: () => pdf,
-			sourceElement,
-		});
-
-		getContextSpy.mockRestore();
-		toDataURLSpy.mockRestore();
+		await expect(
+			exportMarkdownPdf({
+				fetcher,
+				markdownContent: "# Report",
+			}),
+		).rejects.toThrow("Failed to export markdown as PDF.");
 	});
 });
