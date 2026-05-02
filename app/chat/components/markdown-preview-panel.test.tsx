@@ -19,11 +19,6 @@ jest.mock("react-markdown", () => ({
 	default: ({ children }: { children: string }) => <div>{children}</div>,
 }));
 
-jest.mock("rehype-katex", () => jest.fn());
-jest.mock("rehype-raw", () => jest.fn());
-jest.mock("remark-gfm", () => jest.fn());
-jest.mock("remark-math", () => jest.fn());
-
 jest.mock("./mermaid-chart", () => ({
 	__esModule: true,
 	default: ({ chart }: { chart: string }) => <div>{chart}</div>,

@@ -10,11 +10,6 @@ jest.mock("react-markdown", () => ({
 	default: ({ children }: { children?: ReactNode }) => <>{children}</>,
 }));
 
-jest.mock("rehype-katex", () => jest.fn());
-jest.mock("rehype-raw", () => jest.fn());
-jest.mock("remark-gfm", () => jest.fn());
-jest.mock("remark-math", () => jest.fn());
-
 const assistantMessageWithRoundArtifacts = {
 	id: "assistant-round-artifacts",
 	role: "assistant",
