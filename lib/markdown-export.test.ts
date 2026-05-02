@@ -142,6 +142,7 @@ describe("markdown export helpers", () => {
 		expect(filename).toBe("analysis-report.pdf");
 		expect(canvasRenderer).toHaveBeenCalledWith(expect.any(HTMLElement), {
 			backgroundColor: "#ffffff",
+			onclone: expect.any(Function),
 			scale: 2,
 			useCORS: true,
 			windowHeight: expect.any(Number),
@@ -224,6 +225,65 @@ describe("markdown export helpers", () => {
 		expect(exportHeading?.getAttribute("style") ?? "").not.toContain("lab(");
 
 		fetchSpy.mockRestore();
+		getContextSpy.mockRestore();
+		toDataURLSpy.mockRestore();
+	});
+
+	it("sanitizes the cloned html2canvas document background before rendering", async () => {
+		const sourceElement = document.createElement("article");
+		const canvas = document.createElement("canvas");
+		const drawImage = jest.fn();
+		const clonedDocument = document.implementation.createHTMLDocument("export");
+		const canvasRenderer = jest.fn(async (_element, options) => {
+			const clonedElement = clonedDocument.createElement("article");
+			const heading = clonedDocument.createElement("h1");
+
+			heading.setAttribute("style", "color: lab(29% 39 20)");
+			heading.textContent = "Report";
+			clonedElement.append(heading);
+			clonedDocument.body.append(clonedElement);
+			clonedDocument.documentElement.style.backgroundColor = "lab(100% 0 0)";
+			clonedDocument.body.style.backgroundColor = "lab(100% 0 0)";
+			options.onclone?.(clonedDocument, clonedElement);
+
+			expect(clonedDocument.documentElement.style.backgroundColor).toBe(
+				"rgb(255, 255, 255)",
+			);
+			expect(clonedDocument.body.style.backgroundColor).toBe(
+				"rgb(255, 255, 255)",
+			);
+			expect(heading.getAttribute("style") ?? "").not.toContain("lab(");
+
+			return canvas;
+		});
+		const pdf: PdfDocument = {
+			addImage: jest.fn(),
+			addPage: jest.fn(),
+			internal: {
+				pageSize: {
+					getHeight: () => 842,
+					getWidth: () => 595,
+				},
+			},
+			save: jest.fn(),
+		};
+		const getContextSpy = jest
+			.spyOn(HTMLCanvasElement.prototype, "getContext")
+			.mockReturnValue({ drawImage } as unknown as CanvasRenderingContext2D);
+		const toDataURLSpy = jest
+			.spyOn(HTMLCanvasElement.prototype, "toDataURL")
+			.mockReturnValue("data:image/png;base64,markdown");
+
+		sourceElement.innerHTML = "<h1>Report</h1>";
+		canvas.width = 1394;
+		canvas.height = 1000;
+
+		await exportMarkdownPdf({
+			canvasRenderer,
+			pdfFactory: () => pdf,
+			sourceElement,
+		});
+
 		getContextSpy.mockRestore();
 		toDataURLSpy.mockRestore();
 	});

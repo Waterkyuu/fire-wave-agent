@@ -21,6 +21,7 @@ type MarkdownFileExportOptions = DownloadBlobOptions & {
 
 type CanvasRenderOptions = {
 	backgroundColor: string;
+	onclone?: (clonedDocument: Document, clonedElement: HTMLElement) => void;
 	scale: number;
 	useCORS: boolean;
 	windowHeight: number;
@@ -316,6 +317,25 @@ const sanitizeUnsupportedColorStyles = (exportElement: HTMLElement) => {
 	}
 };
 
+const applySafeDocumentColors = (targetDocument: Document) => {
+	const roots = [targetDocument.documentElement, targetDocument.body].filter(
+		(root): root is HTMLElement => Boolean(root),
+	);
+
+	for (const root of roots) {
+		root.style.setProperty("background-color", "#ffffff", "important");
+		root.style.setProperty("color", "#111827", "important");
+	}
+};
+
+const sanitizeHtml2CanvasClone = (
+	clonedDocument: Document,
+	clonedElement: HTMLElement,
+) => {
+	applySafeDocumentColors(clonedDocument);
+	sanitizeUnsupportedColorStyles(clonedElement);
+};
+
 const createPdfExportElement = async (
 	sourceElement: HTMLElement,
 	pdf: PdfDocument,
@@ -444,6 +464,7 @@ const exportMarkdownPdf = async ({
 		);
 		const canvas = await canvasRenderer(exportElement.element, {
 			backgroundColor: "#ffffff",
+			onclone: sanitizeHtml2CanvasClone,
 			scale: PDF_RENDER_SCALE,
 			useCORS: true,
 			windowHeight,
