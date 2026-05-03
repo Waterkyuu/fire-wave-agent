@@ -20,6 +20,7 @@ type WorkspaceRoundArtifact = {
 	downloadUrl?: string;
 	extension?: string;
 	chart?: Record<string, unknown>;
+	markdownContent?: string;
 	title?: string;
 	toolCallId?: string;
 };
@@ -98,6 +99,16 @@ const getFileDownloadUrl = (
 		return `/api/file/${fileId}/download`;
 	}
 	return undefined;
+};
+
+const getMarkdownReportLabel = (content: string): string => {
+	const heading = content
+		.split("\n")
+		.map((line) => line.trim())
+		.find((line) => line.startsWith("#"));
+	const normalizedHeading = heading?.replace(/^#+\s*/, "").trim();
+
+	return normalizedHeading || "Generated report";
 };
 
 // Resolve dataset attachments from user metadata even when preview is omitted.
@@ -280,6 +291,25 @@ const deriveRoundArtifactsFromMessage = (
 					typeof partRecord.toolCallId === "string"
 						? partRecord.toolCallId
 						: undefined,
+			});
+			continue;
+		}
+
+		if (
+			partRecord.type === "markdown-content" &&
+			typeof partRecord.content === "string" &&
+			partRecord.content.trim().length > 0
+		) {
+			const createdAt = nextCreatedAt();
+			const markdownContent = partRecord.content.trim();
+			const label = getMarkdownReportLabel(markdownContent);
+			pushRoundArtifact(artifacts, {
+				id: `${message.id}-report-markdown-${createdAt}`,
+				category: "report",
+				createdAt,
+				label,
+				markdownContent,
+				title: label,
 			});
 			continue;
 		}
@@ -539,6 +569,11 @@ const deriveWorkspaceSnapshotFromMessages = (
 			}
 
 			if (artifact.category === "report") {
+				if (artifact.markdownContent) {
+					snapshot.markdownContent = artifact.markdownContent;
+					markViewUpdated("markdown");
+					continue;
+				}
 				if (!artifact.fileId || !artifact.filename) {
 					continue;
 				}

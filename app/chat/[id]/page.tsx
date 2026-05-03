@@ -11,6 +11,7 @@ import {
 	showChartWorkspaceAtom,
 	showDatasetWorkspaceAtom,
 	showFileWorkspaceAtom,
+	showMarkdownWorkspaceAtom,
 	vncUrlAtom,
 	workspaceChartAtom,
 	workspaceDatasetAtom,
@@ -346,6 +347,8 @@ const ChatPage = ({ params }: ChatPageProps) => {
 						filename: artifact.filename,
 					});
 				}
+			} else if (artifact.markdownContent) {
+				jotaiStore.set(showMarkdownWorkspaceAtom, artifact.markdownContent);
 			} else if (artifact.fileId && artifact.filename) {
 				jotaiStore.set(showFileWorkspaceAtom, {
 					downloadUrl: getFileDownloadUrl(
