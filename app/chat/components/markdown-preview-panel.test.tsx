@@ -1,4 +1,5 @@
 import jotaiStore, { workspaceMarkdownContentAtom } from "@/atoms";
+import { importMarkdownToBlocks } from "@/lib/markdown-blocks/import-markdown";
 import { exportMarkdownFile, exportMarkdownPdf } from "@/lib/markdown-export";
 import {
 	act,
@@ -14,14 +15,18 @@ jest.mock("@/lib/markdown-export", () => ({
 	exportMarkdownPdf: jest.fn(async () => "refract-markdown.pdf"),
 }));
 
-jest.mock("react-markdown", () => ({
-	__esModule: true,
-	default: ({ children }: { children: string }) => <div>{children}</div>,
-}));
-
-jest.mock("./mermaid-chart", () => ({
-	__esModule: true,
-	default: ({ chart }: { chart: string }) => <div>{chart}</div>,
+jest.mock("@/lib/markdown-blocks/import-markdown", () => ({
+	importMarkdownToBlocks: jest.fn(() => [
+		{
+			type: "heading",
+			level: 1,
+			content: [{ type: "text", text: "Report" }],
+		},
+		{
+			type: "paragraph",
+			content: [{ type: "text", text: "Hello export" }],
+		},
+	]),
 }));
 
 const exportMarkdownFileMock = exportMarkdownFile as jest.MockedFunction<
@@ -30,6 +35,15 @@ const exportMarkdownFileMock = exportMarkdownFile as jest.MockedFunction<
 const exportMarkdownPdfMock = exportMarkdownPdf as jest.MockedFunction<
 	typeof exportMarkdownPdf
 >;
+const importMarkdownToBlocksMock =
+	importMarkdownToBlocks as jest.MockedFunction<typeof importMarkdownToBlocks>;
+
+const renderMarkdownPreview = async () => {
+	await act(async () => {
+		render(<MarkdownPreview />);
+		await Promise.resolve();
+	});
+};
 
 describe("MarkdownPreview", () => {
 	beforeEach(() => {
@@ -46,7 +60,8 @@ describe("MarkdownPreview", () => {
 	});
 
 	it("exports the raw markdown content from the export menu", async () => {
-		render(<MarkdownPreview />);
+		await renderMarkdownPreview();
+		await screen.findByText("Hello export");
 
 		fireEvent.keyDown(screen.getByRole("button", { name: /export/i }), {
 			key: "ArrowDown",
@@ -59,7 +74,8 @@ describe("MarkdownPreview", () => {
 	});
 
 	it("downloads the rendered markdown preview as a pdf", async () => {
-		render(<MarkdownPreview />);
+		await renderMarkdownPreview();
+		await screen.findByText("Hello export");
 
 		fireEvent.keyDown(screen.getByRole("button", { name: /export/i }), {
 			key: "ArrowDown",
@@ -70,6 +86,17 @@ describe("MarkdownPreview", () => {
 			expect(exportMarkdownPdfMock).toHaveBeenCalledWith({
 				sourceElement: expect.any(HTMLElement),
 			}),
+		);
+	});
+
+	it("mounts the markdown block editor shell with imported workspace content", async () => {
+		await renderMarkdownPreview();
+
+		expect(await screen.findByTestId("markdown-block-editor")).toBeVisible();
+		expect(await screen.findByText("Report")).toBeVisible();
+		expect(screen.getByText("Hello export")).toBeVisible();
+		expect(importMarkdownToBlocksMock).toHaveBeenCalledWith(
+			"# Report\n\nHello export",
 		);
 	});
 });
