@@ -48,6 +48,26 @@ jest.mock("next-intl", () => ({
 			),
 }));
 
+jest.mock("rehype-katex", () => ({
+	__esModule: true,
+	default: () => undefined,
+}));
+
+jest.mock("rehype-raw", () => ({
+	__esModule: true,
+	default: () => undefined,
+}));
+
+jest.mock("remark-gfm", () => ({
+	__esModule: true,
+	default: () => undefined,
+}));
+
+jest.mock("remark-math", () => ({
+	__esModule: true,
+	default: () => undefined,
+}));
+
 if (typeof globalThis.TransformStream === "undefined") {
 	Object.defineProperty(globalThis, "TransformStream", {
 		value: TransformStream,
