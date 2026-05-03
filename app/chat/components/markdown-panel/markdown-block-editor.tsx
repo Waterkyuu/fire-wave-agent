@@ -6,14 +6,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { exportBlocksToMarkdown } from "@/lib/markdown-blocks/export-markdown";
 import { importMarkdownToBlocks } from "@/lib/markdown-blocks/import-markdown";
 import type { InlineContent, RefractBlock } from "@/types";
-import { EditorContent, type JSONContent, useEditor } from "@tiptap/react";
+import {
+	type Editor,
+	EditorContent,
+	type JSONContent,
+	useEditor,
+} from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import type { RefObject } from "react";
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 
 type MarkdownBlockEditorProps = {
 	contentRef: RefObject<HTMLElement | null>;
 	markdownContent: string;
+	onEditorReady?: (editor: Editor | null) => void;
+	onMarkdownChange?: (markdown: string) => void;
 };
 
 type MaybePromise<T> = Promise<T> | T;
@@ -37,6 +44,9 @@ const createParagraphNode = (text: string): JSONContent => {
 
 const renderInlineContent = (content: InlineContent[]): string =>
 	content.map(({ text }) => text).join("");
+
+const createInlineContent = (text: string): InlineContent[] =>
+	text.length > 0 ? [{ type: "text", text }] : [];
 
 const createFallbackNode = (markdown: string): JSONContent =>
 	createParagraphNode(markdown);
@@ -112,26 +122,123 @@ const isPromiseLike = <T,>(value: MaybePromise<T>): value is Promise<T> =>
 	"then" in value &&
 	typeof value.then === "function";
 
+const extractNodeText = (node: JSONContent): string => {
+	if (node.type === "text") {
+		return node.text ?? "";
+	}
+
+	return (node.content ?? []).map((child) => extractNodeText(child)).join("");
+};
+
+const extractListItemContent = (node: JSONContent): InlineContent[] => {
+	const paragraphNode = (node.content ?? []).find(
+		(child) => child.type === "paragraph",
+	);
+	return createInlineContent(
+		paragraphNode ? extractNodeText(paragraphNode) : "",
+	);
+};
+
+const editorNodeToBlocks = (node: JSONContent): RefractBlock[] => {
+	switch (node.type) {
+		case "heading":
+			return [
+				{
+					type: "heading",
+					level: Math.min(Math.max(Number(node.attrs?.level ?? 1), 1), 4) as
+						| 1
+						| 2
+						| 3
+						| 4,
+					content: createInlineContent(extractNodeText(node)),
+				},
+			];
+		case "paragraph":
+			return [
+				{
+					type: "paragraph",
+					content: createInlineContent(extractNodeText(node)),
+				},
+			];
+		case "bulletList":
+		case "orderedList":
+			return [
+				{
+					type: "list",
+					ordered: node.type === "orderedList",
+					items: (node.content ?? []).map((item) => ({
+						content: extractListItemContent(item),
+					})),
+				},
+			];
+		case "codeBlock":
+			return [
+				{
+					type: "codeBlock",
+					language:
+						typeof node.attrs?.language === "string"
+							? node.attrs.language
+							: undefined,
+					content: extractNodeText(node),
+				},
+			];
+		default:
+			return [];
+	}
+};
+
+const editorDocumentToBlocks = (document: JSONContent): RefractBlock[] =>
+	(document.content ?? []).flatMap((node) => editorNodeToBlocks(node));
+
 const MarkdownBlockEditor = ({
 	contentRef,
 	markdownContent,
+	onEditorReady,
+	onMarkdownChange,
 }: MarkdownBlockEditorProps) => {
 	const [content, setContent] = useState<JSONContent>(createEditorDocument([]));
+	const lastSyncedMarkdownRef = useRef<string | null>(null);
 
 	const editor = useEditor({
 		content,
+		onUpdate: ({ editor: currentEditor }) => {
+			if (!onMarkdownChange) {
+				return;
+			}
+
+			const nextMarkdown = exportBlocksToMarkdown(
+				editorDocumentToBlocks(currentEditor.getJSON()),
+			);
+			lastSyncedMarkdownRef.current = nextMarkdown;
+			onMarkdownChange(nextMarkdown);
+		},
 		editorProps: {
 			attributes: {
 				class:
 					"prose prose-sm dark:prose-invert markdown-body max-w-none focus:outline-none",
 			},
 		},
-		editable: false,
+		editable: true,
 		extensions: [StarterKit],
 		immediatelyRender: false,
 	});
 
 	useEffect(() => {
+		if (!onEditorReady) {
+			return;
+		}
+
+		onEditorReady(editor);
+	}, [editor, onEditorReady]);
+
+	useEffect(() => {
+		if (
+			lastSyncedMarkdownRef.current !== null &&
+			markdownContent === lastSyncedMarkdownRef.current
+		) {
+			return;
+		}
+
 		let isActive = true;
 
 		const loadBlocks = async () => {
@@ -141,6 +248,7 @@ const MarkdownBlockEditor = ({
 
 			if (!isPromiseLike(importResult)) {
 				setContent(createEditorDocument(importResult));
+				lastSyncedMarkdownRef.current = markdownContent;
 				return;
 			}
 
@@ -151,6 +259,7 @@ const MarkdownBlockEditor = ({
 			}
 
 			setContent(createEditorDocument(blocks));
+			lastSyncedMarkdownRef.current = markdownContent;
 		};
 
 		loadBlocks();

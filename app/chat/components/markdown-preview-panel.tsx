@@ -4,13 +4,14 @@ import "@/styles/markdown-preview.css";
 import "katex/dist/katex.min.css";
 import { workspaceMarkdownContentAtom } from "@/atoms";
 import { exportMarkdownFile, exportMarkdownPdf } from "@/lib/markdown-export";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { memo, useCallback, useRef, useState } from "react";
 import MarkdownBlockEditor from "./markdown-panel/markdown-block-editor";
 import MarkdownBlockToolbar from "./markdown-panel/markdown-block-toolbar";
 
 const MarkdownPreview = () => {
 	const markdownContent = useAtomValue(workspaceMarkdownContentAtom);
+	const setMarkdownContent = useSetAtom(workspaceMarkdownContentAtom);
 	const previewRef = useRef<HTMLElement>(null);
 	const [isExportingPdf, setIsExportingPdf] = useState(false);
 	const hasMarkdownContent = markdownContent.trim().length > 0;
@@ -35,6 +36,13 @@ const MarkdownPreview = () => {
 		}
 	}, [hasMarkdownContent, isExportingPdf]);
 
+	const handleMarkdownChange = useCallback(
+		(nextMarkdown: string) => {
+			setMarkdownContent(nextMarkdown);
+		},
+		[setMarkdownContent],
+	);
+
 	return (
 		<div className="flex h-full min-h-0 flex-col">
 			<MarkdownBlockToolbar
@@ -46,6 +54,7 @@ const MarkdownPreview = () => {
 			<MarkdownBlockEditor
 				contentRef={previewRef}
 				markdownContent={markdownContent}
+				onMarkdownChange={handleMarkdownChange}
 			/>
 		</div>
 	);
