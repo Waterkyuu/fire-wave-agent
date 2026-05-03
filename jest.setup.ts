@@ -74,7 +74,9 @@ if (typeof globalThis.fetch === "undefined") {
 		value: jest.fn(async () => ({
 			ok: true,
 			status: 200,
-			headers: new Headers(),
+			headers: {
+				get: () => null,
+			},
 			json: async () => ({}),
 			text: async () => "",
 		})),
@@ -106,29 +108,6 @@ if (typeof globalThis.MessageChannel === "undefined") {
 if (typeof globalThis.MessagePort === "undefined") {
 	Object.defineProperty(globalThis, "MessagePort", {
 		value: MessagePort,
-		writable: true,
-	});
-}
-
-const { Headers, Request, Response } = require("undici");
-
-if (typeof globalThis.Headers === "undefined") {
-	Object.defineProperty(globalThis, "Headers", {
-		value: Headers,
-		writable: true,
-	});
-}
-
-if (typeof globalThis.Request === "undefined") {
-	Object.defineProperty(globalThis, "Request", {
-		value: Request,
-		writable: true,
-	});
-}
-
-if (typeof globalThis.Response === "undefined") {
-	Object.defineProperty(globalThis, "Response", {
-		value: Response,
 		writable: true,
 	});
 }
