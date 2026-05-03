@@ -70,11 +70,14 @@ describe("markdown export helpers", () => {
 		clickSpy.mockRestore();
 	});
 
-	it("posts markdown to the export route and downloads the returned pdf", async () => {
+	it("captures the preview with snapdom and downloads a pdf", async () => {
 		const createObjectURL = jest.fn(() => "blob:pdf");
 		const revokeObjectURL = jest.fn();
 		const originalCreateElement = document.createElement.bind(document);
 		const anchor = document.createElement("a");
+		const drawImage = jest.fn();
+		const sourceElement = document.createElement("article");
+		const canvas = document.createElement("canvas");
 		const clickSpy = jest.spyOn(anchor, "click").mockImplementation(() => {});
 		const createElementSpy = jest
 			.spyOn(document, "createElement")
@@ -82,57 +85,104 @@ describe("markdown export helpers", () => {
 				tagName === "a"
 					? anchor
 					: originalCreateElement(tagName)) as typeof document.createElement);
-		const fetcher = jest.fn(async () => ({
-			blob: async () => new Blob(["pdf"], { type: "application/pdf" }),
-			headers: {
-				get: () => null,
-			},
-			ok: true,
+		const getContextSpy = jest
+			.spyOn(HTMLCanvasElement.prototype, "getContext")
+			.mockReturnValue({ drawImage } as unknown as CanvasRenderingContext2D);
+		const toBlobSpy = jest
+			.spyOn(HTMLCanvasElement.prototype, "toBlob")
+			.mockImplementation((callback) => {
+				callback?.(new Blob(["png"], { type: "image/png" }));
+			});
+		const captureElement = jest.fn(async () => ({
+			toCanvas: async () => canvas,
+		}));
+		const addPage = jest.fn(() => ({
+			drawImage: jest.fn(),
+		}));
+		const embedPng = jest.fn(async () => ({}));
+		const save = jest.fn(async () => new Uint8Array([4, 5, 6]));
+		const createPdfDocument = jest.fn(async () => ({
+			addPage,
+			embedPng,
+			save,
 		}));
 
+		sourceElement.innerHTML = "<h1>Report</h1>";
+		canvas.width = 200;
+		canvas.height = 400;
+
 		const filename = await exportMarkdownPdf({
+			captureElement,
+			createPdfDocument,
 			document,
-			fetcher,
 			filename: "analysis-report",
-			markdownContent: "# Report",
+			sourceElement,
 			url: {
 				createObjectURL,
 				revokeObjectURL,
 			},
 		});
 
-		expect(fetcher).toHaveBeenCalledWith(
-			"/api/export/markdown/pdf",
+		expect(captureElement).toHaveBeenCalledWith(
+			sourceElement,
 			expect.objectContaining({
-				body: JSON.stringify({
-					filename: "analysis-report",
-					markdownContent: "# Report",
-				}),
-				headers: {
-					"Content-Type": "application/json",
-				},
-				method: "POST",
+				backgroundColor: "#ffffff",
+				embedFonts: true,
+				scale: 2,
 			}),
 		);
+		expect(createPdfDocument).toHaveBeenCalled();
+		expect(embedPng).toHaveBeenCalled();
+		expect(save).toHaveBeenCalled();
 		expect(filename).toBe("analysis-report.pdf");
 		expect(anchor.download).toBe("analysis-report.pdf");
 		expect(clickSpy).toHaveBeenCalled();
 		expect(revokeObjectURL).toHaveBeenCalledWith("blob:pdf");
 
 		createElementSpy.mockRestore();
+		getContextSpy.mockRestore();
+		toBlobSpy.mockRestore();
 		clickSpy.mockRestore();
 	});
 
-	it("throws when the pdf export route fails", async () => {
-		const fetcher = jest.fn(async () => ({
-			ok: false,
-		}));
+	it("returns false when the snapdom source element is empty", async () => {
+		const sourceElement = document.createElement("article");
 
 		await expect(
 			exportMarkdownPdf({
-				fetcher,
-				markdownContent: "# Report",
+				filename: "analysis-report",
+				sourceElement,
 			}),
-		).rejects.toThrow("Failed to export markdown as PDF.");
+		).resolves.toBe(false);
+	});
+
+	it("throws when snapdom export cannot create a png blob", async () => {
+		const captureElement = jest.fn(async () => ({
+			toCanvas: async () => document.createElement("canvas"),
+		}));
+		const sourceElement = document.createElement("article");
+		const getContextSpy = jest
+			.spyOn(HTMLCanvasElement.prototype, "getContext")
+			.mockReturnValue({
+				drawImage: jest.fn(),
+			} as unknown as CanvasRenderingContext2D);
+		const toBlobSpy = jest
+			.spyOn(HTMLCanvasElement.prototype, "toBlob")
+			.mockImplementation((callback) => {
+				callback?.(null);
+			});
+
+		sourceElement.innerHTML = "<h1>Report</h1>";
+
+		await expect(
+			exportMarkdownPdf({
+				captureElement,
+				filename: "analysis-report",
+				sourceElement,
+			}),
+		).rejects.toThrow("Failed to convert SnapDOM canvas to PNG.");
+
+		getContextSpy.mockRestore();
+		toBlobSpy.mockRestore();
 	});
 });

@@ -15,7 +15,7 @@ import { exportMarkdownFile, exportMarkdownPdf } from "@/lib/markdown-export";
 import { useAtomValue } from "jotai";
 import { ChevronDown, Download, FileText } from "lucide-react";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import Markdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
@@ -59,6 +59,7 @@ const MarkdownPreBlock = ({
 
 const MarkdownPreview = () => {
 	const markdownContent = useAtomValue(workspaceMarkdownContentAtom);
+	const previewRef = useRef<HTMLElement>(null);
 	const [isExportingPdf, setIsExportingPdf] = useState(false);
 	const hasMarkdownContent = markdownContent.trim().length > 0;
 
@@ -67,7 +68,7 @@ const MarkdownPreview = () => {
 	}, [markdownContent]);
 
 	const handleExportPdf = useCallback(async () => {
-		if (isExportingPdf || !hasMarkdownContent) {
+		if (isExportingPdf || !hasMarkdownContent || !previewRef.current) {
 			return;
 		}
 
@@ -75,12 +76,12 @@ const MarkdownPreview = () => {
 
 		try {
 			await exportMarkdownPdf({
-				markdownContent,
+				sourceElement: previewRef.current,
 			});
 		} finally {
 			setIsExportingPdf(false);
 		}
-	}, [hasMarkdownContent, isExportingPdf, markdownContent]);
+	}, [hasMarkdownContent, isExportingPdf]);
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">
@@ -105,7 +106,7 @@ const MarkdownPreview = () => {
 							disabled={isExportingPdf}
 						>
 							<FileText className="size-4" />
-							PDF
+							{isExportingPdf ? "PDF..." : "PDF"}
 						</DropdownMenuItem>
 						<DropdownMenuItem onClick={handleExportMarkdown}>
 							<FileText className="size-4" />
@@ -115,7 +116,10 @@ const MarkdownPreview = () => {
 				</DropdownMenu>
 			</div>
 			<ScrollArea className="min-h-0 flex-1 p-6">
-				<article className="prose prose-sm dark:prose-invert markdown-body max-w-none">
+				<article
+					ref={previewRef}
+					className="prose prose-sm dark:prose-invert markdown-body max-w-none"
+				>
 					<Markdown
 						remarkPlugins={[remarkGfm, remarkMath]}
 						rehypePlugins={[rehypeRaw, rehypeKatex]}
