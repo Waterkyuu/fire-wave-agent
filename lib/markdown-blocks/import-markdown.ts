@@ -12,10 +12,29 @@ type MdastNode = {
 	value?: string;
 };
 
-const loadEsmModule = <T>(specifier: string): Promise<T> =>
-	new Function("modulePath", "return import(modulePath);")(
-		specifier,
-	) as Promise<T>;
+const isJestRuntime =
+	typeof process !== "undefined" && Boolean(process.env.JEST_WORKER_ID);
+
+const loadEsmModule = <T>(specifier: string): Promise<T> => {
+	if (isJestRuntime) {
+		return new Function("modulePath", "return import(modulePath);")(
+			specifier,
+		) as Promise<T>;
+	}
+
+	switch (specifier) {
+		case "unified":
+			return import("unified") as Promise<T>;
+		case "remark-parse":
+			return import("remark-parse") as Promise<T>;
+		case "remark-gfm":
+			return import("remark-gfm") as Promise<T>;
+		case "remark-math":
+			return import("remark-math") as Promise<T>;
+		default:
+			throw new Error(`Unsupported ESM module: ${specifier}`);
+	}
+};
 
 const createTextContent = (text: string): TextInlineContent[] => {
 	const trimmedText = text.trim();

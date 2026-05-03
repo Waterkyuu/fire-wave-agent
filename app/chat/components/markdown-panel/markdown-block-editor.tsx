@@ -15,6 +15,7 @@ import {
 import StarterKit from "@tiptap/starter-kit";
 import type { RefObject } from "react";
 import { memo, useEffect, useRef, useState } from "react";
+import RefractCodeBlock from "./extensions/refract-code-block";
 
 type MarkdownBlockEditorProps = {
 	contentRef: RefObject<HTMLElement | null>;
@@ -51,6 +52,22 @@ const createInlineContent = (text: string): InlineContent[] =>
 const createFallbackNode = (markdown: string): JSONContent =>
 	createParagraphNode(markdown);
 
+const createCodeBlockNode = (
+	content: string,
+	language?: string | null,
+): JSONContent => ({
+	type: "codeBlock",
+	attrs: { language: language ?? null },
+	content: content
+		? [
+				{
+					type: "text",
+					text: content,
+				},
+			]
+		: undefined,
+});
+
 const blockToEditorNodes = (block: RefractBlock): JSONContent[] => {
 	switch (block.type) {
 		case "heading": {
@@ -84,25 +101,14 @@ const blockToEditorNodes = (block: RefractBlock): JSONContent[] => {
 				},
 			];
 		case "codeBlock":
-			return [
-				{
-					type: "codeBlock",
-					attrs: { language: block.language ?? null },
-					content: block.content
-						? [
-								{
-									type: "text",
-									text: block.content,
-								},
-							]
-						: undefined,
-				},
-			];
+			return [createCodeBlockNode(block.content, block.language ?? null)];
 		case "image":
-		case "mermaidBlock":
-		case "mathBlock":
 		case "rawMarkdownBlock":
 			return [createFallbackNode(exportBlocksToMarkdown([block]))];
+		case "mermaidBlock":
+			return [createCodeBlockNode(block.content, "mermaid")];
+		case "mathBlock":
+			return [createCodeBlockNode(block.content, "latex")];
 		case "table":
 			return [createFallbackNode(exportBlocksToMarkdown([block]))];
 	}
@@ -172,6 +178,24 @@ const editorNodeToBlocks = (node: JSONContent): RefractBlock[] => {
 				},
 			];
 		case "codeBlock":
+			if (node.attrs?.language === "mermaid") {
+				return [
+					{
+						type: "mermaidBlock",
+						content: extractNodeText(node),
+					},
+				];
+			}
+
+			if (node.attrs?.language === "latex") {
+				return [
+					{
+						type: "mathBlock",
+						content: extractNodeText(node),
+					},
+				];
+			}
+
 			return [
 				{
 					type: "codeBlock",
@@ -219,7 +243,7 @@ const MarkdownBlockEditor = ({
 			},
 		},
 		editable: true,
-		extensions: [StarterKit],
+		extensions: [StarterKit.configure({ codeBlock: false }), RefractCodeBlock],
 		immediatelyRender: false,
 	});
 
@@ -274,12 +298,24 @@ const MarkdownBlockEditor = ({
 			return;
 		}
 
-		editor.commands.setContent(content, {
-			emitUpdate: false,
-			parseOptions: {
-				preserveWhitespace: "full",
-			},
+		let cancelled = false;
+
+		Promise.resolve().then(() => {
+			if (cancelled) {
+				return;
+			}
+
+			editor.commands.setContent(content, {
+				emitUpdate: false,
+				parseOptions: {
+					preserveWhitespace: "full",
+				},
+			});
 		});
+
+		return () => {
+			cancelled = true;
+		};
 	}, [content, editor]);
 
 	return (
