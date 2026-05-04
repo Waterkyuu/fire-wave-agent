@@ -22,7 +22,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { handleError } from "@/lib/error-handler";
-import { isDatasetExtension } from "@/lib/file";
+import { isDatasetExtension } from "@/lib/file/file";
 import { type UploadResult, cancelUpload, uploadFile } from "@/lib/upload-file";
 import { cn, generateId } from "@/lib/utils";
 import type { ChatAttachment } from "@/types/chat";

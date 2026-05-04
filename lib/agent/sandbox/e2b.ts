@@ -5,7 +5,7 @@ import { Sandbox as DesktopSandbox } from "@e2b/desktop";
 import {
 	getUploadedFileBytes,
 	storeFileRecordFromBytes,
-} from "../../file-store";
+} from "../../file/file-store";
 
 const E2B_API_KEY = process.env.E2B_API_KEY;
 

@@ -3,7 +3,7 @@ import {
 	formatCodeExecutionError,
 	formatSandboxOperationError,
 } from "@/lib/agent/utils/error-utils";
-import { getFileDownloadUrl } from "@/lib/file-store";
+import { getFileDownloadUrl } from "@/lib/file/file-store";
 import { tool, zodSchema } from "ai";
 import { z } from "zod";
 

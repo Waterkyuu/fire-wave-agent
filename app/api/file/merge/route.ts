@@ -1,4 +1,4 @@
-import { getFileDownloadUrl, mergeUploadedFile } from "@/lib/file-store";
+import { getFileDownloadUrl, mergeUploadedFile } from "@/lib/file/file-store";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 

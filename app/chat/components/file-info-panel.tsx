@@ -3,7 +3,7 @@
 import { workspaceFileAtom } from "@/atoms/chat";
 import FileCard from "@/components/share/file-card";
 import { Button } from "@/components/ui/button";
-import { formatFileSize } from "@/lib/file";
+import { formatFileSize } from "@/lib/file/file";
 import { useAtomValue } from "jotai";
 import { useTranslations } from "next-intl";
 import { memo } from "react";

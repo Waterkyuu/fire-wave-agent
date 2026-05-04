@@ -1,4 +1,4 @@
-import { cancelUploadByFilename } from "@/lib/file-store";
+import { cancelUploadByFilename } from "@/lib/file/file-store";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 

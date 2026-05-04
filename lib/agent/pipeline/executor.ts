@@ -16,7 +16,7 @@ import {
 } from "@/lib/agent/pipeline/output-resolver";
 import type { SandboxSession } from "@/lib/agent/sandbox/e2b";
 import { formatUnknownError } from "@/lib/agent/utils/error-utils";
-import { getFileDownloadUrl } from "@/lib/file-store";
+import { getFileDownloadUrl } from "@/lib/file/file-store";
 import type { FileRecord } from "@/types";
 import type {
 	AgentDefinition,

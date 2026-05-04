@@ -1,4 +1,4 @@
-import { getUploadedFileBytes } from "@/lib/file-store";
+import { getUploadedFileBytes } from "@/lib/file/file-store";
 import { type NextRequest, NextResponse } from "next/server";
 
 type FileDownloadRouteContext = {

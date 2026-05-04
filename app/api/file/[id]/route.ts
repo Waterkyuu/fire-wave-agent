@@ -1,4 +1,4 @@
-import { getFileRecordStatus } from "@/lib/file-store";
+import { getFileRecordStatus } from "@/lib/file/file-store";
 import { type NextRequest, NextResponse } from "next/server";
 
 type FileRouteContext = {

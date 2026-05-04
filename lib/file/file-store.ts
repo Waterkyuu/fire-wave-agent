@@ -2,7 +2,7 @@ import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { S3 } from "@/infra/r2";
-import { getLowercaseExtension, isDatasetFilename } from "@/lib/file";
+import { getLowercaseExtension, isDatasetFilename } from "@/lib/file/file";
 import {
 	type DatasetPreview,
 	type FileRecord,

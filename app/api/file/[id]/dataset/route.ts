@@ -1,4 +1,4 @@
-import { getDatasetPreviewByFileId } from "@/lib/file-store";
+import { getDatasetPreviewByFileId } from "@/lib/file/file-store";
 import { type NextRequest, NextResponse } from "next/server";
 
 type FileDatasetRouteContext = {

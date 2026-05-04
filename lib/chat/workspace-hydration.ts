@@ -6,7 +6,7 @@ import type {
 } from "@/types";
 import type { ChatAttachment, ChatMessageMetadata } from "@/types/chat";
 import type { UIMessage } from "ai";
-import { isDatasetExtension } from "../file";
+import { isDatasetExtension } from "../file/file";
 
 type WorkspaceArtifactCategory = "data" | "chart" | "report";
 

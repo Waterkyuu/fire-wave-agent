@@ -1,4 +1,4 @@
-import { writeChunkFile } from "@/lib/file-store";
+import { writeChunkFile } from "@/lib/file/file-store";
 import { type NextRequest, NextResponse } from "next/server";
 
 const POST = async (req: NextRequest) => {

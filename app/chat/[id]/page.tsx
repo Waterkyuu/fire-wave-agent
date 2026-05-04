@@ -40,7 +40,7 @@ import {
 	getFileDownloadUrl,
 	getFileExtension,
 } from "@/lib/chat/workspace-hydration";
-import { isDatasetExtension } from "@/lib/file";
+import { isDatasetExtension } from "@/lib/file/file";
 import {
 	useChatHistory,
 	useCreateSession,

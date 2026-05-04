@@ -2,7 +2,7 @@ import { executePipeline } from "@/lib/agent/pipeline/executor";
 import { createSandboxSession } from "@/lib/agent/sandbox/e2b";
 import { buildChatSystemPrompt } from "@/lib/agent/single-agent/prompt";
 import { createChatTools } from "@/lib/agent/single-agent/tools";
-import { readFileRecord } from "@/lib/file-store";
+import { readFileRecord } from "@/lib/file/file-store";
 import type { FileRecord } from "@/types";
 import type { PipelineStreamEvent } from "@/types/agent";
 import {

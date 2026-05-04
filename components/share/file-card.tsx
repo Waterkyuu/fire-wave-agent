@@ -1,4 +1,4 @@
-import { formatFileSize } from "@/lib/file";
+import { formatFileSize } from "@/lib/file/file";
 import { cn } from "@/lib/utils";
 import { Database, FileText, Image } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
