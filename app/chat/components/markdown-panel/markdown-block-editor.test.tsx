@@ -303,4 +303,54 @@ describe("MarkdownBlockEditor", () => {
 
 		consoleErrorSpy.mockRestore();
 	});
+
+	it("renders an image block shell and deletes it with backspace", async () => {
+		importMarkdownToBlocksMock.mockImplementationOnce(() => [
+			{
+				type: "image",
+				src: "https://example.com/report.png",
+				alt: "Revenue chart",
+				title: "Quarterly chart",
+			},
+			{
+				type: "paragraph",
+				content: [{ type: "text", text: "Trailing paragraph" }],
+			},
+		]);
+
+		const editorRef = createRef<Editor | null>();
+		const onMarkdownChange = jest.fn();
+		const contentRef = createRef<HTMLElement>();
+
+		const handleEditorReady = (editor: Editor | null) => {
+			editorRef.current = editor;
+		};
+
+		await act(async () => {
+			render(
+				<MarkdownBlockEditor
+					contentRef={contentRef}
+					markdownContent={
+						'![Revenue chart](https://example.com/report.png "Quarterly chart")\n\nTrailing paragraph'
+					}
+					onEditorReady={handleEditorReady}
+					onMarkdownChange={onMarkdownChange}
+				/>,
+			);
+			await Promise.resolve();
+		});
+
+		const imageShell = await screen.findByTestId("image-block-shell");
+
+		expect(imageShell).toHaveTextContent("Revenue chart");
+		expect(imageShell).toHaveTextContent("Quarterly chart");
+		expect(screen.getByAltText("Revenue chart")).toBeVisible();
+
+		fireEvent.mouseDown(imageShell);
+		fireEvent.keyDown(imageShell, { key: "Backspace" });
+
+		await waitFor(() =>
+			expect(onMarkdownChange).toHaveBeenLastCalledWith("Trailing paragraph"),
+		);
+	});
 });

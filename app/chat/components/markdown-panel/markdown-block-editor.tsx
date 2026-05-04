@@ -16,6 +16,7 @@ import StarterKit from "@tiptap/starter-kit";
 import type { RefObject } from "react";
 import { memo, useEffect, useRef, useState } from "react";
 import RefractCodeBlock from "./extensions/refract-code-block";
+import RefractImage from "./extensions/refract-image";
 
 type MarkdownBlockEditorProps = {
 	contentRef: RefObject<HTMLElement | null>;
@@ -103,6 +104,16 @@ const blockToEditorNodes = (block: RefractBlock): JSONContent[] => {
 		case "codeBlock":
 			return [createCodeBlockNode(block.content, block.language ?? null)];
 		case "image":
+			return [
+				{
+					type: "image",
+					attrs: {
+						src: block.src,
+						alt: block.alt,
+						title: block.title ?? null,
+					},
+				},
+			];
 		case "rawMarkdownBlock":
 			return [createFallbackNode(exportBlocksToMarkdown([block]))];
 		case "mermaidBlock":
@@ -206,6 +217,18 @@ const editorNodeToBlocks = (node: JSONContent): RefractBlock[] => {
 					content: extractNodeText(node),
 				},
 			];
+		case "image":
+			return [
+				{
+					type: "image",
+					src: typeof node.attrs?.src === "string" ? node.attrs.src : "",
+					alt: typeof node.attrs?.alt === "string" ? node.attrs.alt : "",
+					title:
+						typeof node.attrs?.title === "string"
+							? node.attrs.title
+							: undefined,
+				},
+			];
 		default:
 			return [];
 	}
@@ -243,7 +266,11 @@ const MarkdownBlockEditor = ({
 			},
 		},
 		editable: true,
-		extensions: [StarterKit.configure({ codeBlock: false }), RefractCodeBlock],
+		extensions: [
+			StarterKit.configure({ codeBlock: false }),
+			RefractCodeBlock,
+			RefractImage,
+		],
 		immediatelyRender: false,
 	});
 
