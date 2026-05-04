@@ -23,7 +23,11 @@ import {
 } from "@/components/ui/tooltip";
 import { handleError } from "@/lib/error-handler";
 import { isDatasetExtension } from "@/lib/file/file";
-import { type UploadResult, cancelUpload, uploadFile } from "@/lib/upload-file";
+import {
+	type UploadResult,
+	cancelUpload,
+	uploadFile,
+} from "@/lib/file/upload-file";
 import { cn, generateId } from "@/lib/utils";
 import type { ChatAttachment } from "@/types/chat";
 import { useAtom, useSetAtom } from "jotai";

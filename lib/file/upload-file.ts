@@ -1,7 +1,7 @@
+import { handleError } from "@/lib/error-handler";
 import apiClient from "@/services/api-client";
 import { voidPost, zodGet, zodPost } from "@/services/request";
 import { FileRecordSchema, MergeFileResponseSchema } from "@/types";
-import { handleError } from "./error-handler";
 
 const DEFAULT_CHUNK_SIZE = 2 * 1024 * 1024;
 const DEFAULT_RETRY_COUNT = 3;
